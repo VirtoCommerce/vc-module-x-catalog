@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module>
+  <id>VirtoCommerce.XCatalog</id>
+  <version>3.800.0</version>
+  <version-tag></version-tag>
+
+  <platformVersion>3.825.0</platformVersion>
+  <dependencies>
+    <dependency id="VirtoCommerce.Xapi" version="3.800.0" />
+    <dependency id="VirtoCommerce.Catalog" version="3.800.0" />
+    <dependency id="VirtoCommerce.Inventory" version="3.800.0" />
+    <dependency id="VirtoCommerce.Marketing" version="3.800.0" />
+    <dependency id="VirtoCommerce.Pricing" version="3.800.0" />
+  </dependencies>
+
+  <title>VirtoCommerce XCatalog module</title>
+  <description>VirtoCommerce XCatalog module</description>
+
+  <authors>
+    <author>Konstantin Savosteev</author>
+  </authors>
+  <owners>
+    <owner>VirtoCommerce</owner>
+  </owners>
+
+  <projectUrl>https://github.com/VirtoCommerce/vc-module-x-catalog</projectUrl>
+  <iconUrl>Modules/$(VirtoCommerce.XCatalog)/Content/logo.png</iconUrl>
+  <requireLicenseAcceptance>false</requireLicenseAcceptance>
+
+  <assemblyFile>VirtoCommerce.XCatalog.Web.dll</assemblyFile>
+  <moduleType>VirtoCommerce.XCatalog.Web.Module, VirtoCommerce.XCatalog.Web</moduleType>
+
+  <releaseNotes>First version.</releaseNotes>
+  <copyright>Copyright © 2024 VirtoCommerce. All rights reserved</copyright>
+  <tags>extension module</tags>
+  <useFullTypeNameInSwagger>false</useFullTypeNameInSwagger>
+</module>
