@@ -10,13 +10,13 @@ using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
+using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
-using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -350,7 +350,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var query = context.GetCatalogQuery<LoadProductsQuery>();
             query.ObjectIds = context.Source.IndexedVariationIds;
-            query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
+            query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+
+            // Include "isActive" field to filter out inactive variations
+            if (!query.IncludeFields.Contains("isActive"))
+            {
+                query.IncludeFields.Add("isActive");
+            }
 
             var response = await mediator.Send(query);
 
