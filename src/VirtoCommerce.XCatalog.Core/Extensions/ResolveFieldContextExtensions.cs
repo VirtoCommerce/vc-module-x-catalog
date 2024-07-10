@@ -1,6 +1,6 @@
 using GraphQL;
-using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Extensions
@@ -12,6 +12,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             var result = AbstractTypeFactory<T>.TryCreateInstance();
             result.StoreId = context.GetArgumentOrValue<string>("storeId");
             result.UserId = context.GetArgumentOrValue<string>("userId") ?? context.GetCurrentUserId();
+            result.OrganizationId = context.GetCurrentOrganizationId();
             result.CurrencyCode = context.GetArgumentOrValue<string>("currencyCode");
             result.CultureName = context.GetArgumentOrValue<string>("cultureName");
 
