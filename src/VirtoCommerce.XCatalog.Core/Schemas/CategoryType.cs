@@ -4,15 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.DataLoader;
+using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
-using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Helpers;
+using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -29,8 +31,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Category.ImgSrc, nullable: true).Description("The category image.");
             Field(x => x.Category.Code, nullable: false).Description("SKU of category.");
             Field(x => x.Category.Name, nullable: false).Description("Name of category.");
-            Field(x => x.Level, nullable: false).Description(@"Level in hierarchy");
-            Field(x => x.Category.Priority, nullable: false).Description(@"The category priority.");
+            Field(x => x.Level, nullable: false).Description("Level in hierarchy");
+            Field(x => x.Category.Priority, nullable: false).Description("The category priority.");
 
             FieldAsync<StringGraphType>("outline", resolve: async context =>
              {
@@ -60,11 +62,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 var response = await mediator.Send(loadRelatedSlugPathQuery);
                 return response.Slug;
-            }, description: @"Request related slug for category");
+            }, description: "Request related slug for category");
 
             Field(x => x.Category.Path, nullable: true).Description("Category path in to the requested catalog  (all parent categories names concatenated. E.g. (parent1/parent2))");
 
-            Field<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
+            ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
                 var source = context.Source;
                 var storeId = context.GetArgumentOrValue<string>("storeId");
@@ -80,7 +82,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.Category.Name, cultureName);
             }, description: "Request related SEO info");
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<CategoryDescriptionType>>>>("descriptions",
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<CategoryDescriptionType>>>>("descriptions",
                   arguments: new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }),
                   resolve: context =>
                   {
@@ -98,7 +100,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                       return descriptions;
                   });
 
-            Field<CategoryDescriptionType>("description",
+            ExtendableField<CategoryDescriptionType>("description",
                 arguments: new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }),
                 resolve: context =>
                 {
@@ -115,25 +117,34 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return null;
                 });
 
-            Field<CategoryType, ExpCategory>("parent").ResolveAsync(ctx =>
+            var parentField = new FieldType
             {
-                var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", (ids) => LoadCategoriesAsync(mediator, ids, ctx));
+                Name = "parent",
+                Type = GraphTypeExtenstionHelper.GetActualType<CategoryType>(),
+                Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
+                {
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(mediator, ids, context));
 
-                return TryGetCategoryParentId(ctx, out var parentCategoryId)
-                    ? loader.LoadAsync(parentCategoryId)
-                    : new DataLoaderResult<ExpCategory>(Task.FromResult<ExpCategory>(null));
-            });
+                    return TryGetCategoryParentId(context, out var parentCategoryId)
+                        ? loader.LoadAsync(parentCategoryId)
+                        : new DataLoaderResult<ExpCategory>(Task.FromResult<ExpCategory>(null));
+                })
+            };
+            AddField(parentField);
 
-            Field<NonNullGraphType<BooleanGraphType>>("hasParent",
-                "Have a parent",
-                resolve: context => TryGetCategoryParentId(context, out _));
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<OutlineType>>>>("outlines",
+            Field<NonNullGraphType<BooleanGraphType>, bool>("hasParent")
+                .Description("Have a parent")
+                .Resolve(context => TryGetCategoryParentId(context, out _));
+
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<OutlineType>>>>("outlines",
                 "Outlines",
                 resolve: context => context.Source.Category.Outlines ?? Array.Empty<Outline>());
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>("images",
+
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>("images",
                 "Images",
                 resolve: context => context.Source.Category.Images ?? Array.Empty<Image>());
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs",
+
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs",
                 "Breadcrumbs",
                 resolve: context =>
             {
@@ -142,7 +153,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var cultureName = context.GetValue<string>("cultureName");
 
                 return context.Source.Category.Outlines.GetBreadcrumbsFromOutLine(store, cultureName);
-
             });
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PropertyType>>>>("properties",
@@ -159,7 +169,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return result;
             });
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<CategoryType>>>>(
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<CategoryType>>>>(
                 nameof(ExpCategory.ChildCategories),
                 resolve: context => context.Source.ChildCategories ?? Array.Empty<ExpCategory>());
         }

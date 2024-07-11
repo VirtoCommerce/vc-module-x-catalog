@@ -13,7 +13,6 @@ using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
@@ -107,7 +106,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(d => d.IndexedProduct.Name, nullable: false).Description("The name of the product.");
 
-            Field<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
+            ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
                 var source = context.Source;
                 var storeId = context.GetArgumentOrValue<string>("storeId");
@@ -123,7 +122,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.IndexedProduct.Name, cultureName);
             }, description: "Request related SEO info");
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<DescriptionType>>>>("descriptions",
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<DescriptionType>>>>("descriptions",
                   arguments: new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }),
                   resolve: context =>
                 {
@@ -141,7 +140,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return reviews;
                 });
 
-            Field<DescriptionType>("description",
+            ExtendableField<DescriptionType>("description",
                 arguments: new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }),
                 resolve: context =>
             {
@@ -158,7 +157,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return null;
             });
 
-            FieldAsync<CategoryType>(
+            ExtendableFieldAsync<CategoryType>(
                 "category",
                 resolve: async context =>
                 {
@@ -196,7 +195,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return brandName?.ToString();
                 });
 
-            FieldAsync<VariationType>(
+            ExtendableFieldAsync<VariationType>(
                 "masterVariation",
                 resolve: async context =>
                 {
@@ -214,25 +213,23 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return response.Products.Select(expProduct => new ExpVariation(expProduct)).FirstOrDefault();
                 });
 
-            FieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
+            ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
                 "variations",
                 resolve: async context => await ResolveVariationsFieldAsync(mediator, context));
 
-            Field<NonNullGraphType<BooleanGraphType>>(
-                "hasVariations",
-                resolve: context =>
+            Field<NonNullGraphType<BooleanGraphType>, bool>("hasVariations")
+                .Resolve(context =>
                 {
                     var result = context.Source.IndexedVariationIds?.Any() ?? false;
                     return result;
                 });
 
-            Field(
-                GraphTypeExtenstionHelper.GetActualComplexType<NonNullGraphType<AvailabilityDataType>>(),
+            ExtendableField<NonNullGraphType<AvailabilityDataType>>(
                 "availabilityData",
                 "Product availability data",
                 resolve: context => AbstractTypeFactory<ExpAvailabilityData>.TryCreateInstance().FromProduct(context.Source));
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>(
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>(
                 "images",
                 "Product images",
                 resolve: context =>
@@ -249,17 +246,17 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     };
                 });
 
-            Field<NonNullGraphType<PriceType>>(
+            ExtendableField<NonNullGraphType<PriceType>>(
                 "price",
                 "Product price",
                 resolve: context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>(
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>(
                 "prices",
                 "Product prices",
                 resolve: context => context.Source.AllPrices);
 
-            Field<PriceType>(
+            ExtendableField<PriceType>(
                 "minVariationPrice",
                 "Minimim product variation price",
                 resolve: context => context.Source.MinVariationPrice);
@@ -290,7 +287,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return result;
                 });
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<AssetType>>>>(
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<AssetType>>>>(
                 "assets",
                 "Assets",
                 resolve: context =>
@@ -307,9 +304,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     };
                 });
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<OutlineType>>>>("outlines", "Outlines", resolve: context => context.Source.IndexedProduct.Outlines ?? Array.Empty<Outline>());//.RootAlias("__object.outlines");
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<OutlineType>>>>("outlines", "Outlines", resolve: context => context.Source.IndexedProduct.Outlines ?? Array.Empty<Outline>());
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs", "Breadcrumbs", resolve: context =>
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs", "Breadcrumbs", resolve: context =>
             {
                 var store = context.GetArgumentOrValue<Store>("store");
                 var cultureName = context.GetValue<string>("cultureName");
@@ -317,9 +314,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return context.Source.IndexedProduct.Outlines.GetBreadcrumbsFromOutLine(store, cultureName);
             });
 
-            Field(
-                GraphTypeExtenstionHelper.GetActualType<VendorType>(),
-                "vendor",
+            ExtendableField<VendorType>("vendor",
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
 
