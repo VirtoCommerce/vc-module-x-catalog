@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using VirtoCommerce.SearchModule.Core.Model;
 
@@ -51,16 +50,16 @@ namespace VirtoCommerce.XCatalog.Data.Index
             }
         }
 
-        private class RegexpNameMapper : FilterToIndexMapper
+        private sealed class RegexpNameMapper : FilterToIndexMapper
         {
+            private readonly Regex _filterPattern;
+            private readonly string _namePattern;
+
             public RegexpNameMapper(Regex filterPattern, string namePattern)
             {
-                FilterPattern = filterPattern;
-                NamePattern = namePattern;
+                _filterPattern = filterPattern;
+                _namePattern = namePattern;
             }
-
-            protected Regex FilterPattern { get; private set; }
-            protected string NamePattern { get; private set; }
 
             public override bool CanMap(IFilter filter)
             {
@@ -68,21 +67,21 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 var result = filterName != null;
                 if (result)
                 {
-                    result = FilterPattern.Match(filterName).Success;
+                    result = _filterPattern.Match(filterName).Success;
                 }
                 return result;
             }
 
             public override IFilter Map(IFilter filter)
             {
-                var newFilterName = FilterPattern.Replace(GetFilterName(filter), NamePattern);
+                var newFilterName = _filterPattern.Replace(GetFilterName(filter), _namePattern);
                 return SetFilterName(filter, newFilterName);
             }
         }
 
         private static IList<FilterToIndexMapper> _allMappers = new List<FilterToIndexMapper>()
         {
-            new RegexpNameMapper(new Regex(@"price.([A-Za-z]{3})", RegexOptions.Compiled | RegexOptions.IgnoreCase),"price_$1"),
+            new RegexpNameMapper(new Regex(@"price.([A-Za-z]{3})", RegexOptions.Compiled | RegexOptions.IgnoreCase), "price_$1"),
             new RegexpNameMapper(new Regex(@"catalog.id", RegexOptions.Compiled | RegexOptions.IgnoreCase), "catalog"),
             new RegexpNameMapper(new Regex(@"category.path", RegexOptions.Compiled | RegexOptions.IgnoreCase), "__path"),
             new RegexpNameMapper(new Regex(@"category.subtree", RegexOptions.Compiled | RegexOptions.IgnoreCase), "__outline"),
@@ -93,11 +92,13 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public static IFilter MapFilterAdditionalSyntax(IFilter filter)
         {
-            foreach (var mapper in _allMappers.Where(mapper => mapper.CanMap(filter)))
+            foreach (var mapper in _allMappers)
             {
-                return mapper.Map(filter);
+                if (mapper.CanMap(filter))
+                {
+                    return mapper.Map(filter);
+                }
             }
-
             return filter;
         }
     }
