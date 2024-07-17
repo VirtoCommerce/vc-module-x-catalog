@@ -1,6 +1,6 @@
 using GraphQL.Language.AST;
-using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes
 {

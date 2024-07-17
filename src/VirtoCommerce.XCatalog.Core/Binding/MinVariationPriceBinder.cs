@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
 
 namespace VirtoCommerce.XCatalog.Core.Binding
 {
@@ -17,12 +17,11 @@ namespace VirtoCommerce.XCatalog.Core.Binding
         {
             var result = new List<Price>();
 
-            if (!searchDocument.ContainsKey(BindingInfo.FieldName))
+            if (!searchDocument.TryGetValue(BindingInfo.FieldName, out var pricesDocumentRecord))
             {
                 return result;
             }
 
-            var pricesDocumentRecord = searchDocument[BindingInfo.FieldName];
             switch (pricesDocumentRecord)
             {
                 case Array jArray:
@@ -41,7 +40,7 @@ namespace VirtoCommerce.XCatalog.Core.Binding
                             }
                         }
 
-                        jObjects = jObjects.Any() ? jObjects : jArray.OfType<JObject>().ToList();
+                        jObjects = jObjects.Count != 0 ? jObjects : jArray.OfType<JObject>().ToList();
                         foreach (var jObject in jObjects)
                         {
                             AddPrice(result, jObject);

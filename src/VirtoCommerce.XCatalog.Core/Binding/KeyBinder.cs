@@ -1,5 +1,5 @@
-using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
 
 namespace VirtoCommerce.XCatalog.Core.Binding
 {

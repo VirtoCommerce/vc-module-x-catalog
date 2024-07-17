@@ -9,7 +9,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
     public static class FacetsExtensions
     {
         /// <summary>
-        /// Add to the facet phrase language-specific facet name in a hope the sought facet can be made by non-dictionary, multivalue and multilanguage property.
+        /// Add to the facet phrase language-specific facet name in a hope the sought facet can be made by non-dictionary, multi value and multi language property.
         /// See details: PT-3517
         /// </summary>
         /// <param name="requestFacets"></param>
@@ -60,7 +60,10 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 // To do this, copy facet items from the fake language-specific facet to the real facet
                 var languageSpecificAggregation = aggregations.FirstOrDefault(y => y.Field == $"{x.Field}_{languageCode.ToLowerInvariant()}");
                 if (languageSpecificAggregation != null)
+                {
                     x.Items = languageSpecificAggregation.Items;
+                }
+
                 return x;
             })
             .Where(x => !Regex.IsMatch(x.Field, @"_\w\w-\w\w$", RegexOptions.IgnoreCase)); // Drop fake language-specific facets from results

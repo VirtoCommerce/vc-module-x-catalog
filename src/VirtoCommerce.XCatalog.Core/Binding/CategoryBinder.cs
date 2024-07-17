@@ -1,9 +1,9 @@
 using System;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
-using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
 
 namespace VirtoCommerce.XCatalog.Core.Binding
 {

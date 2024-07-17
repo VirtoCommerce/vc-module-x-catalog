@@ -3,11 +3,11 @@ using System.Linq;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
-using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -88,7 +88,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             {
                 var outlines = context.Source.IndexedProduct.Outlines;
                 if (outlines.IsNullOrEmpty())
+                {
                     return null;
+                }
 
                 var loadRelatedSlugPathQuery = context.GetCatalogQuery<LoadRelatedSlugPathQuery>();
                 loadRelatedSlugPathQuery.Outlines = outlines;

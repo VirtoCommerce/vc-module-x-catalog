@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Queries;
 
 namespace VirtoCommerce.XCatalog.Data.Queries

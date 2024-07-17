@@ -11,7 +11,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
             Field(x => x.Id).Description("Fulfillment Center ID.");
             Field(x => x.Name, nullable: true).Description("Fulfillment Center name.");
-            Field(x => x.Description, nullable: true).Description("Fulfillment Center descripion.");
+            Field(x => x.Description, nullable: true).Description("Fulfillment Center description.");
             Field(x => x.OuterId, nullable: true).Description("Fulfillment Center outerId.");
             Field(x => x.GeoLocation, nullable: true).Description("Fulfillment Center geo location.");
             Field(x => x.ShortDescription, nullable: true).Description("Fulfillment Center short description.");

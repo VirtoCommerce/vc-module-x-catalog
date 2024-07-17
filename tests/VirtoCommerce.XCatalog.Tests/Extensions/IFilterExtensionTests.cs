@@ -81,7 +81,7 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
         [InlineData("__outline", "__outline", "TermFilter")]
         public void GetFieldName_NamedFilter_ParsedCorrectly(string fieldName, string expectedName, string filterType)
         {
-            // Arrage
+            // Arrange
             IFilter filter = null;
             if (filterType == "RangeFilter")
             {

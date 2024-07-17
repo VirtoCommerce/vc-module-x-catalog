@@ -19,13 +19,11 @@ namespace VirtoCommerce.XCatalog.Core.Binding
         {
             var result = default(CatalogProduct);
 
-            if (!searchDocument.ContainsKey(BindingInfo.FieldName))
+            if (!searchDocument.TryGetValue(BindingInfo.FieldName, out var obj))
             {
                 // No object in index
                 return result;
             }
-
-            var obj = searchDocument[BindingInfo.FieldName];
 
             // check if __object document field name contains string or jObject
             if (obj is string sObj)

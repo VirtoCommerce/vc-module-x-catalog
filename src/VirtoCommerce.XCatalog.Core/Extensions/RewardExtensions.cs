@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Extensions
 {

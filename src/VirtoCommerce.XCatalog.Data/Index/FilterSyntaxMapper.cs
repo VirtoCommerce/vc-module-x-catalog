@@ -76,10 +76,10 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         private class RegexpNameMapper : FilterToIndexMapper
         {
-            public RegexpNameMapper(Regex filterPattern, string namePattren)
+            public RegexpNameMapper(Regex filterPattern, string namePattern)
             {
                 FilterPattern = filterPattern;
-                NamePattern = namePattren;
+                NamePattern = namePattern;
             }
 
             protected Regex FilterPattern { get; private set; }

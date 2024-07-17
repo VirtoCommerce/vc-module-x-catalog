@@ -6,7 +6,6 @@ using VirtoCommerce.SearchModule.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Services
 {
-    // TODO: to data project
     public class PropertySearchCriteriaBuilder
     {
         private readonly ISearchPhraseParser _phraseParser;

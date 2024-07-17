@@ -39,6 +39,7 @@ namespace VirtoCommerce.XDigitalCatalog.Queries
             {
                 result.Results = result.Results.Where(x => request.Types.Contains(x.Type)).ToList();
             }
+
             return new SearchPropertiesResponse
             {
                 Result = result

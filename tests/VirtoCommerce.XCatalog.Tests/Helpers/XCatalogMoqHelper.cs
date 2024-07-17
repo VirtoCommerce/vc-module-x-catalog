@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using AutoFixture;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Tests.Helpers;
-using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Tests.Helpers

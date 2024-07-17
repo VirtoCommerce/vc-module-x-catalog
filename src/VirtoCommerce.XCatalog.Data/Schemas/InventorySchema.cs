@@ -6,11 +6,11 @@ using GraphQL.Builders;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
+using VirtoCommerce.InventoryModule.Core.Model;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.InventoryModule.Core.Model;
-using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
 
@@ -31,7 +31,7 @@ public class InventorySchema : ISchemaBuilder
         {
             Name = "fulfillmentCenter",
             Arguments = new QueryArguments(
-                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "ID of the Fulfilment Center" }
+                new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "ID of the Fulfillment Center" }
             ),
             Type = GraphTypeExtenstionHelper.GetActualType<FulfillmentCenterType>(),
             Resolver = new AsyncFieldResolver<object>(async context =>

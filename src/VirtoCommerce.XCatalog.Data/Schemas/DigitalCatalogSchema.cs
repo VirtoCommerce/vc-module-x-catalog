@@ -10,11 +10,11 @@ using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Currency;
+using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -43,7 +43,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
         /// </summary>
         /// <remarks>
         /// IMPORTANT!
-        /// We can't use the fluent syntax for new types registration provided by dotnet GraphQL here,
+        /// We can't use the fluent syntax for new types registration provided by GraphQL.NET here,
         /// because we have the strict requirement for underlying types extensions and must use
         /// GraphTypeExtenstionHelper to resolve the effective type on execution time
         /// </remarks>

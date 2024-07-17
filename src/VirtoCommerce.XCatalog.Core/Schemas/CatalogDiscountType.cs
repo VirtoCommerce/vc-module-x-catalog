@@ -5,9 +5,9 @@ using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CoreModule.Core.Common;
+using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Schemas;
-using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.XCatalog.Core.Queries;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas

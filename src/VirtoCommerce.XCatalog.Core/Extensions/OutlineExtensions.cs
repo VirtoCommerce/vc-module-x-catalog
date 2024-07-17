@@ -3,11 +3,11 @@ using System.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
-using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Tools;
+using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using SeoStoreSetting = VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.SEO;
@@ -81,7 +81,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         }
 
         /// <summary>
-        /// Returns all concatinated relative outlines for the given catalog
+        /// Returns all concatenated relative outlines for the given catalog
         /// </summary>
         /// <param name="outlines"></param>
         /// <param name="catalogId"></param>

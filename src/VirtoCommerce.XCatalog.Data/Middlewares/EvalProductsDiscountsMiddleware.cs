@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using PipelineNet.Middleware;
-using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.MarketingModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XDigitalCatalog.Queries;
 
@@ -31,10 +31,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public virtual async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             var query = parameter.Query;
             if (query == null)
@@ -59,7 +56,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     var promotionResults = await _marketingEvaluator.EvaluatePromotionAsync(promoEvalContext);
                     var promoRewards = promotionResults.Rewards.OfType<CatalogItemAmountReward>().ToArray();
-                    if (promoRewards.Any())
+                    if (promoRewards.Length != 0)
                     {
                         parameter.Results.Apply(x => x.ApplyRewards(promoRewards));
                     }

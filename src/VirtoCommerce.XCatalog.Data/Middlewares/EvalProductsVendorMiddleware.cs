@@ -6,8 +6,8 @@ using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares;
@@ -40,10 +40,7 @@ public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductRespon
     /// <exception cref="ArgumentNullException"></exception>
     public virtual async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
     {
-        if (parameter == null)
-        {
-            throw new ArgumentNullException(nameof(parameter));
-        }
+        ArgumentNullException.ThrowIfNull(parameter);
 
         if (parameter.Query == null)
         {

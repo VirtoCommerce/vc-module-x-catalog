@@ -44,7 +44,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                     .ToArray();
                 var propertyIds = productProperties.Select(x => x.Id).Distinct().ToArray();
 
-                if (propertyIds.Any())
+                if (propertyIds.Length != 0)
                 {
                     var properties = (await _propertyService.GetByIdsAsync(propertyIds)).ToDictionary(x => x.Id);
 

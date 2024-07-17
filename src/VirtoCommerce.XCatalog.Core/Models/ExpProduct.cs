@@ -5,13 +5,13 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.CoreModule.Core.Seo;
-using VirtoCommerce.Xapi.Core.Binding;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
+using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Binding;
 using VirtoCommerce.XCatalog.Core.Specifications;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
@@ -109,7 +109,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public virtual void ApplyRewards(CatalogItemAmountReward[] allRewards)
         {
-            var productRewards = allRewards.Where(r => r.ProductId.IsNullOrEmpty() || r.ProductId.EqualsInvariant(Id));
+            var productRewards = allRewards?.Where(r => r.ProductId.IsNullOrEmpty() || r.ProductId.EqualsInvariant(Id));
             if (productRewards == null)
             {
                 return;
@@ -165,14 +165,8 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public virtual void ApplyStoreInventories(IEnumerable<InventoryInfo> inventories, Store store)
         {
-            if (inventories == null)
-            {
-                throw new ArgumentNullException(nameof(inventories));
-            }
-            if (store == null)
-            {
-                throw new ArgumentNullException(nameof(store));
-            }
+            ArgumentNullException.ThrowIfNull(inventories);
+            ArgumentNullException.ThrowIfNull(store);
 
             var availFullfilmentCentersIds = (store.AdditionalFulfillmentCenterIds ?? Array.Empty<string>()).Concat(new[] { store.MainFulfillmentCenterId });
 

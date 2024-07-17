@@ -1,5 +1,5 @@
-using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
+using VirtoCommerce.Xapi.Core.Infrastructure;
 
 namespace VirtoCommerce.XCatalog.Core.Queries
 {

@@ -4,12 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using PipelineNet.Middleware;
-using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model.Search;
 using VirtoCommerce.TaxModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using StoreSetting = VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.General;
 
@@ -33,10 +33,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             if (parameter.Query == null)
             {
@@ -56,7 +53,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             {
                 //Evaluate taxes
                 var storeTaxProviders = await _taxProviderSearchService.SearchAsync(new TaxProviderSearchCriteria
-                { StoreIds = new[] { query.StoreId } });
+                { StoreIds = [query.StoreId] });
                 var activeTaxProvider = storeTaxProviders.Results.FirstOrDefault(x => x.IsActive);
                 if (activeTaxProvider != null)
                 {

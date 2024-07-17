@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
-using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.Xapi.Core.Models.Facets;
-using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.Xapi.Core.Models.Facets;
+using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -181,7 +181,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         /// <summary>
         /// By default limit  resulting products, return only visible products and belongs to store catalog,
-        /// but user can override this behaviour by passing "status:hidden" in a filter expression
+        /// but user can override this behavior by passing "status:hidden" in a filter expression
         /// </summary>
         /// <param name="builder">Instance of the request builder</param>
         /// <param name="catalog">Name of the current catalog</param>

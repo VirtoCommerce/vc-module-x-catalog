@@ -1,6 +1,6 @@
 using AutoMapper;
-using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Data.Mapping

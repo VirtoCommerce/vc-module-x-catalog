@@ -164,7 +164,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     var categoryId = context.Source.IndexedProduct.CategoryId;
 
                     var loadCategoryQuery = context.GetCatalogQuery<LoadCategoryQuery>();
-                    loadCategoryQuery.ObjectIds = new[] { categoryId };
+                    loadCategoryQuery.ObjectIds = [categoryId];
                     loadCategoryQuery.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
                     var response = await mediator.Send(loadCategoryQuery);
@@ -258,7 +258,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             ExtendableField<PriceType>(
                 "minVariationPrice",
-                "Minimim product variation price",
+                "Minimum product variation price",
                 resolve: context => context.Source.MinVariationPrice);
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PropertyType>>>>("properties",
@@ -371,7 +371,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 Keyword = context.GetArgument<string>("query"),
                 Group = context.GetArgument<string>("group"),
-                ObjectIds = new[] { context.Source.IndexedProduct.Id }
+                ObjectIds = [context.Source.IndexedProduct.Id]
             };
 
             var response = await mediator.Send(query);

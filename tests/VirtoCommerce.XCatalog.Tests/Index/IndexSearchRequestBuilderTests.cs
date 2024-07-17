@@ -5,10 +5,10 @@ using FluentAssertions;
 using Moq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
-using VirtoCommerce.Xapi.Core.Index;
-using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Index;
+using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.XCatalog.Data.Index;
 using Xunit;
 

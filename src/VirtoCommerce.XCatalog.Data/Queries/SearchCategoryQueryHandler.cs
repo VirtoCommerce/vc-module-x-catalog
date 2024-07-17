@@ -6,13 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Index;
@@ -78,7 +78,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             {
                 options.Items["store"] = store;
                 options.Items["cultureName"] = request.CultureName;
-            })).ToList() ?? new List<ExpCategory>();
+            })).ToList() ?? [];
 
             var result = new SearchCategoryResponse
             {

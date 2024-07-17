@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Services;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models.Facets;
-using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XDigitalCatalog.Queries;
 

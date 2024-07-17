@@ -1,6 +1,6 @@
 using System.Linq;
-using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Binding;
 
 namespace VirtoCommerce.XCatalog.Core.Binding
 {
@@ -12,7 +12,7 @@ namespace VirtoCommerce.XCatalog.Core.Binding
         {
             var fieldName = BindingInfo.FieldName;
 
-            return searchDocument.ContainsKey(fieldName) && searchDocument[fieldName] is object[] objs
+            return searchDocument.TryGetValue(fieldName, out var value) && value is object[] objs
                 ? objs.Select(x => (string)x).ToList()
                 : Enumerable.Empty<string>().ToList();
         }

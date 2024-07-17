@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineNet.Middleware;
-using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
@@ -25,10 +25,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public virtual async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             var query = parameter.Query;
             if (query == null)
@@ -41,7 +38,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             // If products availabilities requested
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadInventories) &&
-                productIds.Any())
+                productIds.Length != 0)
             {
                 var inventories = new List<InventoryInfo>();
 
@@ -63,7 +60,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 }
                 while (searchResult.Results.Count == take);
 
-                if (inventories.Any())
+                if (inventories.Count != 0)
                 {
                     parameter.Results.Apply(x => x.ApplyStoreInventories(inventories, parameter.Store));
                 }

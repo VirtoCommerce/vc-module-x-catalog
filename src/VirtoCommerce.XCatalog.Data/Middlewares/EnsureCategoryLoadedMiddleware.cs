@@ -24,7 +24,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 .Where(key => key != null)
                 .ToArray();
 
-            if (itemsIds.Any())
+            if (itemsIds.Length != 0)
             {
                 var responseGroup = parameter.Query.GetCategoryResponseGroup();
                 var categories = await _categoryService.GetAsync(itemsIds, responseGroup);

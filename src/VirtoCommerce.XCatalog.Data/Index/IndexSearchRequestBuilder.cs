@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.XCatalog.Core.Extensions;
 
 namespace VirtoCommerce.XCatalog.Data.Index
@@ -158,10 +158,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder ParseFilters(ISearchPhraseParser phraseParser, string filterPhrase)
         {
-            if (phraseParser == null)
-            {
-                throw new ArgumentNullException(nameof(phraseParser));
-            }
+            ArgumentNullException.ThrowIfNull(phraseParser);
 
             if (string.IsNullOrEmpty(filterPhrase))
             {
@@ -196,7 +193,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                     {
                         var wildcardValues = termFilter.Values.Where(x => new[] { "?", "*" }.Any(x.Contains)).ToArray();
 
-                        if (wildcardValues.Any())
+                        if (wildcardValues.Length != 0)
                         {
                             var orFilter = new OrFilter
                             {
@@ -239,10 +236,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
             string facetPhrase,
             IList<AggregationRequest> predefinedAggregations = null)
         {
-            if (phraseParser == null)
-            {
-                throw new ArgumentNullException(nameof(phraseParser));
-            }
+            ArgumentNullException.ThrowIfNull(phraseParser);
 
             SearchRequest.Aggregations = predefinedAggregations ?? new List<AggregationRequest>();
 
@@ -348,7 +342,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 }
             }
 
-            if (sortFields.Any())
+            if (sortFields.Count != 0)
             {
                 SearchRequest.Sorting = sortFields;
             }

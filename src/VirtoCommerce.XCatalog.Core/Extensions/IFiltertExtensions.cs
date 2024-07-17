@@ -16,14 +16,8 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         /// <param name="aggregations">Calculated aggregation results</param>
         public static void SetAppliedAggregations(this SearchRequest searchRequest, Aggregation[] aggregations)
         {
-            if (searchRequest == null)
-            {
-                throw new ArgumentNullException(nameof(searchRequest));
-            }
-            if (aggregations == null)
-            {
-                throw new ArgumentNullException(nameof(aggregations));
-            }
+            ArgumentNullException.ThrowIfNull(searchRequest);
+            ArgumentNullException.ThrowIfNull(aggregations);
 
             foreach (var childFilter in searchRequest.GetChildFilters())
             {
@@ -43,13 +37,19 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             // TermFilter names are equal, RangeFilter can contain underscore in the name
             var fieldName = (filter as INamedFilter)?.FieldName;
             if (string.IsNullOrEmpty(fieldName))
+            {
                 return fieldName;
+            }
 
             if (fieldName.StartsWith("__"))
+            {
                 return fieldName;
+            }
 
             if (filter is RangeFilter)
+            {
                 return fieldName.Split('_')[0];
+            }
 
             return fieldName;
         }
