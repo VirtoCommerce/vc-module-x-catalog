@@ -19,6 +19,7 @@ using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 using PropertyType = VirtoCommerce.XCatalog.Core.Schemas.PropertyType;
 
 namespace VirtoCommerce.XCatalog.Data.Schemas
@@ -118,7 +119,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 .Argument<StringGraphType>("facet", "Facets calculate statistical counts to aid in faceted navigation.")
                 .Argument<StringGraphType>("sort", "The sort expression")
                 .Argument<ListGraphType<StringGraphType>>("categoryIds", "Category Ids")
-                .PageSize(20);
+                .PageSize(Connections.DefaultPageSize);
 
             categoriesConnectionBuilder.ResolveAsync(async context =>
             {
@@ -138,7 +139,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 .Argument<ListGraphType<PropertyTypeEnum>>("types", "The owner types (Catalog, Category, Product, Variation)")
                 .Argument<StringGraphType>("filter", "This parameter applies a filter to the query results")
                 .Argument<StringGraphType>("cultureName", "The language for which all localized property dictionary items will be returned")
-                .PageSize(20);
+                .PageSize(Connections.DefaultPageSize);
 
             propertiesConnectionBuilder.ResolveAsync(async context =>
             {
@@ -242,7 +243,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             var query = new SearchPropertiesQuery
             {
                 Skip = skip,
-                Take = first ?? context.PageSize ?? 10,
+                Take = first ?? context.PageSize ?? Connections.DefaultPageSize,
 
                 CatalogId = (string)context.UserContext["catalog"],
                 Types = context.GetArgument<object[]>("types"),

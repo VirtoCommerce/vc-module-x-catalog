@@ -8,7 +8,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
     {
         public class RegexpNameMapper
         {
-            protected Regex _regex { get; set; }
+            private Regex _regex;
 
             protected string Replacement { get; set; }
             public string[] AdditionalFields { get; set; }

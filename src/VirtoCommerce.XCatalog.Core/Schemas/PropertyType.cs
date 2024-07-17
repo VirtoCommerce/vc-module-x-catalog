@@ -10,6 +10,7 @@ using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -46,7 +47,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                         ? context.Source.Name
                         : label;
                 });
-            //.RootAlias("__object.properties.displayNames");
 
             Field<NonNullGraphType<StringGraphType>>(
                 "type",
@@ -84,7 +84,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "value",
                 resolve: context => context.Source.Values.Select(x => x.Value).FirstOrDefault()
             );
-            //.RootAlias("__object.properties.values");
 
             Field<StringGraphType>(
                 "valueId",
@@ -94,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Connection<PropertyDictionaryItemType>()
                 .Name("propertyDictItems")
                 .DeprecationReason("Use propertyDictionaryItems instead.")
-                .PageSize(20)
+                .PageSize(Connections.DefaultPageSize)
                 .ResolveAsync(async context =>
                 {
                     return await ResolveConnectionAsync(mediator, context);
@@ -102,7 +101,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Connection<PropertyDictionaryItemType>()
                 .Name("propertyDictionaryItems")
-                .PageSize(20)
+                .PageSize(Connections.DefaultPageSize)
                 .ResolveAsync(async context =>
                 {
                     return await ResolveConnectionAsync(mediator, context);
@@ -119,7 +118,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             var query = new SearchPropertyDictionaryItemQuery
             {
                 Skip = skip,
-                Take = first ?? context.PageSize ?? 10,
+                Take = first ?? context.PageSize ?? Connections.DefaultPageSize,
                 PropertyIds = new[] { context.Source.Id }
             };
 

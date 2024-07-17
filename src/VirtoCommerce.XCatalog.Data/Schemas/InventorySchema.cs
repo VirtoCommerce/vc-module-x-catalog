@@ -13,6 +13,7 @@ using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Data.Schemas;
 
@@ -61,7 +62,7 @@ public class InventorySchema : ISchemaBuilder
         var fulfillmentCentersConnectionBuilder = GraphTypeExtenstionHelper
             .CreateConnection<FulfillmentCenterType, object>()
             .Name("fulfillmentCenters")
-            .PageSize(20)
+            .PageSize(Connections.DefaultPageSize)
             .Argument<StringGraphType>("storeId", "Search FFCs attached to a store")
             .Argument<StringGraphType>("query", "Search FFC by name")
             .Argument<StringGraphType>("sort", "The sort expression")
@@ -75,7 +76,7 @@ public class InventorySchema : ISchemaBuilder
     {
         context.CopyArgumentsToUserContext();
 
-        var take = context.First ?? context.PageSize ?? 20;
+        var take = context.First ?? context.PageSize ?? Connections.DefaultPageSize;
         var skip = Convert.ToInt32(context.After ?? 0.ToString());
         var fulfillmentCenterIds = context.GetArgument<List<string>>("fulfillmentCenterIds");
 

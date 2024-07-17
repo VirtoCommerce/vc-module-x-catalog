@@ -11,6 +11,7 @@ using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Schemas;
 using VirtoCommerce.XDigitalCatalog.Queries;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
 {
@@ -18,7 +19,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
     {
         protected override string Name => "products";
 
-        protected virtual int DefaultPageSize => 20;
+        protected virtual int DefaultPageSize => Connections.DefaultPageSize;
 
         public SearchProductQueryBuilder(
             IMediator mediator,

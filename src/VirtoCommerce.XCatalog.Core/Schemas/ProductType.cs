@@ -19,6 +19,7 @@ using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -326,13 +327,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Name("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
-              .PageSize(20)
+              .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveAssociationConnectionAsync(mediator, context));
 
 
             Connection<VideoType>()
               .Name("videos")
-              .PageSize(20)
+              .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveVideosConnectionAsync(mediator, context));
         }
 
