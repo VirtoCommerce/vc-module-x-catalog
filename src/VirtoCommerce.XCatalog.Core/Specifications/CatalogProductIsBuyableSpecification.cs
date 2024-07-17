@@ -14,8 +14,7 @@ namespace VirtoCommerce.XCatalog.Core.Specifications
         /// <exception cref="ArgumentNullException"></exception>
         public virtual bool IsSatisfiedBy(ExpProduct product)
         {
-            if (product == null)
-                throw new ArgumentNullException(nameof(product));
+            ArgumentNullException.ThrowIfNull(product);
 
             return product.IndexedProduct.IsActive.GetValueOrDefault(false)
                 && product.IndexedProduct.IsBuyable.GetValueOrDefault(false)

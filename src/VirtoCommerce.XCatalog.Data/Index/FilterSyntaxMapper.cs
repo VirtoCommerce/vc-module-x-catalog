@@ -103,24 +103,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
             }
         }
 
-        private class RegexpNameAndValueMapper : RegexpNameMapper
-        {
-            public RegexpNameAndValueMapper(Regex filterPattern, string indexPattern, string valuePattern)
-                : base(filterPattern, indexPattern)
-            {
-                ValuePattern = valuePattern;
-            }
-
-            private string ValuePattern { get; set; }
-
-            public override IFilter Map(IFilter filter)
-            {
-                filter = base.Map(filter);
-                var newValue = ValuePattern.Replace(GetFilterValue(filter), ValuePattern);
-                return SetFilterValue(filter, newValue);
-            }
-        }
-
         private static IList<FilterToIndexMapper> _allMappers = new List<FilterToIndexMapper>()
         {
             new RegexpNameMapper(new Regex(@"price.([A-Za-z]{3})", RegexOptions.Compiled | RegexOptions.IgnoreCase),"price_$1"),

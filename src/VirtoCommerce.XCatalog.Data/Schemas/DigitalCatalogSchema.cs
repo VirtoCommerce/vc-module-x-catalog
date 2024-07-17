@@ -215,7 +215,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             if (categoryIds.IsNullOrEmpty())
             {
                 query.Skip = skip;
-                query.Take = first ?? context.PageSize ?? 10;
+                query.Take = first ?? context.PageSize ?? Connections.DefaultPageSize;
                 query.Query = context.GetArgument<string>("query");
                 query.Filter = context.GetArgument<string>("filter");
                 query.Facet = context.GetArgument<string>("facet");

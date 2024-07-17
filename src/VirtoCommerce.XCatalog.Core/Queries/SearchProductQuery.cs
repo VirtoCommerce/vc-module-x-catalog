@@ -9,6 +9,7 @@ using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XDigitalCatalog.Queries
 {
@@ -67,7 +68,7 @@ namespace VirtoCommerce.XDigitalCatalog.Queries
                 if (context is IResolveConnectionContext connectionContext)
                 {
                     Skip = int.TryParse(connectionContext.After, out var skip) ? skip : 0;
-                    Take = connectionContext.First ?? connectionContext.PageSize ?? 20;
+                    Take = connectionContext.First ?? connectionContext.PageSize ?? Connections.DefaultPageSize;
                 }
             }
         }
