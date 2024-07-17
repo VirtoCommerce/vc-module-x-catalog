@@ -66,7 +66,7 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             var result = _indexSearchRequestBuilder.AddObjectIds(objectIds).Build();
 
             // Assert
-            result.Take.Should().Be(objectIds.Count());
+            result.Take.Should().Be(objectIds.Length);
             result.Filter.As<AndFilter>().ChildFilters.Should().ContainEquivalentOf(new IdsFilter { Values = objectIds });
         }
 

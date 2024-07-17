@@ -62,7 +62,7 @@ public class ChildCategoriesQueryHandler : IQueryHandler<ChildCategoriesQuery, C
         if (!string.IsNullOrEmpty(request.ProductFilter))
         {
             var outlineIds = await GetProductOutlineIds(request);
-            if (outlineIds.Any())
+            if (outlineIds.Count != 0)
             {
                 FilterChildCategories(result.ChildCategories, outlineIds);
             }
@@ -75,7 +75,7 @@ public class ChildCategoriesQueryHandler : IQueryHandler<ChildCategoriesQuery, C
         return result;
     }
 
-    private void FilterChildCategories(IList<ExpCategory> categories, HashSet<string> outlines)
+    private static void FilterChildCategories(IList<ExpCategory> categories, HashSet<string> outlines)
     {
         if (categories.IsNullOrEmpty())
         {

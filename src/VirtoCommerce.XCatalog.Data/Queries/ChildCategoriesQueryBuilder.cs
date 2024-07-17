@@ -48,7 +48,7 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
             categoryIds.Add(category.Key);
         }
 
-        if (categoryIds.Any())
+        if (categoryIds.Count != 0)
         {
             var responseGroup = GetCategoryResponseGroup(context, request, response);
             var categoriesByIds = new Dictionary<string, Category>();

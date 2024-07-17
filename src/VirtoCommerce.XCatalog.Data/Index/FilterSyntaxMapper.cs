@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using VirtoCommerce.SearchModule.Core.Model;
 
@@ -22,7 +23,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 return filter;
             }
 
-            protected string GetFilterName(IFilter filter)
+            protected static string GetFilterName(IFilter filter)
             {
                 string result = null;
                 if (filter is TermFilter termFilter)
@@ -36,7 +37,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 return result;
             }
 
-            protected IFilter SetFilterName(IFilter filter, string filterName)
+            protected static IFilter SetFilterName(IFilter filter, string filterName)
             {
                 if (filter is TermFilter termFilter)
                 {
@@ -92,13 +93,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public static IFilter MapFilterAdditionalSyntax(IFilter filter)
         {
-            foreach (var mapper in _allMappers)
+            foreach (var mapper in _allMappers.Where(mapper => mapper.CanMap(filter)))
             {
-                if (mapper.CanMap(filter))
-                {
-                    return mapper.Map(filter);
-                }
+                return mapper.Map(filter);
             }
+
             return filter;
         }
     }

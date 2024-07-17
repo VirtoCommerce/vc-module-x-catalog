@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -91,21 +92,19 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public static IEnumerable<string> MapToIndexIncludes(IEnumerable<string> includeFields)
         {
-            IEnumerable<string> result = new string[] { };
+            IEnumerable<string> result = Array.Empty<string>();
             foreach (var includeField in includeFields)
             {
                 var indexField = includeField;
-                foreach (var mapper in Mappers)
+                foreach (var mapper in Mappers.Where(mapper => mapper.CanMap(indexField)))
                 {
-                    if (mapper.CanMap(indexField))
+                    indexField = mapper.Map(indexField);
+                    if (mapper.AdditionalFields != null)
                     {
-                        indexField = mapper.Map(indexField);
-                        if (mapper.AdditionalFields != null)
-                        {
-                            result = result.Union(mapper.AdditionalFields);
-                        }
+                        result = result.Union(mapper.AdditionalFields);
                     }
                 }
+
                 result = result.Union(new string[] { indexField });
             }
             return result;

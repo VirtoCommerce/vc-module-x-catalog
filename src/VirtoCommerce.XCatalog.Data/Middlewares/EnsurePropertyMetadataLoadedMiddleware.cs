@@ -19,10 +19,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             if (parameter.Query == null)
             {

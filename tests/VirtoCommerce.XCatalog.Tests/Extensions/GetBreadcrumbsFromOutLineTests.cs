@@ -55,7 +55,7 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
         }
 
 
-        private List<Outline> GetProductOutlines()
+        private static List<Outline> GetProductOutlines()
         {
             return new List<Outline>() {
                 new Outline

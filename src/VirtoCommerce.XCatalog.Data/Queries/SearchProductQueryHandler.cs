@@ -52,6 +52,15 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _phraseParser = phraseParser;
         }
 
+        public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
+        {
+            var searchRequest = _mapper.Map<SearchProductQuery>(request);
+
+            var result = await Handle(searchRequest, cancellationToken);
+
+            return new LoadProductResponse(result.Results);
+        }
+
         /// <summary>
         /// Handle search products query and return search result with facets
         /// </summary>
@@ -168,15 +177,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     options.Items["cultureName"] = languageCode;
                 }))
                 .ToList();
-        }
-
-        public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
-        {
-            var searchRequest = _mapper.Map<SearchProductQuery>(request);
-
-            var result = await Handle(searchRequest, cancellationToken);
-
-            return new LoadProductResponse(result.Results);
         }
 
         /// <summary>
