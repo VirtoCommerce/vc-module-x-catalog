@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using VirtoCommerce.SearchModule.Core.Model;
 
@@ -47,28 +45,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 else if (filter is RangeFilter rangeFilter)
                 {
                     rangeFilter.FieldName = filterName;
-                }
-                return filter;
-            }
-
-            protected string GetFilterValue(IFilter filter)
-            {
-                if (filter is TermFilter termFilter)
-                {
-                    return termFilter.Values.FirstOrDefault();
-                }
-                throw new NotSupportedException();
-            }
-
-            protected IFilter SetFilterValue(IFilter filter, string filterValue)
-            {
-                if (filter is TermFilter termFilter)
-                {
-                    termFilter.Values = new[] { filterValue };
-                }
-                else if (filter is RangeFilter rangeFilter)
-                {
-                    throw new NotSupportedException();
                 }
                 return filter;
             }
