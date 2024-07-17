@@ -17,11 +17,25 @@
   <description>VirtoCommerce XCatalog module</description>
 
   <authors>
+    <author>Eugeny Tatarincev</author>
+    <author>Yan Brovkin</author>
+    <author>Fillip Kuksov</author>
+    <author>Egidijus Mažeika</author>
+    <author>Andrei Kostyrin</author>
+    <author>Dmitri Pushnitsa</author>
+    <author>Alexandr Andreev</author>
+    <author>Andrey Kozlov</author>
     <author>Konstantin Savosteev</author>
+    <author>Aleksandr Vishniakov</author>
+    <author>Artem Dudarev</author>
   </authors>
   <owners>
     <owner>VirtoCommerce</owner>
   </owners>
+  
+  <groups>
+    <group>commerce</group>
+  </groups>
 
   <projectUrl>https://github.com/VirtoCommerce/vc-module-x-catalog</projectUrl>
   <iconUrl>Modules/$(VirtoCommerce.XCatalog)/Content/logo.png</iconUrl>
