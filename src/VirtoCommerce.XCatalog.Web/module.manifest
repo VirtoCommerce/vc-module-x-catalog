@@ -13,8 +13,8 @@
     <dependency id="VirtoCommerce.Pricing" version="3.800.0" />
   </dependencies>
 
-  <title>VirtoCommerce XCatalog module</title>
-  <description>VirtoCommerce XCatalog module</description>
+  <title>Catalog Experience API</title>
+  <description>Manages all catalog-related operations, from product listings to detailed item information.</description>
 
   <authors>
     <author>Eugeny Tatarincev</author>
