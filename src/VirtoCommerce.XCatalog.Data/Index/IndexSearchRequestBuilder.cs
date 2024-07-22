@@ -74,6 +74,12 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IndexSearchRequestBuilder WithCultureName(string cultureName)
         {
             CultureName = cultureName;
+
+            if (!string.IsNullOrEmpty(CultureName))
+            {
+                SearchRequest.SearchFields.Add($"__content_{cultureName}".ToLowerInvariant());
+            }
+
             return this;
         }
 

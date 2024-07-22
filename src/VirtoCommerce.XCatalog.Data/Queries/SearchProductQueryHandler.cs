@@ -84,12 +84,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 CatalogId = store.Catalog,
             };
 
+            builder.WithCultureName(criteria.LanguageCode);
+
             //Use predefined  facets for store  if the facet filter expression is not set
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadFacets))
             {
                 var predefinedAggregations = await _aggregationConverter.GetAggregationRequestsAsync(criteria, new FiltersContainer());
 
-                builder.WithCultureName(criteria.LanguageCode);
                 builder.ParseFacets(_phraseParser, request.Facet, predefinedAggregations)
                    .ApplyMultiSelectFacetSearch();
             }
