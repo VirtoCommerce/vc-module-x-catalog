@@ -6,6 +6,7 @@ using PipelineNet.Middleware;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.MarketingModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XDigitalCatalog.Queries;
@@ -18,14 +19,13 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         private readonly IMarketingPromoEvaluator _marketingEvaluator;
         private readonly IGenericPipelineLauncher _pipeline;
 
-
         public EvalProductsDiscountsMiddleware(
-            IMapper mapper
-            , IMarketingPromoEvaluator marketingEvaluator
-            , IGenericPipelineLauncher pipeline)
+            IMapper mapper,
+            IOptionalDependency<IMarketingPromoEvaluator> marketingEvaluator,
+            IGenericPipelineLauncher pipeline)
         {
             _mapper = mapper;
-            _marketingEvaluator = marketingEvaluator;
+            _marketingEvaluator = marketingEvaluator.Value;
             _pipeline = pipeline;
         }
 
@@ -37,6 +37,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             if (query == null)
             {
                 throw new OperationCanceledException("Query must be set");
+            }
+
+            if (_marketingEvaluator == null)
+            {
+                await next(parameter);
+                return;
             }
 
             var responseGroup = EnumUtility.SafeParse(query.GetResponseGroup(), ExpProductResponseGroup.None);

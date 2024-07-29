@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.PricingModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
@@ -24,12 +25,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public EvalProductsPricesMiddleware(
             IMapper mapper,
-            IPricingEvaluatorService pricingEvaluatorService,
+            IOptionalDependency<IPricingEvaluatorService> pricingEvaluatorService,
             IGenericPipelineLauncher pipeline,
             IStoreService storeService)
         {
             _mapper = mapper;
-            _pricingEvaluatorService = pricingEvaluatorService;
+            _pricingEvaluatorService = pricingEvaluatorService.Value;
             _pipeline = pipeline;
             _storeService = storeService;
         }
@@ -42,6 +43,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             if (query == null)
             {
                 throw new OperationCanceledException("Query must be set");
+            }
+
+            if (_pricingEvaluatorService == null)
+            {
+                await next(parameter);
+                return;
             }
 
             // If prices evaluation requested
