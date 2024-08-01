@@ -7,6 +7,7 @@ using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 
@@ -17,9 +18,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         private readonly IInventorySearchService _inventorySearchService;
         private readonly IGenericPipelineLauncher _pipeline;
 
-        public EvalProductsInventoryMiddleware(IInventorySearchService inventorySearchService, IGenericPipelineLauncher pipeline)
+        public EvalProductsInventoryMiddleware(IOptionalDependency<IInventorySearchService> inventorySearchService, IGenericPipelineLauncher pipeline)
         {
-            _inventorySearchService = inventorySearchService;
+            _inventorySearchService = inventorySearchService.Value;
             _pipeline = pipeline;
         }
 
@@ -31,6 +32,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             if (query == null)
             {
                 throw new OperationCanceledException("Query must be set");
+            }
+
+            if (_inventorySearchService == null)
+            {
+                await next(parameter);
+                return;
             }
 
             var productIds = parameter.Results.Select(x => x.Id).ToArray();
