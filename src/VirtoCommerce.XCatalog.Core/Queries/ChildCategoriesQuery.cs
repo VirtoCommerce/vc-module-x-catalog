@@ -2,9 +2,8 @@ using System.Collections.Generic;
 using GraphQL;
 using GraphQL.Types;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Core.Queries;
 
-namespace VirtoCommerce.XDigitalCatalog.Queries;
+namespace VirtoCommerce.XCatalog.Core.Queries;
 
 public class ChildCategoriesQuery : CatalogQueryBase<ChildCategoriesQueryResponse>
 {
