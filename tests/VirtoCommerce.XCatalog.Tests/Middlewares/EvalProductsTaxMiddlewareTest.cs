@@ -13,8 +13,8 @@ using VirtoCommerce.TaxModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Middlewares;
-using VirtoCommerce.XDigitalCatalog.Queries;
 using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Middlewares
