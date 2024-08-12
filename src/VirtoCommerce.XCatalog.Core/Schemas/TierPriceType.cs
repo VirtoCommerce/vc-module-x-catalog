@@ -10,10 +10,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
             Field<NonNullGraphType<MoneyType>>("price",
                 "Price",
-                resolve: context => context.Source.Price);
+                resolve: context => context.Source.ActualPrice);
             Field<NonNullGraphType<MoneyType>>("priceWithTax",
                 "Price with tax",
-                resolve: context => context.Source.PriceWithTax);
+                resolve: context => context.Source.ActualPriceWithTax);
             Field<NonNullGraphType<LongGraphType>>("quantity",
                 "Quantity",
                 resolve: context => context.Source.Quantity);
