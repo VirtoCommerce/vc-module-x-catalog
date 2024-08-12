@@ -13,6 +13,7 @@ using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
+using VirtoCommerce.XDigitalCatalog.Queries;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 

@@ -9,7 +9,7 @@ using VirtoCommerce.Xapi.Core;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XDigitalCatalog.Queries;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 

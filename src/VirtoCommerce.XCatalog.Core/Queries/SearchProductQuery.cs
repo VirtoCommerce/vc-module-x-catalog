@@ -8,9 +8,10 @@ using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Core.Queries;
 using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
-namespace VirtoCommerce.XCatalog.Core.Queries
+namespace VirtoCommerce.XDigitalCatalog.Queries
 {
     public class SearchProductQuery : CatalogQueryBase<SearchProductResponse>, ISearchQuery
     {

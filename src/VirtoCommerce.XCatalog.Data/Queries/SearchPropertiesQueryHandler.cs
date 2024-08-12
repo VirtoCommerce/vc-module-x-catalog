@@ -10,7 +10,7 @@ using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Services;
 
-namespace VirtoCommerce.XCatalog.Data.Queries
+namespace VirtoCommerce.XDigitalCatalog.Queries
 {
     public class SearchPropertiesQueryHandler : IRequestHandler<SearchPropertiesQuery, SearchPropertiesResponse>
     {

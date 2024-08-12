@@ -9,8 +9,8 @@ using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
+using VirtoCommerce.XDigitalCatalog.Queries;
 using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Data.Queries

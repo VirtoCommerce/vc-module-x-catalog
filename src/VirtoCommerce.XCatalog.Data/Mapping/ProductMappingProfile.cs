@@ -13,6 +13,7 @@ using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XDigitalCatalog.Queries;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Data.Mapping

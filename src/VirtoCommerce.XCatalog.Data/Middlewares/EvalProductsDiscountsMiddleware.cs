@@ -9,7 +9,7 @@ using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XDigitalCatalog.Queries;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
