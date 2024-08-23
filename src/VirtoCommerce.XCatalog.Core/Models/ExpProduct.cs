@@ -178,7 +178,8 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
             if (store.MainFulfillmentCenterId != null)
             {
-                Inventory = AllInventories.FirstOrDefault(x => x.FulfillmentCenterId == store.MainFulfillmentCenterId) ?? Inventory;
+                var mainFfc = AllInventories.FirstOrDefault(x => x.FulfillmentCenterId == store.MainFulfillmentCenterId);
+                Inventory = mainFfc != null && mainFfc.InStockQuantity - mainFfc.ReservedQuantity > 0 ? mainFfc : Inventory;
             }
         }
     }
