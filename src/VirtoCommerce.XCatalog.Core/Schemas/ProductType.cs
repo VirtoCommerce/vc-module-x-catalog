@@ -180,7 +180,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(d => d.IndexedProduct.OuterId, nullable: true).Description("The outer identifier");
 
-            Field(d => d.IndexedProduct.Gtin, nullable: true).Description("Global Trade Item Number");
+            Field(d => d.IndexedProduct.Gtin, nullable: true).Description("Global Trade Item Number (GTIN)");
+            Field(d => d.IndexedProduct.ManufacturerPartNumber, nullable: true).Description("Manufacturer Part Number (MPN)");
 
             Field<StringGraphType>(
                 "brandName",
