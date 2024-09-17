@@ -74,7 +74,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(d => d.IndexedProduct.ProductType, nullable: true).Description("The type of product");
             Field(d => d.IndexedProduct.MinQuantity, nullable: true).Description("Min. quantity");
             Field(d => d.IndexedProduct.MaxQuantity, nullable: true).Description("Max. quantity");
-            Field(d => d.IndexedProduct.PackSize, nullable: false).Description("Defines the number of items in a package.");
+            Field(d => d.IndexedProduct.PackSize, nullable: false).Description("Defines the number of items in a package. Quantity step for your product's.");
 
             FieldAsync<StringGraphType>("outline", resolve: async context =>
             {

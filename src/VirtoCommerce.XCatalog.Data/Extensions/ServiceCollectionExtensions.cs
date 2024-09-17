@@ -21,6 +21,7 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
             {
                 builder.AddMiddleware(typeof(EnsureCatalogProductLoadedMiddleware));
                 builder.AddMiddleware(typeof(RemoveNullCatalogProductsMiddleware));
+                builder.AddMiddleware(typeof(PackSizeResolveMiddleware));
                 builder.AddMiddleware(typeof(EvalProductsPricesMiddleware));
                 builder.AddMiddleware(typeof(EvalProductsDiscountsMiddleware));
                 builder.AddMiddleware(typeof(EvalProductsTaxMiddleware));
