@@ -180,9 +180,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 resolve: context => context.Source.IndexedProduct.ImgSrc);
 
             Field(d => d.IndexedProduct.OuterId, nullable: true).Description("The outer identifier");
-
             Field(d => d.IndexedProduct.Gtin, nullable: true).Description("Global Trade Item Number (GTIN)");
             Field(d => d.IndexedProduct.ManufacturerPartNumber, nullable: true).Description("Manufacturer Part Number (MPN)");
+            Field(d => d.IndexedProduct.WeightUnit, nullable: true).Description("Weight unit");
+            Field(d => d.IndexedProduct.Weight, nullable: true).Description("Weight");
+            Field(d => d.IndexedProduct.MeasureUnit, nullable: true).Description("Measure unit");
+            Field(d => d.IndexedProduct.Height, nullable: true).Description("Height");
+            Field(d => d.IndexedProduct.Width, nullable: true).Description("Width");
+            Field(d => d.IndexedProduct.Length, nullable: true).Description("Length");
 
             Field<StringGraphType>(
                 "brandName",
