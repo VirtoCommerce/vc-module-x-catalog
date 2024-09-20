@@ -104,6 +104,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "vendor",
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
+
+            Field(
+                GraphTypeExtenstionHelper.GetActualType<RatingType>(),
+                "rating",
+                "Product raiting",
+                resolve: context => context.Source.Rating);
+
         }
     }
 }

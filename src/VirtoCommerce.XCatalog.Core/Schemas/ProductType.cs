@@ -325,6 +325,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
 
+            ExtendableField<RatingType>(
+                "rating",
+                "Product rating",
+                resolve: context => context.Source.Rating);
+
+
             Field(x => x.InWishlist, nullable: false).Description("Product added at least in one wishlist");
 
             Field(x => x.WishlistIds, nullable: false).Description("List of wishlist ID with this product");
