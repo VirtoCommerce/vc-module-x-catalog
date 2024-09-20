@@ -128,11 +128,6 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                 foreach (var reward in mappedRewards)
                 {
-                    foreach (var tierPrice in productPrice.TierPrices)
-                    {
-                        tierPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - tierPrice.Price).Amount), productPrice.Currency);
-                    }
-
                     if (!reward.IsValid)
                     {
                         continue;
@@ -156,7 +151,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.Price.Amount, 1);
+                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.ActualPrice.Amount, 1);
                         }
                     }
                 }
