@@ -78,6 +78,11 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public ExpVendor Vendor { get; set; }
 
+        /// <summary>
+        /// Product rating
+        /// </summary>
+        public ExpRating Rating { get; set; }
+
         public bool InWishlist { get; set; }
 
         public IList<string> WishlistIds { get; set; } = [];
