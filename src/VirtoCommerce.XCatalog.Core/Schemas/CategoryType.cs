@@ -33,6 +33,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Category.Name, nullable: false).Description("Name of category.");
             Field(x => x.Level, nullable: false).Description("Level in hierarchy");
             Field(x => x.Category.Priority, nullable: false).Description("The category priority.");
+            Field(x => x.RelevanceScore, nullable: true).Description("Category relevance score");
 
             FieldAsync<StringGraphType>("outline", resolve: async context =>
              {
