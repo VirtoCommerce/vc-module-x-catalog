@@ -52,6 +52,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 resolve: context => context.Source.IndexedProduct.MaxQuantity
             );
 
+            Field<IntGraphType>(
+               "packSize",
+               description: "Defines the number of items in a package. Quantity step for your product's.",
+               resolve: context => context.Source.IndexedProduct.PackSize
+           );
+
             ExtendableField<NonNullGraphType<AvailabilityDataType>>(
                 "availabilityData",
                 "Availability data",
