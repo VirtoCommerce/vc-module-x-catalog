@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
         [BindIndexField(FieldName = "__minvariationprice", BinderType = typeof(MinVariationPriceBinder))]
         public IList<Price> IndexedMinVariationPrices { get; set; } = new List<Price>();
 
-        [BindIndexField(FieldName = SearchModule.Core.ModuleConstants.RelevanceScore, BinderType = typeof(ScoreBinder))]
+        [BindIndexField(FieldName = SearchModule.Core.ModuleConstants.RelevanceScore, BinderType = typeof(DefaultPropertyIndexBinder))]
         public double? RelevanceScore { get; set; }
 
         [BindIndexField(BinderType = typeof(KeyBinder))]

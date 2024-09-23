@@ -16,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
         [BindIndexField(BinderType = typeof(KeyBinder))]
         public virtual string Key { get; set; }
 
-        [BindIndexField(FieldName = SearchModule.Core.ModuleConstants.RelevanceScore, BinderType = typeof(ScoreBinder))]
+        [BindIndexField(FieldName = SearchModule.Core.ModuleConstants.RelevanceScore, BinderType = typeof(DefaultPropertyIndexBinder))]
         public double? RelevanceScore { get; set; }
 
         //Level in hierarchy
