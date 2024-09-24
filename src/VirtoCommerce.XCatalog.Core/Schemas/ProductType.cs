@@ -74,6 +74,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(d => d.IndexedProduct.ProductType, nullable: true).Description("The type of product");
             Field(d => d.IndexedProduct.MinQuantity, nullable: true).Description("Min. quantity");
             Field(d => d.IndexedProduct.MaxQuantity, nullable: true).Description("Max. quantity");
+            Field(d => d.IndexedProduct.PackSize, nullable: false).Description("Defines the number of items in a package. Quantity step for your product's.");
 
             FieldAsync<StringGraphType>("outline", resolve: async context =>
             {
@@ -324,6 +325,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<VendorType>("vendor",
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
+
+            ExtendableField<RatingType>(
+                "rating",
+                "Product rating",
+                resolve: context => context.Source.Rating);
+
 
             Field(x => x.InWishlist, nullable: false).Description("Product added at least in one wishlist");
 

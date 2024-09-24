@@ -5,7 +5,6 @@ using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
@@ -53,6 +52,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 resolve: context => context.Source.IndexedProduct.MaxQuantity
             );
 
+            Field<IntGraphType>(
+               "packSize",
+               description: "Defines the number of items in a package. Quantity step for your product's.",
+               resolve: context => context.Source.IndexedProduct.PackSize
+           );
+
             ExtendableField<NonNullGraphType<AvailabilityDataType>>(
                 "availabilityData",
                 "Availability data",
@@ -99,11 +104,16 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return response.Slug;
             }, description: "Request related slug for product");
 
-            Field(
-                GraphTypeExtenstionHelper.GetActualType<VendorType>(),
+            ExtendableField<NonNullGraphType<VendorType>>(
                 "vendor",
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
+
+            ExtendableField<NonNullGraphType<RatingType>>(
+                "rating",
+                "Product raiting",
+                resolve: context => context.Source.Rating);
+
         }
     }
 }
