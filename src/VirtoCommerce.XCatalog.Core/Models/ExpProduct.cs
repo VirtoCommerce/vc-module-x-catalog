@@ -82,6 +82,11 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public ExpVendor Vendor { get; set; }
 
+        /// <summary>
+        /// Product rating
+        /// </summary>
+        public ExpRating Rating { get; set; }
+
         public bool InWishlist { get; set; }
 
         public IList<string> WishlistIds { get; set; } = [];
@@ -132,11 +137,6 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                 foreach (var reward in mappedRewards)
                 {
-                    foreach (var tierPrice in productPrice.TierPrices)
-                    {
-                        tierPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - tierPrice.Price).Amount), productPrice.Currency);
-                    }
-
                     if (!reward.IsValid)
                     {
                         continue;
@@ -160,7 +160,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.Price.Amount, 1);
+                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.ActualPrice.Amount, 1);
                         }
                     }
                 }
