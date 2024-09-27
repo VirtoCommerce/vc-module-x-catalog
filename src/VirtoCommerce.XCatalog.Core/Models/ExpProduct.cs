@@ -9,6 +9,7 @@ using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
+using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.Xapi.Core.Models;
@@ -18,7 +19,7 @@ using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Core.Models
 {
-    public class ExpProduct
+    public class ExpProduct : IHasRelevanceScore
     {
         public string Id => IndexedProduct?.Id;
 
@@ -30,6 +31,9 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         [BindIndexField(FieldName = "__minvariationprice", BinderType = typeof(MinVariationPriceBinder))]
         public IList<Price> IndexedMinVariationPrices { get; set; } = new List<Price>();
+
+        [BindIndexField(FieldName = SearchModule.Core.ModuleConstants.RelevanceScore, BinderType = typeof(DefaultPropertyIndexBinder))]
+        public double? RelevanceScore { get; set; }
 
         [BindIndexField(BinderType = typeof(KeyBinder))]
         public virtual string Key { get; set; }
