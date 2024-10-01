@@ -21,7 +21,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<StringGraphType>("cultureName",
                 "Culture name",
                 resolve: context => context.Source.LanguageCode);
-
         }
     }
 }
