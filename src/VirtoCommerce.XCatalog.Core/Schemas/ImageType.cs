@@ -26,19 +26,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         public ImageType()
         {
             Field<NonNullGraphType<StringGraphType>>("id",
-                "Image ID",
+                "The unique ID of the image",
                 resolve: context => context.Source.Id);
             Field<StringGraphType>("name",
-                "Image name",
+                "The name of the image",
                 resolve: context => context.Source.Name);
             Field<StringGraphType>("group",
-                "Image group",
+                "The group of the image",
                 resolve: context => context.Source.Group);
             Field<NonNullGraphType<StringGraphType>>("url",
-                "Image URL",
+                "The URL of the image",
                 resolve: context => context.Source.Url);
             Field<StringGraphType>("relativeUrl",
-                "Image relative URL",
+                "The relative URL of the image",
                 resolve: context => context.Source.RelativeUrl);
             Field<NonNullGraphType<IntGraphType>>("sortOrder",
                 "Sort order",
@@ -46,6 +46,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<StringGraphType>("cultureName",
                 "Culture name",
                 resolve: context => context.Source.LanguageCode);
+            Field<StringGraphType>("description",
+                "The description of the image",
+                resolve: context => context.Source.Description);
         }
     }
 }
