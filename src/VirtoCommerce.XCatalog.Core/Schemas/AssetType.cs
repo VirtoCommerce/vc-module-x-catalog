@@ -11,16 +11,17 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.Id, nullable: false).Description("The unique ID of the asset.");
             Field(x => x.Name, nullable: true).Description("The name of the asset.");
-            Field(x => x.MimeType, nullable: true).Description("MimeType of the asset.");
-            Field(x => x.Size, nullable: false).Description("Size of the asset.");
-            Field(x => x.Url, nullable: false).Description("Url of the asset.");
-            Field(x => x.RelativeUrl, nullable: true).Description("RelativeUrl of the asset.");
-            Field(x => x.TypeId, nullable: false).Description("Type id of the asset.");
-            Field(x => x.Group, nullable: true).Description("Group of the asset.");
-            Field(x => x.Description, nullable: true).Description("Description of the asset.");
+            Field(x => x.MimeType, nullable: true).Description("The MIME type of the asset.");
+            Field(x => x.Size, nullable: false).Description("The size of the asset in bytes.");
+            Field(x => x.Url, nullable: false).Description("The URL of the asset.");
+            Field(x => x.RelativeUrl, nullable: true).Description("The relative URL of the asset.");
+            Field(x => x.TypeId, nullable: false).Description("The type ID of the asset.");
+            Field(x => x.Group, nullable: true).Description("The group of the asset.");
+            Field(x => x.Description, nullable: true).Description("The description of the asset.");
             Field<StringGraphType>("cultureName",
                 "Culture name",
                 resolve: context => context.Source.LanguageCode);
+
         }
     }
 }
