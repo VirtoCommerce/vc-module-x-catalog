@@ -12,9 +12,15 @@ namespace VirtoCommerce.XCatalog.Core.Binding
         {
             var fieldName = BindingInfo.FieldName;
 
-            return searchDocument.TryGetValue(fieldName, out var value) && value is object[] objs
-                ? objs.Select(x => (string)x).ToList()
+            return searchDocument.TryGetValue(fieldName, out var value)
+                  ? value switch
+                 {
+                   object[] objs => objs.Select(x => (string)x).ToList(),
+                   string str => new List<string> { str },
+                   _ => Enumerable.Empty<string>().ToList()
+                 }
                 : Enumerable.Empty<string>().ToList();
+
         }
     }
 }
