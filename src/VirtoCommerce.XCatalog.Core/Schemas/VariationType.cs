@@ -104,12 +104,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return response.Slug;
             }, description: "Request related slug for product");
 
-            ExtendableField<NonNullGraphType<VendorType>>(
+            ExtendableField<VendorType>(
                 "vendor",
                 "Product vendor",
                 resolve: context => context.Source.Vendor);
 
-            ExtendableField<NonNullGraphType<RatingType>>(
+            ExtendableField<RatingType>(
                 "rating",
                 "Product raiting",
                 resolve: context => context.Source.Rating);
