@@ -30,15 +30,18 @@ public class GetProductConfigurationQueryHandler : IQueryHandler<GetProductConfi
             {
                 new()
                 {
+                    Id = "Beverages",
                     Name = "Beverages",
                     IsRequired = true,
                 },
                 new()
                 {
+                    Id = "Baloons",
                     Name = "Baloons",
                 },
                 new()
                 {
+                    Id = "Chips and Snacks",
                     Name = "Chips and Snacks"
                 }
             }
