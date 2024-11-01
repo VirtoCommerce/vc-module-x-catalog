@@ -9,8 +9,9 @@ public class ExpConfigurationSection
     public string Type { get; set; }
     public string Description { get; set; }
     public bool IsRequired { get; set; }
-    public int Quantity { get; set; } = 1;
+    public int Quantity { get; set; }
 
+    public IList<string> ProductIds { get; set; } = [];
     public IList<ExpProduct> Products { get; set; } = [];
 }
 
