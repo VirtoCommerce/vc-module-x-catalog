@@ -47,17 +47,17 @@ public class GetProductConfigurationQueryHandler : IQueryHandler<GetProductConfi
                 .Select(x => x.Replace(_productsFieldName, string.Empty, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-        var productsRequest = new SearchProductQuery()
+        var productsRequest = new SearchProductQuery
         {
-            StoreId = request?.StoreId,
-            CultureName = request?.CultureName,
-            CurrencyCode = request?.CurrencyCode,
-            UserId = request?.UserId,
-            OrganizationId = request?.OrganizationId,
+            StoreId = request.StoreId,
+            CultureName = request.CultureName,
+            CurrencyCode = request.CurrencyCode,
+            UserId = request.UserId,
+            OrganizationId = request.OrganizationId,
             IncludeFields = includeFields,
+            ObjectIds = result.ConfigurationSections.SelectMany(x => x.ProductIds).Distinct().ToArray()
         };
 
-        productsRequest.ObjectIds = result.ConfigurationSections.SelectMany(x => x.ProductIds).Distinct().ToArray();
         var productsResponse = await _mediator.Send(productsRequest, cancellationToken);
         var productsByIds = productsResponse.Results.ToDictionary(x => x.Id, x => x);
 
