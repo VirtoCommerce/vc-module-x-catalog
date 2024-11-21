@@ -1,8 +1,8 @@
 {
   "permissions": {
-    "XCatalog:create": "Create XCatalog related data",
-    "XCatalog:read": "View XCatalog related data",
-    "XCatalog:update": "Update XCatalog related data",
-    "XCatalog:delete": "Delete XCatalog related data"
+    "XCatalog:create": "Create xCatalog related data",
+    "XCatalog:read": "View xCatalog related data",
+    "XCatalog:update": "Update xCatalog related data",
+    "XCatalog:delete": "Delete xCatalog related data"
   }
 }
