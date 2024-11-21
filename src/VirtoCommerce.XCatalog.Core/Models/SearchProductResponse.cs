@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Models.Facets;
-using VirtoCommerce.XDigitalCatalog.Queries;
+using VirtoCommerce.XCatalog.Core.Queries;
 
 namespace VirtoCommerce.XCatalog.Core.Models
 {
