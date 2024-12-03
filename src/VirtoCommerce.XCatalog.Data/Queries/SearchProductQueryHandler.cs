@@ -138,7 +138,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
                                             .AddSorting(request.Sort)
-                                            .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
+                                            .WithIncludeFields(request.ObjectIds?.Length > 0 ? "__object" : "sku");
 
             if (request.ObjectIds.IsNullOrEmpty())
             {
