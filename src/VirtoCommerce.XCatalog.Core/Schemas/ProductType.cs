@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.DataLoader;
+using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
@@ -76,7 +77,28 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(d => d.IndexedProduct.MaxQuantity, nullable: true).Description("Max. quantity");
             Field(d => d.IndexedProduct.PackSize, nullable: false).Description("Defines the number of items in a package. Quantity step for your product's.");
             Field(d => d.RelevanceScore, nullable: true).Description("Product relevance score");
-            Field(d => d.IndexedProduct.IsConfigurable, nullable: false).Description("Product is configurable");
+
+            var productField = new FieldType
+            {
+                Name = "isConfigurable",
+                Type = typeof(NonNullGraphType<BooleanGraphType>),
+                Description = "Product is configurable",
+                Resolver = new FuncFieldResolver<ExpProduct, IDataLoaderResult<bool>>(context =>
+                {
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, bool>("products_active_configurations", async (ids) =>
+                    {
+                        var query = new GetProductConfigurationsQuery
+                        {
+                            ProductIds = ids.ToArray()
+                        };
+
+                        return await mediator.Send(query);
+                    });
+                    return loader.LoadAsync(context.Source.Id);
+                })
+            };
+            AddField(productField);
+
 
             FieldAsync<StringGraphType>("outline", resolve: async context =>
             {
