@@ -146,7 +146,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                     var discount = new Discount
                     {
-                        DiscountAmount = reward.GetRewardAmount(priceAmount, 1),
+                        DiscountAmount = reward.GetTotalAmount(priceAmount, 1, productPrice.Currency),
                         Description = reward.Promotion.Description,
                         Coupon = reward.Coupon,
                         PromotionId = reward.Promotion.Id
@@ -160,7 +160,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.ActualPrice.Amount, 1);
+                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.ActualPrice.Amount, 1, productPrice.Currency);
                         }
                     }
                 }
