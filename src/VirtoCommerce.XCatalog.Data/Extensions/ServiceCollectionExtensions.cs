@@ -2,6 +2,7 @@ using GraphQL.Server;
 using Microsoft.Extensions.DependencyInjection;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
@@ -15,6 +16,8 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
             graphQLBuilder.AddSchema(typeof(CoreAssemblyMarker), typeof(DataAssemblyMarker));
+
+            services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
 
             // The generic pipeline that is used for on-the-fly additional data evaluation (prices, inventories, discounts and taxes) for resulting products
             services.AddPipeline<SearchProductResponse>(builder =>
