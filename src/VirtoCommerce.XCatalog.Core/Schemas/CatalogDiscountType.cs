@@ -16,17 +16,20 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     {
         public CatalogDiscountType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
         {
-            var promotion = new EventStreamFieldType
+            var promotion = new FieldType
             {
                 Name = "promotion",
                 Type = GraphTypeExtenstionHelper.GetActualType<PromotionType>(),
                 Arguments = new QueryArguments(),
-                Resolver = new FuncFieldResolver<Discount, IDataLoaderResult<Promotion>>(context =>
+                Resolver = new FuncFieldResolver<Discount, IDataLoaderResult<Promotion>>(async context =>
                 {
                     var loader = dataLoader.Context.GetOrAddBatchLoader<string, Promotion>("promotionsLoader", (ids) => LoadPromotionsAsync(mediator, ids));
-                    return loader.LoadAsync(context.Source.PromotionId);
+                    var result = loader.LoadAsync(context.Source.PromotionId);
+
+                    return await Task.FromResult(result);
                 })
             };
+
             AddField(promotion);
         }
 

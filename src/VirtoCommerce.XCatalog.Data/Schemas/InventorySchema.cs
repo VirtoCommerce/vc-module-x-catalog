@@ -35,7 +35,7 @@ public class InventorySchema : ISchemaBuilder
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "ID of the Fulfillment Center" }
             ),
             Type = GraphTypeExtenstionHelper.GetActualType<FulfillmentCenterType>(),
-            Resolver = new AsyncFieldResolver<object>(async context =>
+            Resolver = new FuncFieldResolver<object>(async context =>
             {
                 context.CopyArgumentsToUserContext();
 

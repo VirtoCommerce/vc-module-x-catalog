@@ -1,9 +1,10 @@
+using GraphQL.MicrosoftDI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Data;
 using VirtoCommerce.XCatalog.Data.Extensions;
 
@@ -16,13 +17,16 @@ public class Module : IModule, IHasConfiguration
 
     public void Initialize(IServiceCollection serviceCollection)
     {
-        var graphQlBuilder = new CustomGraphQLBuilder(serviceCollection);
+        var graphQlBuilder = new GraphQLBuilder(serviceCollection, builder =>
+        {
+            builder.AddSchema(serviceCollection, typeof(CoreAssemblyMarker), typeof(DataAssemblyMarker));
+        });
         serviceCollection.AddXCatalog(graphQlBuilder);
     }
 
     public void PostInitialize(IApplicationBuilder appBuilder)
     {
-        appBuilder.UseScopedSchema<DataAssemblyMarker>("catalog");
+        //appBuilder.UseScopedSchema<DataAssemblyMarker>("catalog");
     }
 
     public void Uninstall()
