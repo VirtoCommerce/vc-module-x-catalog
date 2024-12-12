@@ -1,6 +1,9 @@
 using GraphQL.DI;
 using Microsoft.Extensions.DependencyInjection;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
+using VirtoCommerce.MarketingModule.Core.Model.Promotions;
+using VirtoCommerce.PricingModule.Core.Model;
+using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
@@ -42,6 +45,10 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
             });
 
             services.AddPipeline<InventorySearchCriteria>();
+
+            services.AddPipeline<PriceEvaluationContext>();
+            services.AddPipeline<PromotionEvaluationContext>();
+            services.AddPipeline<TaxEvaluationContext>();
 
             return services;
         }
