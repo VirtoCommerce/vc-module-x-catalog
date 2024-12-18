@@ -4,7 +4,7 @@ using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class PriceType : ObjectGraphType<ProductPrice>
+    public class PriceType : ExtendableGraphType<ProductPrice>
     {
         public PriceType()
         {

@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class VideoType : ObjectGraphType<Video>
+    public class VideoType : ExtendableGraphType<Video>
     {
         public VideoType()
         {

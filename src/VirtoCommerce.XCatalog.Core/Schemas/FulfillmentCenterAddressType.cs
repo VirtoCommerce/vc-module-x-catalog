@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.InventoryModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class FulfillmentCenterAddressType : ObjectGraphType<Address>
+    public class FulfillmentCenterAddressType : ExtendableGraphType<Address>
     {
         public FulfillmentCenterAddressType()
         {

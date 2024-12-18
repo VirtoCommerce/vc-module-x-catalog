@@ -2,10 +2,11 @@ using System.Linq;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class PropertyDictionaryItemType : ObjectGraphType<PropertyDictionaryItem>
+    public class PropertyDictionaryItemType : ExtendableGraphType<PropertyDictionaryItem>
     {
         public PropertyDictionaryItemType()
         {

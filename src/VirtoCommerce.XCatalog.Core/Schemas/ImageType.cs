@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class ImageType : ObjectGraphType<Image>
+    public class ImageType : ExtendableGraphType<Image>
     {
         /// <summary>
         ///

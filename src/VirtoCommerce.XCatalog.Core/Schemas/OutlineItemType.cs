@@ -4,7 +4,7 @@ using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class OutlineItemType : ObjectGraphType<OutlineItem>
+    public class OutlineItemType : ExtendableGraphType<OutlineItem>
     {
         public OutlineItemType()
         {

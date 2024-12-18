@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.InventoryModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class InventoryInfoType : ObjectGraphType<InventoryInfo>
+    public class InventoryInfoType : ExtendableGraphType<InventoryInfo>
     {
         public InventoryInfoType()
         {

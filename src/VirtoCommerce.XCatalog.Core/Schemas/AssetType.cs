@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class AssetType : ObjectGraphType<Asset>
+    public class AssetType : ExtendableGraphType<Asset>
     {
         public AssetType()
         {

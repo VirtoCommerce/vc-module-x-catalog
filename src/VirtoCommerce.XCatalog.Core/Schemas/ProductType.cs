@@ -360,16 +360,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.WishlistIds, nullable: false).Description("List of wishlist ID with this product");
 
-            Connection<ProductAssociationType>()
-              .Name("associations")
+            Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveAssociationConnectionAsync(mediator, context));
 
 
-            Connection<VideoType>()
-              .Name("videos")
+            Connection<VideoType>("videos")
               .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveVideosConnectionAsync(mediator, context));
         }

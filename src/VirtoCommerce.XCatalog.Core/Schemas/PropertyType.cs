@@ -8,13 +8,14 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes;
 using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class PropertyType : ObjectGraphType<Property>
+    public class PropertyType : ExtendableGraphType<Property>
     {
         public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
         {
@@ -90,8 +91,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 resolve: context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault()
             );
 
-            Connection<PropertyDictionaryItemType>()
-                .Name("propertyDictItems")
+            Connection<PropertyDictionaryItemType>("propertyDictItems")
                 .DeprecationReason("Use propertyDictionaryItems instead.")
                 .PageSize(Connections.DefaultPageSize)
                 .ResolveAsync(async context =>
@@ -99,8 +99,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return await ResolveConnectionAsync(mediator, context);
                 });
 
-            Connection<PropertyDictionaryItemType>()
-                .Name("propertyDictionaryItems")
+            Connection<PropertyDictionaryItemType>("propertyDictionaryItems")
                 .PageSize(Connections.DefaultPageSize)
                 .ResolveAsync(async context =>
                 {

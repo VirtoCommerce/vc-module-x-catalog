@@ -12,7 +12,7 @@ using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XDigitalCatalog.Queries;
+using VirtoCommerce.XCatalog.Core.Queries;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {

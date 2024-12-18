@@ -4,10 +4,11 @@ using GraphQL.Types;
 using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class FulfillmentCenterType : ObjectGraphType<FulfillmentCenter>
+    public class FulfillmentCenterType : ExtendableGraphType<FulfillmentCenter>
     {
         public FulfillmentCenterType(IOptionalDependency<IFulfillmentCenterGeoService> fulfillmentCenterGeoService)
         {

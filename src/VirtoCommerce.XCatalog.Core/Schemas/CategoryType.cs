@@ -121,7 +121,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             var parentField = new FieldType
             {
                 Name = "parent",
-                Type = GraphTypeExtenstionHelper.GetActualType<CategoryType>(),
+                Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
                 {
                     var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(mediator, ids, context));

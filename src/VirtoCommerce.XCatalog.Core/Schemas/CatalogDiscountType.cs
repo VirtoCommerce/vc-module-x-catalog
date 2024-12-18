@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GraphQL;
 using GraphQL.DataLoader;
 using GraphQL.Resolvers;
 using GraphQL.Types;
@@ -19,7 +20,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             var promotion = new FieldType
             {
                 Name = "promotion",
-                Type = GraphTypeExtenstionHelper.GetActualType<PromotionType>(),
+                Type = GraphTypeExtensionHelper.GetActualType<PromotionType>(),
                 Arguments = new QueryArguments(),
                 Resolver = new FuncFieldResolver<Discount, IDataLoaderResult<Promotion>>(async context =>
                 {
