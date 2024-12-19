@@ -127,7 +127,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
             var rewardsMap = AllPrices
                    .Select(x => x.Currency)
                    .Distinct()
-                   .ToDictionary(x => x, x => productRewards);
+                   .ToDictionary(x => x, _ => productRewards);
 
             foreach (var productPrice in AllPrices)
             {
@@ -146,7 +146,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                     var discount = new Discount
                     {
-                        DiscountAmount = reward.GetRewardAmount(priceAmount, 1),
+                        DiscountAmount = reward.GetTotalAmount(priceAmount, 1, productPrice.Currency),
                         Description = reward.Promotion.Description,
                         Coupon = reward.Coupon,
                         PromotionId = reward.Promotion.Id
@@ -160,7 +160,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetRewardAmount(tierPrice.ActualPrice.Amount, 1);
+                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.ActualPrice.Amount, 1, productPrice.Currency);
                         }
                     }
                 }
@@ -172,11 +172,11 @@ namespace VirtoCommerce.XCatalog.Core.Models
             ArgumentNullException.ThrowIfNull(inventories);
             ArgumentNullException.ThrowIfNull(store);
 
-            var availFullfilmentCentersIds = (store.AdditionalFulfillmentCenterIds ?? Array.Empty<string>()).Concat(new[] { store.MainFulfillmentCenterId });
+            var availFulfilmentCentersIds = (store.AdditionalFulfillmentCenterIds ?? Array.Empty<string>()).Concat([store.MainFulfillmentCenterId]);
 
             AllInventories.Clear();
             Inventory = null;
-            AllInventories = inventories.Where(x => x.ProductId == Id && availFullfilmentCentersIds.Contains(x.FulfillmentCenterId)).ToList();
+            AllInventories = inventories.Where(x => x.ProductId == Id && availFulfilmentCentersIds.Contains(x.FulfillmentCenterId)).ToList();
 
             Inventory = AllInventories.OrderByDescending(x => Math.Max(0, x.InStockQuantity - x.ReservedQuantity)).FirstOrDefault();
 
