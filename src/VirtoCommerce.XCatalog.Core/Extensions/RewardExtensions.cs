@@ -21,7 +21,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             var rewardsMap = productPrices
                 .Select(x => x.Currency)
                 .Distinct()
-                .ToDictionary(x => x, x => rewards);
+                .ToDictionary(x => x, _ => rewards);
 
             foreach (var productPrice in productPrices)
             {
