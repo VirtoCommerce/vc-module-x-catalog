@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "XCatalog:create": "Criar dados relacionados ao xCatalog",
+    "XCatalog:read": "Visualizar dados relacionados ao xCatalog",
+    "XCatalog:update": "Atualizar dados relacionados ao xCatalog",
+    "XCatalog:delete": "Excluir dados relacionados ao xCatalog"
+  }
+}
