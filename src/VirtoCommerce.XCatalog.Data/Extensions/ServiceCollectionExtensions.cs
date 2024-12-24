@@ -15,8 +15,6 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
     {
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
-            //graphQLBuilder.AddSchema(services, typeof(CoreAssemblyMarker), typeof(DataAssemblyMarker));
-
             // turn off scoped schema for now
             //services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
 
