@@ -4,6 +4,7 @@ using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
@@ -15,8 +16,7 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
     {
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
-            // turn off scoped schema for now
-            //services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
+            services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
 
             // The generic pipeline that is used for on-the-fly additional data evaluation (prices, inventories, discounts and taxes) for resulting products
             services.AddPipeline<SearchProductResponse>(builder =>

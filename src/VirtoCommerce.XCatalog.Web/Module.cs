@@ -26,7 +26,7 @@ public class Module : IModule, IHasConfiguration
 
     public void PostInitialize(IApplicationBuilder appBuilder)
     {
-        //appBuilder.UseScopedSchema<DataAssemblyMarker>("catalog");
+        appBuilder.UseScopedSchema<DataAssemblyMarker>("catalog");
     }
 
     public void Uninstall()
