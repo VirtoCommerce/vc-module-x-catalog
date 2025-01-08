@@ -32,9 +32,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.DisplayOrder, nullable: true).Description("The display order of the property.");
 
-            Field<NonNullGraphType<StringGraphType>>(
-                "label",
-                resolve: context =>
+            Field<NonNullGraphType<StringGraphType>>("label")
+                .Resolve(context =>
                 {
                     var cultureName = context.GetValue<string>("cultureName");
 
@@ -49,47 +48,39 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                         : label;
                 });
 
-            Field<NonNullGraphType<StringGraphType>>(
-                "type",
-                resolve: context => context.Source.Type.ToString(),
-                deprecationReason: "Use propertyType instead."
-            );
+            Field<NonNullGraphType<StringGraphType>>("type")
+                .Resolve(context => context.Source.Type.ToString())
+                .DeprecationReason("Use propertyType instead.");
 
-            Field<NonNullGraphType<PropertyTypeEnum>>(
-                "propertyType",
-                resolve: context => context.Source.Type
-            );
+            Field<NonNullGraphType<PropertyTypeEnum>>("propertyType")
+                .Resolve(context => context.Source.Type);
 
-            Field<NonNullGraphType<StringGraphType>>(
-                "valueType",
+            Field<NonNullGraphType<StringGraphType>>("valueType")
                 // since PropertyType is used both for property metadata queries and product/category/catalog queries
                 // to infer "valueType" need to look in ValueType property in case of metadata query or in the first value in case
                 // when the Property object was created dynamically by grouping
-                resolve: context => context.Source.Values.IsNullOrEmpty()
+                .Resolve(context => context.Source.Values.IsNullOrEmpty()
                         ? context.Source.ValueType.ToString()
-                        : context.Source.Values.Select(x => x.ValueType).First().ToString(), // Values.IsNullOrEmpty() is false here. It means at least one element is present
-                description: "ValueType of the property.",
-                deprecationReason: "Use propertyValueType instead.");
+                        : context.Source.Values.Select(x => x.ValueType).First().ToString())
+                // Values.IsNullOrEmpty() is false here. It means at least one element is present
+                .Description("ValueType of the property.")
+                .DeprecationReason("Use propertyValueType instead.");
 
-            Field<NonNullGraphType<PropertyValueTypeEnum>>(
-                "propertyValueType",
+            Field<NonNullGraphType<PropertyValueTypeEnum>>("propertyValueType")
                 // since PropertyType is used both for property metadata queries and product/category/catalog queries
                 // to infer "valueType" need to look in ValueType property in case of metadata query or in the first value in case
                 // when the Property object was created dynamically by grouping
-                resolve: context => context.Source.Values.IsNullOrEmpty()
+                .Resolve(context => context.Source.Values.IsNullOrEmpty()
                     ? context.Source.ValueType
-                    : context.Source.Values.Select(x => x.ValueType).First(), // Values.IsNullOrEmpty() is false here. It means at least one element is present
-                description: "ValueType of the property.");
+                    : context.Source.Values.Select(x => x.ValueType).First())
+                // Values.IsNullOrEmpty() is false here. It means at least one element is present
+                .Description("ValueType of the property.");
 
-            Field<PropertyValueGraphType>(
-                "value",
-                resolve: context => context.Source.Values.Select(x => x.Value).FirstOrDefault()
-            );
+            Field<PropertyValueGraphType>("value")
+                .Resolve(context => context.Source.Values.Select(x => x.Value).FirstOrDefault());
 
-            Field<StringGraphType>(
-                "valueId",
-                resolve: context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault()
-            );
+            Field<StringGraphType>("valueId")
+                .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
 
             Connection<PropertyDictionaryItemType>("propertyDictItems")
                 .DeprecationReason("Use propertyDictionaryItems instead.")
@@ -112,7 +103,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
             var first = context.First;
 
-            int.TryParse(context.After, out var skip);
+            _ = int.TryParse(context.After, out var skip);
 
             var query = new SearchPropertyDictionaryItemQuery
             {

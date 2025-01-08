@@ -14,13 +14,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Description = "Represents property dictionary item";
 
             Field(x => x.Id, nullable: false).Description("The unique ID of the property dictionary item.");
-            Field<StringGraphType>("value",
-                resolve: context =>
+            Field<StringGraphType>("value")
+                .Resolve(context =>
                 {
                     var cultureName = context.GetArgumentOrValue<string>("cultureName");
                     return string.IsNullOrEmpty(cultureName) ? context.Source.Alias : context.Source.LocalizedValues.FirstOrDefault(x => x.LanguageCode == cultureName)?.Value ?? context.Source.Alias;
-                },
-                description: "Value alias.");
+                })
+                .Description("Value alias.");
             Field(x => x.SortOrder, nullable: false).Description("Value order.");
         }
     }

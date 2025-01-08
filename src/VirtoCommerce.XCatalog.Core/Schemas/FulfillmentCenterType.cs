@@ -16,17 +16,16 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Name, nullable: true).Description("Fulfillment Center name.");
             Field(x => x.Description, nullable: true).Description("Fulfillment Center description.");
             Field(x => x.OuterId, nullable: true).Description("Fulfillment Center outerId.");
-            Field(x => x.GeoLocation, nullable: true).Description("Fulfillment Center geo location.");
+            Field(x => x.GeoLocation, nullable: true).Description("Fulfillment Center GEO location.");
             Field(x => x.ShortDescription, nullable: true).Description("Fulfillment Center short description.");
-            Field<FulfillmentCenterAddressType>(nameof(FulfillmentCenter.Address).ToCamelCase(),
-                description: "Fulfillment Center address.",
-                resolve: x => x.Source.Address);
+            Field<FulfillmentCenterAddressType>(nameof(FulfillmentCenter.Address).ToCamelCase())
+                .Description("Fulfillment Center address.")
+                .Resolve(x => x.Source.Address);
 
-            FieldAsync<ListGraphType<FulfillmentCenterType>>(
-                "nearest",
-                arguments: new QueryArguments(new QueryArgument<IntGraphType> { Name = "take" }),
-                description: "Nearest Fulfillment Centers",
-                resolve: async context =>
+            Field<ListGraphType<FulfillmentCenterType>>("nearest")
+                .Arguments(new QueryArguments(new QueryArgument<IntGraphType> { Name = "take" }))
+                .Description("Nearest Fulfillment Centers")
+                .ResolveAsync(async context =>
                 {
                     if (fulfillmentCenterGeoService.Value == null)
                     {

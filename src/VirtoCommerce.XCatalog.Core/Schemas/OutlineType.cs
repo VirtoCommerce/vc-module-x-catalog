@@ -8,9 +8,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     {
         public OutlineType()
         {
-            Field<ListGraphType<NonNullGraphType<OutlineItemType>>>("items",
-                "Outline items",
-                resolve: context => context.Source.Items);
+            Field<ListGraphType<NonNullGraphType<OutlineItemType>>>("items")
+                .Description("Outline items")
+                .Resolve(context => context.Source.Items);
         }
     }
 }

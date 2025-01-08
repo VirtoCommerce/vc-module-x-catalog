@@ -8,7 +8,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     {
         public FulfillmentCenterAddressType()
         {
-            Field<StringGraphType>("id", resolve: context => context.Source.Key, description: "Id");
+            Field<StringGraphType>("id").Description("Id").Resolve(context => context.Source.Key);
             Field(x => x.Key, true).Description("Id");
             Field(x => x.City, nullable: true).Description("City");
             Field(x => x.CountryCode, nullable: true).Description("Country code");
@@ -27,9 +27,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.RegionName, nullable: true).Description("Region name");
             Field(x => x.Zip, nullable: true).Description("Zip");
             Field(x => x.OuterId, nullable: true).Description("Outer id");
-            Field<IntGraphType>(nameof(Address.AddressType),
-                "Address type",
-                resolve: context => (int)context.Source.AddressType);
+
+            Field<IntGraphType>(nameof(Address.AddressType))
+                .Description("Address type")
+                .Resolve(context => (int)context.Source.AddressType);
         }
     }
 }
