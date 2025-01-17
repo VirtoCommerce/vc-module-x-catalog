@@ -48,23 +48,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                         : label;
                 });
 
-            Field<NonNullGraphType<StringGraphType>>("type")
-                .Resolve(context => context.Source.Type.ToString())
-                .DeprecationReason("Use propertyType instead.");
-
             Field<NonNullGraphType<PropertyTypeEnum>>("propertyType")
                 .Resolve(context => context.Source.Type);
-
-            Field<NonNullGraphType<StringGraphType>>("valueType")
-                // since PropertyType is used both for property metadata queries and product/category/catalog queries
-                // to infer "valueType" need to look in ValueType property in case of metadata query or in the first value in case
-                // when the Property object was created dynamically by grouping
-                .Resolve(context => context.Source.Values.IsNullOrEmpty()
-                        ? context.Source.ValueType.ToString()
-                        : context.Source.Values.Select(x => x.ValueType).First().ToString())
-                // Values.IsNullOrEmpty() is false here. It means at least one element is present
-                .Description("ValueType of the property.")
-                .DeprecationReason("Use propertyValueType instead.");
 
             Field<NonNullGraphType<PropertyValueTypeEnum>>("propertyValueType")
                 // since PropertyType is used both for property metadata queries and product/category/catalog queries
@@ -82,21 +67,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
 
-            Connection<PropertyDictionaryItemType>("propertyDictItems")
-                .DeprecationReason("Use propertyDictionaryItems instead.")
-                .PageSize(Connections.DefaultPageSize)
-                .ResolveAsync(async context =>
-                {
-                    return await ResolveConnectionAsync(mediator, context);
-                });
-
             Connection<PropertyDictionaryItemType>("propertyDictionaryItems")
                 .PageSize(Connections.DefaultPageSize)
                 .ResolveAsync(async context =>
                 {
                     return await ResolveConnectionAsync(mediator, context);
                 });
-
         }
 
         private static async Task<object> ResolveConnectionAsync(IMediator mediator, IResolveConnectionContext<Property> context)

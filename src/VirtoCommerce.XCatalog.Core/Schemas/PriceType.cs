@@ -36,15 +36,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<NonNullGraphType<StringGraphType>>("currency")
                 .Description("Currency")
                 .Resolve(context => context.Source.Currency.Code);
-            Field<DateTimeGraphType>("validFrom")
-                .Description("Valid from")
-                .Resolve(context => context.Source.StartDate).DeprecationReason("startDate");
             Field<DateTimeGraphType>("startDate")
                 .Description("Start date")
                 .Resolve(context => context.Source.StartDate);
-            Field<DateTimeGraphType>("validUntil")
-                .Description("Valid until")
-                .Resolve(context => context.Source.EndDate).DeprecationReason("endDate");
             Field<DateTimeGraphType>("endDate")
                 .Description("End date")
                 .Resolve(context => context.Source.EndDate);
