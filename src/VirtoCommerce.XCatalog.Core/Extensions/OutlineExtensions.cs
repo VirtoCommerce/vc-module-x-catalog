@@ -155,6 +155,20 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             }
 #pragma warning restore S2259 // Null pointers should not be dereferenced
 
+            var catalog = outlineItems[0];
+            var catalogSeoInfoForStoreAndLanguage = SeoInfoForStoreAndLanguage(catalog, store.Id, cultureName);
+            if (catalog.SeoObjectType == "Catalog" && catalogSeoInfoForStoreAndLanguage != null)
+            {
+                var breadcrumb = new Breadcrumb(catalog.SeoObjectType)
+                {
+                    ItemId = catalog.Id,
+                    Title = catalogSeoInfoForStoreAndLanguage.PageTitle?.EmptyToNull() ?? "Catalog",
+                    SemanticUrl = catalogSeoInfoForStoreAndLanguage.SemanticUrl?.EmptyToNull() ?? "catalog",
+                    SeoPath = catalogSeoInfoForStoreAndLanguage.SemanticUrl?.EmptyToNull() ?? "catalog"
+                };
+                breadcrumbs.Insert(0, breadcrumb);
+            }
+
             return breadcrumbs;
         }
 
