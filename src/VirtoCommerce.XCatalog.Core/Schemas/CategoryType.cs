@@ -30,7 +30,18 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Id, nullable: false).Description("Id of category.");
             Field(x => x.Category.ImgSrc, nullable: true).Description("The category image.");
             Field(x => x.Category.Code, nullable: false).Description("SKU of category.");
-            Field(x => x.Category.Name, nullable: false).Description("Name of category.");
+            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            {
+                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+                var category = context.Source.Category;
+                var localizedName = category.LocalizedName?.Get(cultureName);
+                if (!string.IsNullOrEmpty(localizedName))
+                {
+                    return localizedName;
+                }
+                return category.Name;
+            }, description: "The name of the category.");
+
             Field(x => x.Level, nullable: false).Description("Level in hierarchy");
             Field(x => x.Category.Priority, nullable: false).Description("The category priority.");
             Field(x => x.RelevanceScore, nullable: true).Description("Category relevance score");

@@ -130,7 +130,17 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return response.Slug;
             }).Description("Request related slug for product");
 
-            Field(d => d.IndexedProduct.Name, nullable: false).Description("The name of the product.");
+            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            {
+                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+                var product = context.Source.IndexedProduct;
+                var localizedName = product.LocalizedName?.Get(cultureName);
+                if (!string.IsNullOrEmpty(localizedName))
+                {
+                    return localizedName;
+                }
+                return product.Name;
+            }, description: "The name of the product.");
 
             ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
