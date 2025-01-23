@@ -30,7 +30,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Id, nullable: false).Description("Id of category.");
             Field(x => x.Category.ImgSrc, nullable: true).Description("The category image.");
             Field(x => x.Category.Code, nullable: false).Description("SKU of category.");
-            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            Field<NonNullGraphType<StringGraphType>>("name").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var category = context.Source.Category;
@@ -40,7 +40,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return localizedName;
                 }
                 return category.Name;
-            }, description: "The name of the category.");
+            }).Description("The name of the category.");
 
             Field(x => x.Level, nullable: false).Description("Level in hierarchy");
             Field(x => x.Category.Priority, nullable: false).Description("The category priority.");

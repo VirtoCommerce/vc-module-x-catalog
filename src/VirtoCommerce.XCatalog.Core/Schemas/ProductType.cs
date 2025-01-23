@@ -130,7 +130,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return response.Slug;
             }).Description("Request related slug for product");
 
-            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            Field<NonNullGraphType<StringGraphType>>("name").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var product = context.Source.IndexedProduct;
@@ -140,7 +140,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return localizedName;
                 }
                 return product.Name;
-            }, description: "The name of the product.");
+            }).Description("The name of the product.");
 
             ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
