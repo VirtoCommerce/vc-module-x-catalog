@@ -9,13 +9,14 @@ using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
+using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class ProductAssociationType : ObjectGraphType<ProductAssociation>
+    public class ProductAssociationType : ExtendableGraphType<ProductAssociation>
     {
         public ProductAssociationType(IDataLoaderContextAccessor dataLoader, IMediator mediator)
         {
@@ -24,15 +25,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(d => d.Type, nullable: false);
             Field(d => d.Priority, nullable: false);
-            Field("Quantity", x => x.Quantity, nullable: true, type: typeof(IntGraphType));
+            Field(x => x.Quantity, nullable: true);
             Field(d => d.AssociatedObjectId, nullable: true);
             Field(d => d.AssociatedObjectType, nullable: true);
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<StringGraphType>>>>("tags", resolve: context => context.Source.Tags?.ToList() ?? []);
+            Field<NonNullGraphType<ListGraphType<NonNullGraphType<StringGraphType>>>>("tags").Resolve(context => context.Source.Tags?.ToList() ?? []);
 
             var productField = new FieldType
             {
                 Name = "product",
-                Type = GraphTypeExtenstionHelper.GetActualType<ProductType>(),
+                Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
                 Resolver = new FuncFieldResolver<ProductAssociation, IDataLoaderResult<ExpProduct>>(context =>
                 {
                     var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", (ids) => LoadProductsAsync(mediator, ids, context));

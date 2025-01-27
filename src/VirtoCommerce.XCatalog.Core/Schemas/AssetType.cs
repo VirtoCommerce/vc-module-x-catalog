@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class AssetType : ObjectGraphType<Asset>
+    public class AssetType : ExtendableGraphType<Asset>
     {
         public AssetType()
         {
@@ -18,9 +19,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.TypeId, nullable: false).Description("The type ID of the asset.");
             Field(x => x.Group, nullable: true).Description("The group of the asset.");
             Field(x => x.Description, nullable: true).Description("The description of the asset.");
-            Field<StringGraphType>("cultureName",
-                "Culture name",
-                resolve: context => context.Source.LanguageCode);
+            Field<StringGraphType>("cultureName")
+                .Description("Culture name")
+                .Resolve(context => context.Source.LanguageCode);
         }
     }
 }

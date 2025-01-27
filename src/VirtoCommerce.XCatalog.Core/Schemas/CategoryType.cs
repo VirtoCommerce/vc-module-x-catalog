@@ -30,7 +30,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Id, nullable: false).Description("Id of category.");
             Field(x => x.Category.ImgSrc, nullable: true).Description("The category image.");
             Field(x => x.Category.Code, nullable: false).Description("SKU of category.");
-            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            Field<NonNullGraphType<StringGraphType>>("name").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var category = context.Source.Category;
@@ -40,28 +40,28 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return localizedName;
                 }
                 return category.Name;
-            }, description: "The name of the category.");
+            }).Description("The name of the category.");
 
             Field(x => x.Level, nullable: false).Description("Level in hierarchy");
             Field(x => x.Category.Priority, nullable: false).Description("The category priority.");
             Field(x => x.RelevanceScore, nullable: true).Description("Category relevance score");
 
-            FieldAsync<StringGraphType>("outline", resolve: async context =>
-             {
-                 var outlines = context.Source.Category?.Outlines;
-                 if (outlines.IsNullOrEmpty())
-                 {
-                     return null;
-                 }
+            Field<StringGraphType>("outline").ResolveAsync(async context =>
+            {
+                var outlines = context.Source.Category?.Outlines;
+                if (outlines.IsNullOrEmpty())
+                {
+                    return null;
+                }
 
-                 var loadRelatedCatalogOutlineQuery = context.GetCatalogQuery<LoadRelatedCatalogOutlineQuery>();
-                 loadRelatedCatalogOutlineQuery.Outlines = outlines;
+                var loadRelatedCatalogOutlineQuery = context.GetCatalogQuery<LoadRelatedCatalogOutlineQuery>();
+                loadRelatedCatalogOutlineQuery.Outlines = outlines;
 
-                 var response = await mediator.Send(loadRelatedCatalogOutlineQuery);
-                 return response.Outline;
-             }, description: @"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
+                var response = await mediator.Send(loadRelatedCatalogOutlineQuery);
+                return response.Outline;
+            }).Description(@"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
 
-            FieldAsync<StringGraphType>("slug", resolve: async context =>
+            Field<StringGraphType>("slug").ResolveAsync(async context =>
             {
                 var outlines = context.Source.Category?.Outlines;
                 if (outlines.IsNullOrEmpty())
@@ -74,7 +74,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 var response = await mediator.Send(loadRelatedSlugPathQuery);
                 return response.Slug;
-            }, description: "Request related slug for category");
+            }).Description("Request related slug for category");
 
             Field(x => x.Category.Path, nullable: true).Description("Category path in to the requested catalog  (all parent categories names concatenated. E.g. (parent1/parent2))");
 
@@ -132,7 +132,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             var parentField = new FieldType
             {
                 Name = "parent",
-                Type = GraphTypeExtenstionHelper.GetActualType<CategoryType>(),
+                Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
                 {
                     var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(mediator, ids, context));

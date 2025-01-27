@@ -34,8 +34,8 @@ public class InventorySchema : ISchemaBuilder
             Arguments = new QueryArguments(
                 new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "ID of the Fulfillment Center" }
             ),
-            Type = GraphTypeExtenstionHelper.GetActualType<FulfillmentCenterType>(),
-            Resolver = new AsyncFieldResolver<object>(async context =>
+            Type = GraphTypeExtensionHelper.GetActualType<FulfillmentCenterType>(),
+            Resolver = new FuncFieldResolver<object>(async context =>
             {
                 context.CopyArgumentsToUserContext();
 
@@ -59,9 +59,7 @@ public class InventorySchema : ISchemaBuilder
         };
         schema.Query.AddField(filfillmentCenterField);
 
-        var fulfillmentCentersConnectionBuilder = GraphTypeExtenstionHelper
-            .CreateConnection<FulfillmentCenterType, object>()
-            .Name("fulfillmentCenters")
+        var fulfillmentCentersConnectionBuilder = GraphTypeExtensionHelper.CreateConnection<FulfillmentCenterType, object>("fulfillmentCenters")
             .PageSize(Connections.DefaultPageSize)
             .Argument<StringGraphType>("storeId", "Search FFCs attached to a store")
             .Argument<StringGraphType>("query", "Search FFC by name")

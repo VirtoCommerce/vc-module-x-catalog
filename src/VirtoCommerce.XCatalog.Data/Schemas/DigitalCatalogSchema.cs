@@ -61,8 +61,8 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" },
                     new QueryArgument<StringGraphType> { Name = "custom", Description = "Can be used for custom query parameters" }
                 ),
-                Type = GraphTypeExtenstionHelper.GetActualType<ProductType>(),
-                Resolver = new AsyncFieldResolver<object, IDataLoaderResult<ExpProduct>>(async context =>
+                Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
+                Resolver = new FuncFieldResolver<object, IDataLoaderResult<ExpProduct>>(async context =>
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
@@ -81,6 +81,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 })
             };
             schema.Query.AddField(productField);
+
             var categoryField = new FieldType
             {
                 Name = "category",
@@ -91,8 +92,8 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<StringGraphType> { Name = "currencyCode", Description = "Currency code (\"USD\")" },
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" }
                 ),
-                Type = GraphTypeExtenstionHelper.GetActualType<CategoryType>(),
-                Resolver = new AsyncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(async context =>
+                Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
+                Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(async context =>
                {
                    var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                    context.UserContext["store"] = store;
@@ -106,8 +107,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             };
             schema.Query.AddField(categoryField);
 
-            var categoriesConnectionBuilder = GraphTypeExtenstionHelper.CreateConnection<CategoryType, object>()
-                .Name("categories")
+            var categoriesConnectionBuilder = GraphTypeExtensionHelper.CreateConnection<CategoryType, object>("categories")
                 .Argument<StringGraphType>("storeId", "The store id where category are searched")
                 .Argument<StringGraphType>("cultureName", "The language for which all localized category data will be returned")
                 .Argument<StringGraphType>("userId", "The customer id for search result impersonation")
@@ -133,8 +133,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 
             schema.Query.AddField(categoriesConnectionBuilder.FieldType);
 
-            var propertiesConnectionBuilder = GraphTypeExtenstionHelper.CreateConnection<PropertyType, object>()
-                .Name("properties")
+            var propertiesConnectionBuilder = GraphTypeExtensionHelper.CreateConnection<PropertyType, object>("properties")
                 .Argument<NonNullGraphType<StringGraphType>>("storeId", "The store id to get associated catalog")
                 .Argument<ListGraphType<PropertyTypeEnum>>("types", "The owner types (Catalog, Category, Product, Variation)")
                 .Argument<StringGraphType>("filter", "This parameter applies a filter to the query results")
@@ -160,13 +159,15 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "id of the property" },
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "The language for which all localized property dictionary items will be returned" }
                 ),
-                Type = GraphTypeExtenstionHelper.GetActualType<PropertyType>(),
-                Resolver = new AsyncFieldResolver<PropertyType, IDataLoaderResult<Property>>(context =>
+                Type = GraphTypeExtensionHelper.GetActualType<PropertyType>(),
+                Resolver = new FuncFieldResolver<PropertyType, IDataLoaderResult<Property>>(async context =>
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
                     var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", (ids) => LoadPropertiesAsync(_mediator, ids));
-                    return Task.FromResult(loader.LoadAsync(context.GetArgument<string>("id")));
+                    var result = loader.LoadAsync(context.GetArgument<string>("id"));
+
+                    return await Task.FromResult(result);
                 })
             };
             schema.Query.AddField(propertyField);

@@ -69,9 +69,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(d => d.IndexedProduct.Id, nullable: false).Description("The unique ID of the product.");
             Field(d => d.IndexedProduct.Code, nullable: false).Description("The product SKU.");
-            Field<StringGraphType>("catalogId",
-                "The unique ID of the catalog",
-                resolve: context => context.Source.IndexedProduct.CatalogId);
+            Field<StringGraphType>("catalogId")
+                .Description("The unique ID of the catalog")
+                .Resolve(context => context.Source.IndexedProduct.CatalogId);
             Field(d => d.IndexedProduct.ProductType, nullable: true).Description("The type of product");
             Field(d => d.IndexedProduct.MinQuantity, nullable: true).Description("Min. quantity");
             Field(d => d.IndexedProduct.MaxQuantity, nullable: true).Description("Max. quantity");
@@ -100,7 +100,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             AddField(productField);
 
 
-            FieldAsync<StringGraphType>("outline", resolve: async context =>
+            Field<StringGraphType>("outline").ResolveAsync(async context =>
             {
                 var outlines = context.Source.IndexedProduct.Outlines;
                 if (outlines.IsNullOrEmpty())
@@ -113,9 +113,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 var response = await mediator.Send(loadRelatedCatalogOutlineQuery);
                 return response.Outline;
-            }, description: @"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
+            }).Description(@"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
 
-            FieldAsync<StringGraphType>("slug", resolve: async context =>
+            Field<StringGraphType>("slug").ResolveAsync(async context =>
             {
                 var outlines = context.Source.IndexedProduct.Outlines;
                 if (outlines.IsNullOrEmpty())
@@ -128,9 +128,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 var response = await mediator.Send(loadRelatedSlugPathQuery);
                 return response.Slug;
-            }, description: "Request related slug for product");
+            }).Description("Request related slug for product");
 
-            Field<NonNullGraphType<StringGraphType>>("name", resolve: context =>
+            Field<NonNullGraphType<StringGraphType>>("name").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var product = context.Source.IndexedProduct;
@@ -140,7 +140,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return localizedName;
                 }
                 return product.Name;
-            }, description: "The name of the product.");
+            }).Description("The name of the product.");
 
             ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
@@ -208,10 +208,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return response.Categories.FirstOrDefault();
                 });
 
-            Field<StringGraphType>(
-                "imgSrc",
-                description: "The product main image URL.",
-                resolve: context => context.Source.IndexedProduct.ImgSrc);
+            Field<StringGraphType>("imgSrc")
+                .Description("The product main image URL.")
+                .Resolve(context => context.Source.IndexedProduct.ImgSrc);
 
             Field(d => d.IndexedProduct.OuterId, nullable: true).Description("The outer identifier");
             Field(d => d.IndexedProduct.Gtin, nullable: true).Description("Global Trade Item Number (GTIN)");
@@ -223,10 +222,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(d => d.IndexedProduct.Width, nullable: true).Description("Width");
             Field(d => d.IndexedProduct.Length, nullable: true).Description("Length");
 
-            Field<StringGraphType>(
-                "brandName",
-                description: "Get brandName for product.",
-                resolve: context =>
+            Field<StringGraphType>("brandName")
+                .Description("Get brandName for product.")
+                .Resolve(context =>
                 {
                     var brandName = context.Source.IndexedProduct.Properties
                         ?.FirstOrDefault(x => x.Name.EqualsInvariant("Brand"))
@@ -370,16 +368,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.WishlistIds, nullable: false).Description("List of wishlist ID with this product");
 
-            Connection<ProductAssociationType>()
-              .Name("associations")
+            Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveAssociationConnectionAsync(mediator, context));
 
 
-            Connection<VideoType>()
-              .Name("videos")
+            Connection<VideoType>("videos")
               .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveVideosConnectionAsync(mediator, context));
         }
