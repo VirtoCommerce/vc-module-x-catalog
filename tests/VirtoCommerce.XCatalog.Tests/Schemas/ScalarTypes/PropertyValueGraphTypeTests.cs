@@ -1,4 +1,4 @@
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes;
 using Xunit;
@@ -18,7 +18,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas.ScalarTypes
             var geoPoint = GeoPoint.ToString();
 
             // Act
-            var result = _propertyValueGraphType.ParseLiteral(new StringValue(geoPoint));
+            var result = _propertyValueGraphType.ParseLiteral(new GraphQLStringValue(geoPoint));
 
             // Assert
             Assert.Equal(geoPoint, result);

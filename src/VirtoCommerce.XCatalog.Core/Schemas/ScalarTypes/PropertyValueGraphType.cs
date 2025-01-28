@@ -1,4 +1,4 @@
-using GraphQL.Language.AST;
+using GraphQLParser.AST;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 
@@ -6,11 +6,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes
 {
     public class PropertyValueGraphType : AnyValueGraphType
     {
-        public override object ParseLiteral(IValue value)
+        public override object ParseLiteral(GraphQLValue value)
         {
-            if (value is StringValue stringValue)
+            if (value is GraphQLStringValue stringValue)
             {
-                return GeoPoint.TryParse(stringValue.Value)?.ToString() ?? base.ParseLiteral(value);
+                return GeoPoint.TryParse(stringValue.Value.ToString())?.ToString() ?? base.ParseLiteral(value);
             }
             return base.ParseLiteral(value);
         }

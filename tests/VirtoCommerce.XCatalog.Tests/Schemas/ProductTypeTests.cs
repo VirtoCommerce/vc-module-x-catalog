@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using GraphQL;
@@ -24,7 +25,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         #region Properties
 
         [Fact]
-        public void ProductType_Properties_ShouldResolve()
+        public async Task ProductType_Properties_ShouldResolve()
         {
             // Arrange
             var propValues = _fixture
@@ -57,7 +58,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.Resolve(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -65,7 +66,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public void ProductType_Properties_ShouldReturnPropertyWithCurrentCultureName()
+        public async Task ProductType_Properties_ShouldReturnPropertyWithCurrentCultureName()
         {
             // Arrange
             var propValues = _fixture
@@ -101,7 +102,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.Resolve(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -109,7 +110,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public void ProductType_Properties_SelectedLanguageNotFound_ShouldReturnEmptyList()
+        public async Task ProductType_Properties_SelectedLanguageNotFound_ShouldReturnEmptyList()
         {
             // Arrange
             var propValue = _fixture
@@ -144,7 +145,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.Resolve(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -153,7 +154,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public void ProductType_Properties_NoLocalization_ShouldGetDefaultValueForDictionary()
+        public async Task ProductType_Properties_NoLocalization_ShouldGetDefaultValueForDictionary()
         {
             // Arrange
             var alias = "i_grouped";
@@ -189,7 +190,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.Resolve(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();

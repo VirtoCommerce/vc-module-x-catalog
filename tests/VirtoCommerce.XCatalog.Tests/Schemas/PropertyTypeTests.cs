@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using AutoFixture;
 using FluentAssertions;
 using GraphQL;
@@ -16,7 +17,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         private readonly PropertyType _propertyType = new(null, null);
 
         [Fact]
-        public void PropertyType_Properties_ShouldFilterPropertiesByCultureName()
+        public async Task PropertyType_Properties_ShouldFilterPropertiesByCultureName()
         {
             // Arrange
             var label = _fixture.Create<string>();
@@ -49,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.Resolve(resolveContext);
+            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<string>();
@@ -57,7 +58,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public void PropertyType_Properties_CultureNameNotPassed_ShouldReturnSourceName()
+        public async Task PropertyType_Properties_CultureNameNotPassed_ShouldReturnSourceName()
         {
             // Arrange
             var label = _fixture.Create<string>();
@@ -82,7 +83,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.Resolve(resolveContext);
+            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<string>();

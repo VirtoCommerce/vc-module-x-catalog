@@ -4,19 +4,19 @@ using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class TierPriceType : ObjectGraphType<TierPrice>
+    public class TierPriceType : ExtendableGraphType<TierPrice>
     {
         public TierPriceType()
         {
-            Field<NonNullGraphType<MoneyType>>("price",
-                "Price",
-                resolve: context => context.Source.ActualPrice);
-            Field<NonNullGraphType<MoneyType>>("priceWithTax",
-                "Price with tax",
-                resolve: context => context.Source.ActualPriceWithTax);
-            Field<NonNullGraphType<LongGraphType>>("quantity",
-                "Quantity",
-                resolve: context => context.Source.Quantity);
+            Field<NonNullGraphType<MoneyType>>("price")
+                .Description("Price")
+                .Resolve(context => context.Source.ActualPrice);
+            Field<NonNullGraphType<MoneyType>>("priceWithTax")
+                .Description("Price with tax")
+                .Resolve(context => context.Source.ActualPriceWithTax);
+            Field<NonNullGraphType<LongGraphType>>("quantity")
+                .Description("Quantity")
+                .Resolve(context => context.Source.Quantity);
         }
     }
 }

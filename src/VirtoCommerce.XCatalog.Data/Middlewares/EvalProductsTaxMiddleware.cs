@@ -57,8 +57,10 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 var activeTaxProvider = storeTaxProviders.Results.FirstOrDefault(x => x.IsActive);
                 if (activeTaxProvider != null)
                 {
-                    var taxEvalContext = new TaxEvaluationContext
-                    { Currency = query.CurrencyCode, StoreId = query.StoreId, CustomerId = query.UserId };
+                    var taxEvalContext = AbstractTypeFactory<TaxEvaluationContext>.TryCreateInstance();
+                    taxEvalContext.Currency = query.CurrencyCode;
+                    taxEvalContext.StoreId = query.StoreId;
+                    taxEvalContext.CustomerId = query.UserId;
 
                     await _pipeline.Execute(taxEvalContext);
 

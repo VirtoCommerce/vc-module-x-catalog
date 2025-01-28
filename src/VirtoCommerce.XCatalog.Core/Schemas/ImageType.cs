@@ -1,9 +1,10 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class ImageType : ObjectGraphType<Image>
+    public class ImageType : ExtendableGraphType<Image>
     {
         /// <summary>
         ///
@@ -25,30 +26,30 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         /// </example>
         public ImageType()
         {
-            Field<NonNullGraphType<StringGraphType>>("id",
-                "The unique ID of the image",
-                resolve: context => context.Source.Id);
-            Field<StringGraphType>("name",
-                "The name of the image",
-                resolve: context => context.Source.Name);
-            Field<StringGraphType>("group",
-                "The group of the image",
-                resolve: context => context.Source.Group);
-            Field<NonNullGraphType<StringGraphType>>("url",
-                "The URL of the image",
-                resolve: context => context.Source.Url);
-            Field<StringGraphType>("relativeUrl",
-                "The relative URL of the image",
-                resolve: context => context.Source.RelativeUrl);
-            Field<NonNullGraphType<IntGraphType>>("sortOrder",
-                "Sort order",
-                resolve: context => context.Source.SortOrder);
-            Field<StringGraphType>("cultureName",
-                "Culture name",
-                resolve: context => context.Source.LanguageCode);
-            Field<StringGraphType>("description",
-                "The description of the image",
-                resolve: context => context.Source.Description);
+            Field<NonNullGraphType<StringGraphType>>("id")
+                .Description("The unique ID of the image")
+                .Resolve(context => context.Source.Id);
+            Field<StringGraphType>("name")
+                .Description("The name of the image")
+                .Resolve(context => context.Source.Name);
+            Field<StringGraphType>("group")
+                .Description("The group of the image")
+                .Resolve(context => context.Source.Group);
+            Field<NonNullGraphType<StringGraphType>>("url")
+                .Description("The URL of the image")
+                .Resolve(context => context.Source.Url);
+            Field<StringGraphType>("relativeUrl")
+                .Description("The relative URL of the image")
+                .Resolve(context => context.Source.RelativeUrl);
+            Field<NonNullGraphType<IntGraphType>>("sortOrder")
+                .Description("Sort order")
+                .Resolve(context => context.Source.SortOrder);
+            Field<StringGraphType>("cultureName")
+                .Description("Culture name")
+                .Resolve(context => context.Source.LanguageCode);
+            Field<StringGraphType>("description")
+                .Description("The description of the image")
+                .Resolve(context => context.Source.Description);
         }
     }
 }

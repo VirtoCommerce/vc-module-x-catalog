@@ -8,8 +8,7 @@ public class ProductSuggestionsQueryResponseType : ExtendableGraphType<ProductSu
 {
     public ProductSuggestionsQueryResponseType()
     {
-        Field<ListGraphType<StringGraphType>>(
-            nameof(ProductSuggestionsQueryResponse.Suggestions),
-            resolve: context => context.Source.Suggestions);
+        Field<ListGraphType<StringGraphType>>(nameof(ProductSuggestionsQueryResponse.Suggestions))
+            .Resolve(context => context.Source.Suggestions);
     }
 }
