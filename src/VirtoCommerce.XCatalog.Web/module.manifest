@@ -4,9 +4,9 @@
   <version>3.901.0</version>
   <version-tag></version-tag>
 
-  <platformVersion>3.867.0</platformVersion>
+  <platformVersion>3.877.0-pr-2876-10fd</platformVersion>
   <dependencies>
-    <dependency id="VirtoCommerce.Catalog" version="3.838.0-alpha.2276-vcst-2486" />
+    <dependency id="VirtoCommerce.Catalog" version="3.838.0-pr-767-995e" />
     <dependency id="VirtoCommerce.Inventory" version="3.805.0" optional="true" />
     <dependency id="VirtoCommerce.Marketing" version="3.815.0" optional="true" />
     <dependency id="VirtoCommerce.Pricing" version="3.809.0" optional="true" />

@@ -180,7 +180,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 return pageTitle;
             }
 
-            if (item.LocalizedName.TryGetValue(cultureName, out var localizedTitle))
+            if (item.LocalizedName.TryGet(cultureName, out var localizedTitle))
             {
                 return localizedTitle;
             }
