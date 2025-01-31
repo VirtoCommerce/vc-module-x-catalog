@@ -30,7 +30,7 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                             .ToArray() ?? [],
                         Name = request.Field
                     },
-                    "pricerange" => new CoreFacets.RangeFacetResult
+                    "range" or "pricerange" => new CoreFacets.RangeFacetResult
                     {
                         Ranges = request.Items?.Select(x => new CoreFacets.FacetRange
                         {
