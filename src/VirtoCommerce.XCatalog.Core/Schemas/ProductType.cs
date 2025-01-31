@@ -134,7 +134,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var product = context.Source.IndexedProduct;
-                var localizedName = product.LocalizedName?.Get(cultureName);
+                var localizedName = product.LocalizedName?.GetValue(cultureName);
                 if (!string.IsNullOrEmpty(localizedName))
                 {
                     return localizedName;
