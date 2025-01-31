@@ -147,7 +147,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 var breadcrumb = new Breadcrumb(item.SeoObjectType)
                 {
                     ItemId = item.Id,
-                    Title = seoInfoForStoreAndLanguage?.PageTitle?.EmptyToNull() ?? item.Name,
+                    Title = ResolveItemTitle(item, seoInfoForStoreAndLanguage, cultureName),
                     SemanticUrl = seoInfoForStoreAndLanguage?.SemanticUrl,
                     SeoPath = seoPath
                 };
@@ -170,6 +170,22 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             }
 
             return breadcrumbs;
+        }
+
+        private static string ResolveItemTitle(OutlineItem item, SeoInfo seoInfoForStoreAndLanguage, string cultureName)
+        {
+            var pageTitle = seoInfoForStoreAndLanguage?.PageTitle?.EmptyToNull();
+            if (!string.IsNullOrEmpty(pageTitle))
+            {
+                return pageTitle;
+            }
+
+            if (item.LocalizedName != null && item.LocalizedName.TryGetValue(cultureName, out var localizedTitle))
+            {
+                return localizedTitle;
+            }
+
+            return item.Name;
         }
 
         public static SeoInfo SeoInfoForStoreAndLanguage(OutlineItem item, string storeId, string cultureName)
