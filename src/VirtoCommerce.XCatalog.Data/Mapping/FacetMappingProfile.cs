@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
@@ -35,10 +36,10 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                         Ranges = request.Items?.Select(x => new CoreFacets.FacetRange
                         {
                             Count = x.Count,
-                            From = Convert.ToInt64(x.RequestedLowerBound),
+                            From = Convert.ToDecimal(x.RequestedLowerBound, CultureInfo.InvariantCulture),
                             IncludeFrom = x.IncludeLower,
                             FromStr = x.RequestedLowerBound,
-                            To = Convert.ToInt64(x.RequestedUpperBound),
+                            To = Convert.ToDecimal(x.RequestedUpperBound, CultureInfo.InvariantCulture),
                             IncludeTo = x.IncludeUpper,
                             ToStr = x.RequestedUpperBound,
                             IsSelected = x.IsApplied,
