@@ -10,7 +10,7 @@
     <dependency id="VirtoCommerce.Inventory" version="3.805.0" optional="true" />
     <dependency id="VirtoCommerce.Marketing" version="3.815.0" optional="true" />
     <dependency id="VirtoCommerce.Pricing" version="3.809.0" optional="true" />
-    <dependency id="VirtoCommerce.Xapi" version="3.902.0-alpha.63-vcst-2608-range-aggregations" />
+    <dependency id="VirtoCommerce.Xapi" version="3.902.0-pr-25-27f8" />
   </dependencies>
 
   <title>Catalog Experience API</title>
