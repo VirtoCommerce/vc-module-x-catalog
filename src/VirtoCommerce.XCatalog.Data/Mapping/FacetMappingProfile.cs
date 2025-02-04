@@ -36,10 +36,10 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                         Ranges = request.Items?.Select(x => new CoreFacets.FacetRange
                         {
                             Count = x.Count,
-                            From = Convert.ToDecimal(x.RequestedLowerBound, CultureInfo.InvariantCulture),
+                            From = ToNullableDecimal(x.RequestedLowerBound),
                             IncludeFrom = x.IncludeLower,
                             FromStr = x.RequestedLowerBound,
-                            To = Convert.ToDecimal(x.RequestedUpperBound, CultureInfo.InvariantCulture),
+                            To = ToNullableDecimal(x.RequestedUpperBound),
                             IncludeTo = x.IncludeUpper,
                             ToStr = x.RequestedUpperBound,
                             IsSelected = x.IsApplied,
@@ -58,6 +58,16 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
 
                 return result;
             });
+        }
+
+        private static decimal? ToNullableDecimal(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
         }
     }
 }
