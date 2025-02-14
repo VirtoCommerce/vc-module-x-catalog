@@ -99,24 +99,22 @@ public class ChildCategoriesQueryHandler : IQueryHandler<ChildCategoriesQuery, C
     {
         var result = new HashSet<string>();
 
-        var productsRequest = new SearchProductQuery()
-        {
-            StoreId = childCategoriesQuery?.StoreId,
-            CultureName = childCategoriesQuery?.CultureName,
-            CurrencyCode = childCategoriesQuery?.CurrencyCode,
-            UserId = childCategoriesQuery?.UserId ?? ModuleConstants.AnonymousUser.UserName,
-            Filter = childCategoriesQuery?.ProductFilter,
-            Take = 0,
-            Facet = "__outline",
-            IncludeFields = new List<string>
-            {
-                "term_facets.name",
-                "term_facets.label",
-                "term_facets.terms.label",
-                "term_facets.terms.term",
-                "term_facets.terms.count"
-            },
-        };
+        var productsRequest = AbstractTypeFactory<SearchProductQuery>.TryCreateInstance();
+        productsRequest.StoreId = childCategoriesQuery?.StoreId;
+        productsRequest.CultureName = childCategoriesQuery?.CultureName;
+        productsRequest.CurrencyCode = childCategoriesQuery?.CurrencyCode;
+        productsRequest.UserId = childCategoriesQuery?.UserId ?? ModuleConstants.AnonymousUser.UserName;
+        productsRequest.Filter = childCategoriesQuery?.ProductFilter;
+        productsRequest.Take = 0;
+        productsRequest.Facet = "__outline";
+        productsRequest.IncludeFields =
+        [
+            "term_facets.name",
+            "term_facets.label",
+            "term_facets.terms.label",
+            "term_facets.terms.term",
+            "term_facets.terms.count",
+        ];
 
         var productsResult = await _mediator.Send(productsRequest);
 
