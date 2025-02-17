@@ -62,7 +62,10 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 {
                     case TermFilter termFilter:
                         // For term filters: just check result value in filter values
-                        aggregationItem.IsApplied = termFilter.Values.Any(x => x.EqualsInvariant(aggregationItem.Value?.ToString()));
+                        if (termFilter.Values.Any(x => x.EqualsInvariant(aggregationItem.Value?.ToString())))
+                        {
+                            aggregationItem.IsApplied = true;
+                        }
                         break;
                     case RangeFilter rangeFilter:
                         // For range filters check the values have the same bounds

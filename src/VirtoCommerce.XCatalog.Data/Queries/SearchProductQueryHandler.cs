@@ -155,7 +155,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 .Where(o => !string.IsNullOrEmpty(o))
                 .ToArray();
 
-            criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
+            criteria.Outline = criteria.Outlines.MinBy(x => x.Length);
         }
 
         protected virtual Task<Aggregation[]> ConvertAggregations(SearchResponse searchResponse, SearchRequest searchRequest, ProductIndexedSearchCriteria criteria)
