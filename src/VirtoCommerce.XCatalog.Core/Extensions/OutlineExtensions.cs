@@ -1,64 +1,17 @@
 using System.Collections.Generic;
 using System.Linq;
+using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.StoreModule.Core.Model;
-using VirtoCommerce.Tools;
-using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
-using SeoStoreSetting = VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.SEO;
-using toolsDto = VirtoCommerce.Tools.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
-        /// <summary>
-        /// Returns SEO path if all outline items of the first outline have SEO keywords, otherwise returns default value.
-        /// Path: GrandParentCategory/ParentCategory/ProductCategory/Product
-        /// </summary>
-        /// <param name="outlines"></param>
-        /// <param name="store"></param>
-        /// <param name="language"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
-        public static string GetSeoPath(this IEnumerable<Outline> outlines, Store store, string language, string defaultValue)
-        {
-            string result = null;
-
-            var toolsStore = new toolsDto.Store
-            {
-                Id = store.Id,
-                Url = store.Url,
-                SecureUrl = store.SecureUrl,
-                Catalog = store.Catalog,
-                DefaultLanguage = store.DefaultLanguage,
-                SeoLinksType = EnumUtility.SafeParse(store.Settings.GetValue<string>(SeoStoreSetting.SeoLinksType), toolsDto.SeoLinksType.Collapsed),
-                Languages = store.Languages?.ToList(),
-            };
-            var toolsOutlines = outlines?.Select(o => o.JsonConvert<toolsDto.Outline>()).ToArray();
-            if (toolsOutlines != null)
-            {
-                result = toolsOutlines.GetSeoPath(toolsStore, language ?? store.DefaultLanguage, defaultValue);
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Returns best matching outline path for the given catalog: CategoryId/CategoryId2.
-        /// </summary>
-        /// <param name="outlines"></param>
-        /// <param name="catalogId"></param>
-        /// <returns></returns>
-        public static string GetOutlinePath(this IEnumerable<Outline> outlines, string catalogId)
-        {
-            return outlines?.Select(o => o.JsonConvert<toolsDto.Outline>()).GetOutlinePath(catalogId);
-        }
-
         /// <summary>
         /// Returns product's category outline.
         /// </summary>
@@ -134,7 +87,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 var item = outlineItems[i];
 
                 var innerOutline = new List<Outline> { new Outline { Items = outlineItems } };
-                var seoPath = innerOutline.GetSeoPath(store, cultureName, null);
+                var seoPath = innerOutline.GetSeoPath(store, cultureName);
 
                 outlineItems.Remove(item);
                 if (string.IsNullOrWhiteSpace(seoPath))

@@ -4,6 +4,7 @@ FluentAssertions.dll
 GraphQL.dll
 GraphQL.Authorization.dll
 GraphQL.DataLoader.dll
+GraphQL.MicrosoftDI.dll
 GraphQL.NewtonsoftJson.dll
 GraphQL.Relay.dll
 GraphQL.Server.Core.dll
@@ -11,9 +12,13 @@ GraphQL.Server.Transports.AspNetCore.dll
 GraphQL.Server.Transports.AspNetCore.NewtonsoftJson.dll
 GraphQL.Server.Transports.Subscriptions.Abstractions.dll
 GraphQL.Server.Transports.Subscriptions.WebSockets.dll
+GraphQL.Server.Ui.GraphiQL.dll
 GraphQL.SystemReactive.dll
+GraphQL.SystemTextJson.dll
+GraphQLParser.dll
 GraphQL-Parser.dll
 MediatR.dll
+MediatR.Contracts.dll
 MediatR.Extensions.Microsoft.DependencyInjection.dll
 Microsoft.AI.DependencyCollector.dll
 Microsoft.AI.EventCounterCollector.dll
