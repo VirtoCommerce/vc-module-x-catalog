@@ -7,6 +7,7 @@ using GraphQL.DataLoader;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
+using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
@@ -81,14 +82,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
                 var source = context.Source;
-                var storeId = context.GetArgumentOrValue<string>("storeId");
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
 
                 SeoInfo seoInfo = null;
 
                 if (!source.Category.SeoInfos.IsNullOrEmpty())
                 {
-                    seoInfo = source.Category.SeoInfos.GetBestMatchingSeoInfo(storeId, cultureName);
+                    var store = context.GetArgumentOrValue<Store>("store");
+                    seoInfo = source.Category.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
                 return seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.Category.Name, cultureName);
