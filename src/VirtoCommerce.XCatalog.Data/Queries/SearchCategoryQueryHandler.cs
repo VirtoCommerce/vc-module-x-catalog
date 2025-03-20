@@ -48,28 +48,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public virtual async Task<SearchCategoryResponse> Handle(SearchCategoryQuery request, CancellationToken cancellationToken)
         {
-            var essentialTerms = new List<string>();
             var store = await GetStore(request);
 
-            essentialTerms.Add($"__outline:{store.Catalog}");
+            var builder = GetIndexedSearchRequestBuilder(request, store);
 
-            var searchRequestBuilder = new IndexSearchRequestBuilder()
-                                          .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
-                                          .ParseFilters(_phraseParser, request.Filter)
-                                          .WithSearchPhrase(request.Query)
-                                          .WithPaging(request.Skip, request.Take)
-                                          .AddObjectIds(request.ObjectIds)
-                                          .AddSorting(request.Sort)
-                                          //Limit search result with store catalog
-                                          .AddTerms(essentialTerms)
-                                          .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
-
-            if (request.ObjectIds.IsNullOrEmpty())
-            {
-                searchRequestBuilder.AddTerms(new[] { "status:visible" }, skipIfExists: true);
-            }
-
-            var searchRequest = searchRequestBuilder.Build();
+            var searchRequest = builder.Build();
 
             var searchResult = await _searchProvider.SearchAsync(KnownDocumentTypes.Category, searchRequest);
 
@@ -84,7 +67,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 Query = request,
                 Results = categories,
                 Store = store,
-                TotalCount = (int)searchResult.TotalCount
+                TotalCount = (int)searchResult.TotalCount,
             };
 
             await _pipeline.Execute(result);
@@ -153,17 +136,40 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             return new LoadCategoryResponse(result.Results);
         }
 
-        private async Task<Store> GetStore<T>(CatalogQueryBase<T> request)
+        protected virtual IndexSearchRequestBuilder GetIndexedSearchRequestBuilder(SearchCategoryQuery request, Store store)
+        {
+            //Limit search result with store catalog
+            var essentialTerms = new List<string>
+            {
+                $"__outline:{store.Catalog}",
+            };
+
+            var searchRequestBuilder = new IndexSearchRequestBuilder()
+                .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
+                .ParseFilters(_phraseParser, request.Filter)
+                .WithSearchPhrase(request.Query)
+                .WithPaging(request.Skip, request.Take)
+                .AddObjectIds(request.ObjectIds)
+                .AddSorting(request.Sort)
+                .AddTerms(essentialTerms)
+                .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
+
+            if (request.ObjectIds.IsNullOrEmpty())
+            {
+                searchRequestBuilder.AddTerms(["status:visible"], skipIfExists: true);
+            }
+
+            return searchRequestBuilder;
+        }
+
+        protected async Task<Store> GetStore<T>(CatalogQueryBase<T> request)
         {
             var store = request.Store;
 
             if (store is null && !string.IsNullOrWhiteSpace(request.StoreId))
             {
-                store = await _storeService.GetByIdAsync(request.StoreId);
-                if (store == null)
-                {
-                    throw new ArgumentException($"Store with Id: {request.StoreId} is absent");
-                }
+                store = await _storeService.GetByIdAsync(request.StoreId)
+                    ?? throw new ArgumentException($"Store with Id: {request.StoreId} is absent");
             }
 
             return store;
