@@ -25,6 +25,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         public int Take { get; set; }
         public string[] ObjectIds { get; set; }
         public bool EvaluatePromotions { get; set; } = true;
+        public string SelectedAddressId { get; set; }
+        public string SelectedAddress { get; set; }
 
         public override IEnumerable<QueryArgument> GetArguments()
         {
@@ -41,6 +43,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             yield return Argument<StringGraphType>(nameof(Sort), "The sort expression");
 
             yield return Argument<ListGraphType<StringGraphType>>("productIds", "Product Ids");
+            yield return Argument<StringGraphType>(nameof(SelectedAddressId), "Id of selected shipping address");
+            yield return Argument<StringGraphType>(nameof(SelectedAddress), "The shipping address to which the products are to be delivered");
 
             yield return Argument<StringGraphType>("custom", "Can be used for custom query parameters");
         }
@@ -63,6 +67,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
                 Fuzzy = context.GetArgument<bool>(nameof(Fuzzy));
                 FuzzyLevel = context.GetArgument<int?>(nameof(FuzzyLevel));
                 Sort = context.GetArgument<string>(nameof(Sort));
+                SelectedAddressId = context.GetArgument<string>(nameof(SelectedAddressId));
+                SelectedAddress = context.GetArgument<string>(nameof(SelectedAddress));
 
                 if (context is IResolveConnectionContext connectionContext)
                 {
