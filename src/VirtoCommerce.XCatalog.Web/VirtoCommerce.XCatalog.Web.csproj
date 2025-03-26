@@ -11,4 +11,10 @@
     <ProjectReference Include="..\VirtoCommerce.XCatalog.Core\VirtoCommerce.XCatalog.Core.csproj" />
     <ProjectReference Include="..\VirtoCommerce.XCatalog.Data\VirtoCommerce.XCatalog.Data.csproj" />
   </ItemGroup>
+
+  <!-- Added temporarily to avoid runtime errors while not all dependent modules are updated -->
+  <ItemGroup>
+    <PackageReference Include="VirtoCommerce.Tools" Version="3.808.0" />
+  </ItemGroup>
+
 </Project>
