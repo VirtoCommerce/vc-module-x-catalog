@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
@@ -15,11 +16,11 @@ namespace VirtoCommerce.XCatalog.Core.Binding
             var result = searchDocument.TryGetValue(fieldName, out var value)
                   ? value switch
                   {
-                      object[] objs => objs.Select(x => (string)x).ToList(),
+                      IList<object> list => list.OfType<string>().ToList(),
                       string str => [str],
-                      _ => Enumerable.Empty<string>().ToList()
+                      _ => []
                   }
-                  : Enumerable.Empty<string>().ToList();
+                  : [];
 
             return result;
         }
