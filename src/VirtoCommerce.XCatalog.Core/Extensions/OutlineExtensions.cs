@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using VirtoCommerce.CatalogModule.Core.Extensions;
@@ -12,6 +13,33 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
+        /// <summary>
+        /// Returns SEO path if all outline items of the first outline have SEO keywords, otherwise returns default value.
+        /// Path: GrandParentCategory/ParentCategory/ProductCategory/Product
+        /// </summary>
+        /// <param name="outlines"></param>
+        /// <param name="store"></param>
+        /// <param name="language"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        [Obsolete("Use VirtoCommerce.CatalogModule.Core.Extensions", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions/")]
+        public static string GetSeoPath(this IEnumerable<Outline> outlines, Store store, string language, string defaultValue)
+        {
+            return CatalogModule.Core.Extensions.OutlineExtensions.GetSeoPath(outlines, store, language, defaultValue);
+        }
+
+        /// <summary>
+        /// Returns best matching outline path for the given catalog: CategoryId/CategoryId2.
+        /// </summary>
+        /// <param name="outlines"></param>
+        /// <param name="catalogId"></param>
+        /// <returns></returns>
+        [Obsolete("Use VirtoCommerce.CatalogModule.Core.Extensions", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions/")]
+        public static string GetOutlinePath(this IEnumerable<Outline> outlines, string catalogId)
+        {
+            return CatalogModule.Core.Extensions.OutlineExtensions.GetOutlinePath(outlines, catalogId);
+        }
+
         /// <summary>
         /// Returns product's category outline.
         /// </summary>
@@ -49,7 +77,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             return relativePaths?.Count > 0
                 ? string.Join(';', relativePaths)
                 : string.Empty;
-            }
+        }
 
         /// <summary>s
         /// Returns catalog's relative outline path
