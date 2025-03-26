@@ -21,7 +21,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         {
             var result = string.Empty;
 
-            if (product != null && !string.IsNullOrEmpty(product.Outline))
+            if (!string.IsNullOrEmpty(product?.Outline))
             {
                 var i = product.Outline.LastIndexOf('/');
                 if (i >= 0)
@@ -41,17 +41,15 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         /// <returns></returns>
         public static string GetOutlinePaths(this IEnumerable<Outline> outlines, string catalogId)
         {
-            var result = string.Empty;
-            var catalogOutlines = outlines?.Where(o => o.Items.Any(i => i.SeoObjectType == "Catalog" && i.Id == catalogId));
-            var outlinesList = catalogOutlines?.Where(x => x != null).Select(x => x.ToCatalogRelativePath()).ToList();
+            var relativePaths = outlines
+                ?.Where(x => x.Items.ContainsCatalog(catalogId))
+                .Select(x => x.ToCatalogRelativePath())
+                .ToList();
 
-            if (!outlinesList.IsNullOrEmpty())
-            {
-                result = string.Join(";", outlinesList);
+            return relativePaths?.Count > 0
+                ? string.Join(';', relativePaths)
+                : string.Empty;
             }
-
-            return result;
-        }
 
         /// <summary>s
         /// Returns catalog's relative outline path
@@ -60,11 +58,12 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         /// <returns></returns>
         public static string ToCatalogRelativePath(this Outline outline)
         {
-            return outline.Items == null ? null : string.Join("/",
+            return outline?.Items is null
+                ? null
+                : string.Join('/',
                 outline.Items
-                    .Where(x => x != null && x.SeoObjectType != "Catalog")
-                    .Select(x => x.Id)
-                );
+                        .Where(x => x != null && !x.IsCatalog())
+                        .Select(x => x.Id));
         }
 
         public static IEnumerable<Breadcrumb> GetBreadcrumbsFromOutLine(this IEnumerable<Outline> outlines, Store store, string cultureName)
