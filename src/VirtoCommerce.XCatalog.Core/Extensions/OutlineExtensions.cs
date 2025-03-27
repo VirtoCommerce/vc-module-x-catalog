@@ -164,7 +164,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
             foreach (var (previousId, i) in previousIds.Select((x, i) => (x, i)))
             {
-                var nextOutlines = new List<Outline>();
+                var matchingOutlines = new List<Outline>();
 
                 foreach (var outline in outlines.Where(x => x.Items.Count > i))
                 {
@@ -174,14 +174,14 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
                     if (item.Id.EqualsIgnoreCase(previousId))
                     {
-                        nextOutlines.Add(outline);
+                        matchingOutlines.Add(outline);
                     }
                 }
 
-                if (nextOutlines.Count > 0)
+                if (matchingOutlines.Count > 0)
                 {
-                    outlines = nextOutlines;
-                    bestOutline = nextOutlines.First();
+                    outlines = matchingOutlines;
+                    bestOutline = matchingOutlines.First();
                 }
                 else
                 {
@@ -216,8 +216,8 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         {
             var item = items.Last();
             var seo = item.GetBestMatchingSeoInfo(store, cultureName);
-            var title = item.GetTitle(seo, cultureName);
-            var semanticUrl = seo?.SemanticUrl?.EmptyToNull();
+            var seoTitle = seo?.PageTitle.EmptyToNull();
+            var semanticUrl = seo?.SemanticUrl.EmptyToNull();
 
             if (item.IsCatalog())
             {
@@ -228,7 +228,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 return new Breadcrumb(item.SeoObjectType)
                 {
                     ItemId = item.Id,
-                    Title = title ?? "Catalog",
+                    Title = seoTitle ?? "Catalog",
                     SemanticUrl = catalogSemanticUrl,
                     SeoPath = catalogSemanticUrl,
                 };
@@ -241,27 +241,10 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 : new Breadcrumb(item.SeoObjectType)
                 {
                     ItemId = item.Id,
-                    Title = title ?? item.Name,
+                    Title = seoTitle ?? item.LocalizedName?.GetValue(cultureName).EmptyToNull() ?? item.Name,
                     SemanticUrl = semanticUrl,
                     SeoPath = seoPath,
                 };
-        }
-
-        private static string GetTitle(this OutlineItem item, SeoInfo seo, string cultureName)
-        {
-            var pageTitle = seo?.PageTitle;
-
-            if (!string.IsNullOrEmpty(pageTitle))
-            {
-                return pageTitle;
-            }
-
-            if (item.LocalizedName != null && item.LocalizedName.TryGetValue(cultureName, out var localizedTitle))
-            {
-                return localizedTitle.EmptyToNull();
-            }
-
-            return null;
         }
 
         [Obsolete("Use VirtoCommerce.StoreModule.Core.Extensions.GetBestMatchingSeoInfo()", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/platform/user-guide/versions/virto3-products-versions/")]
