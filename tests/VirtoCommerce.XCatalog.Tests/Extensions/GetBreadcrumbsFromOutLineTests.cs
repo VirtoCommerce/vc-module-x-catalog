@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
@@ -25,14 +24,14 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
                 Settings = new List<ObjectSettingEntry>()
             };
             //Act
-            var breadcrumbs = productOutline.GetBreadcrumbsFromOutLine(store, null);
+            var breadcrumbs = productOutline.GetBreadcrumbs(store);
 
             // Assert
-            breadcrumbs.Should().HaveCount(3);
+            breadcrumbs.Items.Should().HaveCount(3);
 
-            breadcrumbs.ToArray()[0].SeoPath.Should().Be("Camcorders");
-            breadcrumbs.ToArray()[1].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones");
-            breadcrumbs.ToArray()[2].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones/3dr-x8-m-octocopter-for-visual-spectrum-aeria");
+            breadcrumbs.Items[0].SeoPath.Should().Be("Camcorders");
+            breadcrumbs.Items[1].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones");
+            breadcrumbs.Items[2].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones/3dr-x8-m-octocopter-for-visual-spectrum-aeria");
         }
 
         [Fact]
@@ -48,10 +47,10 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
                 Settings = new List<ObjectSettingEntry>()
             };
             //Act
-            var breadcrumbs = productOutline.GetBreadcrumbsFromOutLine(store, null);
+            var breadcrumbs = productOutline.GetBreadcrumbs(store);
 
             // Assert
-            breadcrumbs.Should().BeEmpty();
+            breadcrumbs.Items.Should().BeEmpty();
         }
 
 

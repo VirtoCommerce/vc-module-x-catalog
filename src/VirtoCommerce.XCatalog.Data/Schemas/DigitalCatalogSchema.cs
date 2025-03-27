@@ -59,6 +59,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<StringGraphType> { Name = "userId", Description = "User Id" },
                     new QueryArgument<StringGraphType> { Name = "currencyCode", Description = "Currency code (\"USD\")" },
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" },
+                    new QueryArgument<StringGraphType> { Name = "previousBreadcrumbsPath", Description = "Previous breadcrumbs path" },
                     new QueryArgument<StringGraphType> { Name = "custom", Description = "Can be used for custom query parameters" }
                 ),
                 Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
@@ -70,13 +71,12 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                     context.UserContext["store"] = store;
 
-                    var cultureName = context.GetArgument<string>("cultureName");
-
-                    var allCurrencies = await _currencyService.GetAllCurrenciesAsync();
                     //Store all currencies in the user context for future resolve in the schema types
+                    var allCurrencies = await _currencyService.GetAllCurrenciesAsync();
+                    var cultureName = context.GetArgument<string>("cultureName");
                     context.SetCurrencies(allCurrencies, cultureName);
 
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", (ids) => LoadProductsAsync(_mediator, ids, context));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(_mediator, ids, context));
                     return loader.LoadAsync(context.GetArgument<string>("id"));
                 })
             };
@@ -86,32 +86,34 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             {
                 Name = "category",
                 Arguments = new QueryArguments(
-                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "id of the product" },
+                    new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "id", Description = "id of the category" },
                     new QueryArgument<NonNullGraphType<StringGraphType>> { Name = "storeId", Description = "Store Id" },
                     new QueryArgument<StringGraphType> { Name = "userId", Description = "User Id" },
                     new QueryArgument<StringGraphType> { Name = "currencyCode", Description = "Currency code (\"USD\")" },
-                    new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" }
+                    new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" },
+                    new QueryArgument<StringGraphType> { Name = "previousBreadcrumbsPath", Description = "Previous breadcrumbs path" }
                 ),
                 Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(async context =>
                {
-                   var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
-                   context.UserContext["store"] = store;
-
                    //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                    context.CopyArgumentsToUserContext();
 
-                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", (ids) => LoadCategoriesAsync(_mediator, ids, context));
+                   var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
+                   context.UserContext["store"] = store;
+
+                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(_mediator, ids, context));
                    return loader.LoadAsync(context.GetArgument<string>("id"));
                })
             };
             schema.Query.AddField(categoryField);
 
             var categoriesConnectionBuilder = GraphTypeExtensionHelper.CreateConnection<CategoryType, object>("categories")
-                .Argument<StringGraphType>("storeId", "The store id where category are searched")
-                .Argument<StringGraphType>("cultureName", "The language for which all localized category data will be returned")
+                .Argument<NonNullGraphType<StringGraphType>>("storeId", "The store id where category are searched")
                 .Argument<StringGraphType>("userId", "The customer id for search result impersonation")
                 .Argument<StringGraphType>("currencyCode", "The currency for which all prices data will be returned")
+                .Argument<StringGraphType>("cultureName", "The language for which all localized category data will be returned")
+                .Argument<StringGraphType>("previousBreadcrumbsPath", "Previous breadcrumbs path")
                 .Argument<StringGraphType>("query", "The query parameter performs the full-text search")
                 .Argument<StringGraphType>("filter", "This parameter applies a filter to the query results")
                 .Argument<BooleanGraphType>("fuzzy", "When the fuzzy query parameter is set to true the search endpoint will also return categories that contain slight differences to the search text.")
@@ -123,11 +125,12 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 
             categoriesConnectionBuilder.ResolveAsync(async context =>
             {
+                //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
+                context.CopyArgumentsToUserContext();
+
                 var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                 context.UserContext["store"] = store;
 
-                //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
-                context.CopyArgumentsToUserContext();
                 return await ResolveCategoriesConnectionAsync(_mediator, context);
             });
 
@@ -142,11 +145,12 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 
             propertiesConnectionBuilder.ResolveAsync(async context =>
             {
+                //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
+                context.CopyArgumentsToUserContext();
+
                 var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                 context.UserContext["catalog"] = store.Catalog;
 
-                //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
-                context.CopyArgumentsToUserContext();
                 return await ResolvePropertiesConnectionAsync(_mediator, context);
             });
 
@@ -164,7 +168,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", (ids) => LoadPropertiesAsync(_mediator, ids));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(_mediator, ids));
                     var result = loader.LoadAsync(context.GetArgument<string>("id"));
 
                     return await Task.FromResult(result);

@@ -157,16 +157,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "Images",
                 resolve: context => context.Source.Category.Images ?? Array.Empty<Image>());
 
-            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs",
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>(
+                "breadcrumbs",
                 "Breadcrumbs",
-                resolve: context =>
-            {
+                resolve: context => context.Source.Category.GetBreadcrumbs(context).Items);
 
-                var store = context.GetArgumentOrValue<Store>("store");
-                var cultureName = context.GetValue<string>("cultureName");
-
-                return context.Source.Category.Outlines.GetBreadcrumbsFromOutLine(store, cultureName);
-            });
+            ExtendableField<NonNullGraphType<StringGraphType>>(
+                "breadcrumbsPath",
+                "Breadcrumbs path",
+                resolve: context => context.Source.Category.GetBreadcrumbs(context).Path);
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PropertyType>>>>("properties",
                 arguments: new QueryArguments(new QueryArgument<ListGraphType<StringGraphType>> { Name = "names" }),
