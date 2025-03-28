@@ -95,7 +95,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var defaultUnit = measure?.Units.FirstOrDefault(x => x.IsDefault);
                 var valueUnit = measure?.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
                 var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
-                result = $"{decimalValue.FormatDecimal(languageCode)} {defaultUnit?.Symbol}";
+
+                var symbol = defaultUnit?.Symbol;
+                var localizedName = defaultUnit?.LocalizedSymbol?.GetValue(languageCode);
+                if (!string.IsNullOrEmpty(localizedName))
+                {
+                    symbol = localizedName;
+                }
+
+                result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
             }
             else
             {
