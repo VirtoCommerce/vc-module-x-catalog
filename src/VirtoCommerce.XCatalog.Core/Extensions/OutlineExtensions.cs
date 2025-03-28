@@ -16,16 +16,16 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
-        public static string GetBestSeoPath(this IList<Outline> outlines, Store store, string language, string previousBreadcrumbsPath)
+        public static string GetBestSeoPath(this IList<Outline> outlines, Store store, string language, string previousOutlinePath)
         {
-            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousBreadcrumbsPath);
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousOutlinePath);
 
             return outline?.Items?.GetSeoPath(store, language);
         }
 
-        public static string GetBestOutlinePath(this IList<Outline> outlines, string catalogId, string previousBreadcrumbsPath)
+        public static string GetBestOutlinePath(this IList<Outline> outlines, string catalogId, string previousOutlinePath)
         {
-            var outline = outlines.GetBestMatchingOutline(catalogId, previousBreadcrumbsPath);
+            var outline = outlines.GetBestMatchingOutline(catalogId, previousOutlinePath);
 
             return outline?.Items?.GetOutlinePath();
         }
@@ -129,48 +129,33 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         [Obsolete("Use GetBreadcrumbs()", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/platform/user-guide/versions/virto3-products-versions/")]
         public static IEnumerable<Breadcrumb> GetBreadcrumbsFromOutLine(this IEnumerable<Outline> outlines, Store store, string cultureName)
         {
-            return outlines.GetBreadcrumbs(store, cultureName).Items;
+            return outlines.GetBreadcrumbs(store, cultureName);
         }
 
-        public static Breadcrumbs GetBreadcrumbs<TEntity>(this TEntity entity, IResolveFieldContext context)
-            where TEntity : IEntity, IHasOutlines
+        public static IList<Breadcrumb> GetBreadcrumbs(this IEnumerable<Outline> outlines, IResolveFieldContext context)
         {
-            ArgumentNullException.ThrowIfNull(entity);
             ArgumentNullException.ThrowIfNull(context);
-
-            var contextKey = $"breadcrumbs_{entity.Id}";
-            var breadcrumbs = context.GetValue<Breadcrumbs>(contextKey);
-
-            if (breadcrumbs != null)
-            {
-                return breadcrumbs;
-            }
 
             var store = context.GetValue<Store>("store");
             var cultureName = context.GetArgumentOrValue<string>("cultureName");
-            var previousBreadcrumbsPath = context.GetArgumentOrValue<string>("previousBreadcrumbsPath");
+            var previousOutlinePath = context.GetArgumentOrValue<string>("previousOutline");
 
-            breadcrumbs = entity.Outlines.GetBreadcrumbs(store, cultureName, previousBreadcrumbsPath);
-            context.UserContext[contextKey] = breadcrumbs;
-
-            return breadcrumbs;
+            return outlines.GetBreadcrumbs(store, cultureName, previousOutlinePath);
         }
 
-        public static Breadcrumbs GetBreadcrumbs(this IEnumerable<Outline> outlines, Store store, string cultureName = null, string previousBreadcrumbsPath = null)
+        public static IList<Breadcrumb> GetBreadcrumbs(this IEnumerable<Outline> outlines, Store store, string cultureName = null, string previousOutlinePath = null)
         {
-            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousBreadcrumbsPath);
-            var items = outline?.GetBreadcrumbs(store, cultureName) ?? [];
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousOutlinePath);
 
-            return new Breadcrumbs
-            {
-                Path = string.Join('/', items.Select(x => x.ItemId)),
+            // Exclude catalog item if it has no SEO information
+            var breadcrumbs = outline?.GetBreadcrumbs(store, cultureName)
+                .Where(x => !string.IsNullOrEmpty(x.SemanticUrl))
+                .ToList();
 
-                // Exclude catalog item if it has no SEO information
-                Items = items.Where(x => !string.IsNullOrEmpty(x.SemanticUrl)).ToList(),
-            };
+            return breadcrumbs ?? [];
         }
 
-        public static Outline GetBestMatchingOutline(this IEnumerable<Outline> outlines, string catalogId, string previousBreadcrumbsPath)
+        public static Outline GetBestMatchingOutline(this IEnumerable<Outline> outlines, string catalogId, string previousOutlinePath)
         {
             var catalogOutlines = outlines?.Where(x => x.Items.ContainsCatalog(catalogId)).ToList();
 
@@ -179,26 +164,29 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 return null;
             }
 
-            return string.IsNullOrEmpty(previousBreadcrumbsPath)
+            return string.IsNullOrEmpty(previousOutlinePath)
                 ? catalogOutlines.First()
-                : catalogOutlines.GetBestMatchingOutline(previousBreadcrumbsPath);
+                : catalogOutlines.GetBestMatchingOutline(previousOutlinePath);
         }
 
 
-        private static Outline GetBestMatchingOutline(this List<Outline> outlines, string previousBreadcrumbsPath)
+        private static Outline GetBestMatchingOutline(this List<Outline> outlines, string previousOutlinePath)
         {
             Outline bestOutline = null;
-            var previousIds = previousBreadcrumbsPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var previousIds = previousOutlinePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var (previousId, i) in previousIds.Select((x, i) => (x, i)))
             {
                 var matchingOutlines = new List<Outline>();
 
-                foreach (var outline in outlines.Where(x => x.Items.Count > i))
+                // Skip catalog item
+                var itemIndex = i + 1;
+
+                foreach (var outline in outlines.Where(x => x.Items.Count > itemIndex))
                 {
                     var item = outline.Items is IList<OutlineItem> list
-                        ? list[i]
-                        : outline.Items.Skip(i).First();
+                        ? list[itemIndex]
+                        : outline.Items.Skip(itemIndex).First();
 
                     if (item.Id.EqualsIgnoreCase(previousId))
                     {

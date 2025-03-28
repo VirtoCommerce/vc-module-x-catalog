@@ -59,7 +59,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<StringGraphType> { Name = "userId", Description = "User Id" },
                     new QueryArgument<StringGraphType> { Name = "currencyCode", Description = "Currency code (\"USD\")" },
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" },
-                    new QueryArgument<StringGraphType> { Name = "previousBreadcrumbsPath", Description = "Previous breadcrumbs path" },
+                    new QueryArgument<StringGraphType> { Name = "previousOutline", Description = "Previous outline" },
                     new QueryArgument<StringGraphType> { Name = "custom", Description = "Can be used for custom query parameters" }
                 ),
                 Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
@@ -91,7 +91,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     new QueryArgument<StringGraphType> { Name = "userId", Description = "User Id" },
                     new QueryArgument<StringGraphType> { Name = "currencyCode", Description = "Currency code (\"USD\")" },
                     new QueryArgument<StringGraphType> { Name = "cultureName", Description = "Culture name (\"en-US\")" },
-                    new QueryArgument<StringGraphType> { Name = "previousBreadcrumbsPath", Description = "Previous breadcrumbs path" }
+                    new QueryArgument<StringGraphType> { Name = "previousOutline", Description = "Previous outline" }
                 ),
                 Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(async context =>
@@ -113,7 +113,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 .Argument<StringGraphType>("userId", "The customer id for search result impersonation")
                 .Argument<StringGraphType>("currencyCode", "The currency for which all prices data will be returned")
                 .Argument<StringGraphType>("cultureName", "The language for which all localized category data will be returned")
-                .Argument<StringGraphType>("previousBreadcrumbsPath", "Previous breadcrumbs path")
+                .Argument<StringGraphType>("previousOutline", "Previous outline")
                 .Argument<StringGraphType>("query", "The query parameter performs the full-text search")
                 .Argument<StringGraphType>("filter", "This parameter applies a filter to the query results")
                 .Argument<BooleanGraphType>("fuzzy", "When the fuzzy query parameter is set to true the search endpoint will also return categories that contain slight differences to the search text.")

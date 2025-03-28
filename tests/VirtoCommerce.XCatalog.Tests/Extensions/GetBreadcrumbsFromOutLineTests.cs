@@ -27,11 +27,11 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
             var breadcrumbs = productOutline.GetBreadcrumbs(store);
 
             // Assert
-            breadcrumbs.Items.Should().HaveCount(3);
+            breadcrumbs.Should().HaveCount(3);
 
-            breadcrumbs.Items[0].SeoPath.Should().Be("Camcorders");
-            breadcrumbs.Items[1].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones");
-            breadcrumbs.Items[2].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones/3dr-x8-m-octocopter-for-visual-spectrum-aeria");
+            breadcrumbs[0].SeoPath.Should().Be("Camcorders");
+            breadcrumbs[1].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones");
+            breadcrumbs[2].SeoPath.Should().Be("Camcorders/Aerial Imaging & Drones/3dr-x8-m-octocopter-for-visual-spectrum-aeria");
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
             var breadcrumbs = productOutline.GetBreadcrumbs(store);
 
             // Assert
-            breadcrumbs.Items.Should().BeEmpty();
+            breadcrumbs.Should().BeEmpty();
         }
 
 

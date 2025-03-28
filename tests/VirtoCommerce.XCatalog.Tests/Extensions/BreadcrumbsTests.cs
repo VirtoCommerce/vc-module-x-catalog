@@ -11,54 +11,53 @@ using static VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.SEO;
 
 namespace VirtoCommerce.XCatalog.Tests.Extensions
 {
-    public class GetBreadcrumbsTests
+    public class BreadcrumbsTests
     {
         [Theory]
-        [InlineData(null, "s1/c1/p1")]
-        [InlineData("", "s1/c1/p1")]
-        [InlineData("s1", "s1/c1/p1")]
-        [InlineData("s1/c1", "s1/c1/p1")]
-        [InlineData("s1/c2", "s1/c2/c21/p1")]
-        [InlineData("s1/c0/p2", "s1/c1/p1")]
-        [InlineData("s1/c1/p2", "s1/c1/p1")]
-        [InlineData("s1/c2/p2", "s1/c2/c21/p1")]
-        [InlineData("s1/c1/c11", "s1/c1/c11/p1")]
-        [InlineData("s1/c1/c12", "s1/c1/c12/p1")]
-        [InlineData("s1/c2/c21", "s1/c2/c21/p1")]
-        [InlineData("s1/c2/c22", "s1/c2/c22/p1")]
-        [InlineData("s1/c1/c12/p2", "s1/c1/c12/p1")]
-        [InlineData("s1/c2/c22/p2", "s1/c2/c22/p1")]
-        [InlineData("s2/c2", "s1/c1/p1")]
-        public void GetBreadcrumbs(string previousBreadcrumbsPath, string expectedBreadcrumbsPath)
+        [InlineData(null, "c1/p1")]
+        [InlineData("", "c1/p1")]
+        [InlineData("c1", "c1/p1")]
+        [InlineData("c2", "c2/c21/p1")]
+        [InlineData("c0/p2", "c1/p1")]
+        [InlineData("c1/p2", "c1/p1")]
+        [InlineData("c2/p2", "c2/c21/p1")]
+        [InlineData("c1/c11", "c1/c11/p1")]
+        [InlineData("c1/c12", "c1/c12/p1")]
+        [InlineData("c2/c21", "c2/c21/p1")]
+        [InlineData("c2/c22", "c2/c22/p1")]
+        [InlineData("c1/c12/p2", "c1/c12/p1")]
+        [InlineData("c2/c22/p2", "c2/c22/p1")]
+        public void GetBestOutlinePath(string previousOutlinePath, string expectedOutlinePath)
         {
             // Arrange
             var store = GetStore("StoreId", "s1");
             var outlines = CreateOutlines(SeoProduct, "p1", "catalog", store, "s1/c1", "s1/c1/c11", "s1/c1/c12", "s1/c2/c21", "s1/c2/c22");
 
             // Act
-            var actualBreadcrumbs = outlines.GetBreadcrumbs(store, store.DefaultLanguage, previousBreadcrumbsPath);
+            var actualOutlinePath = outlines.GetBestOutlinePath(store.Catalog, previousOutlinePath);
 
             // Assert
-            Assert.Equal(expectedBreadcrumbsPath, actualBreadcrumbs.Path);
+            Assert.Equal(expectedOutlinePath, actualOutlinePath);
         }
 
         [Theory]
-        [InlineData(null, "s1/c1/p2", "s1/c1/p1", "c1")]
-        [InlineData("cc", "s1/c1/p2", "s1/c1/p1", "s1")]
-        public void GetBreadcrumbs_WhenMissingCatalogSeo_FirstItemShouldBeCategory(string catalogSemanticUrl, string previousBreadcrumbsPath, string expectedBreadcrumbsPath, string expectedFirstItemId)
+        [InlineData(null, "c1/p2", "c1/p1", "c1")]
+        [InlineData("cc", "c1/p2", "c1/p1", "s1")]
+        public void GetBreadcrumbs_WhenMissingCatalogSeo_FirstItemShouldBeCategory(string catalogSemanticUrl, string previousOutlinePath, string expectedOutlinePath, string expectedFirstBreadcrumbId)
         {
             // Arrange
             var store = GetStore("StoreId", "s1");
             var outlines = CreateOutlines(SeoProduct, "p1", catalogSemanticUrl, store, "s1/c1", "s1/c1/c11", "s1/c1/c12", "s1/c2/c21", "s1/c2/c22");
 
             // Act
-            var actualBreadcrumbs = outlines.GetBreadcrumbs(store, store.DefaultLanguage, previousBreadcrumbsPath);
+            var actualOutlinePath = outlines.GetBestOutlinePath(store.Catalog, previousOutlinePath);
+            var actualBreadcrumbs = outlines.GetBreadcrumbs(store, store.DefaultLanguage, previousOutlinePath);
 
             // Assert
-            Assert.Equal(expectedBreadcrumbsPath, actualBreadcrumbs.Path);
+            Assert.Equal(expectedOutlinePath, actualOutlinePath);
 
-            var actualFirstItemId = actualBreadcrumbs.Items.First().ItemId;
-            Assert.Equal(expectedFirstItemId, actualFirstItemId);
+            var actualFirstBreadcrumbId = actualBreadcrumbs.First().ItemId;
+            Assert.Equal(expectedFirstBreadcrumbId, actualFirstBreadcrumbId);
         }
 
         private static Store GetStore(string storeId, string catalogId)

@@ -28,7 +28,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             return new LoadRelatedCatalogOutlineResponse
             {
-                Outline = request.Outlines.GetBestOutlinePath(store.Catalog, request.PreviousBreadcrumbsPath)
+                Outline = request.Outlines.GetBestOutlinePath(store.Catalog, request.PreviousOutline),
             };
         }
     }

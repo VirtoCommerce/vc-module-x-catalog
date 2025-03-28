@@ -9,6 +9,6 @@ namespace VirtoCommerce.XCatalog.Core.Models
         string OrganizationId { get; set; }
         string CultureName { get; set; }
         string CurrencyCode { get; set; }
-        string PreviousBreadcrumbsPath { get; set; }
+        string PreviousOutline { get; set; }
     }
 }

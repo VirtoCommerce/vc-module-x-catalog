@@ -350,12 +350,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>(
                 "breadcrumbs",
                 "Breadcrumbs",
-                resolve: context => context.Source.IndexedProduct.GetBreadcrumbs(context).Items);
-
-            ExtendableField<NonNullGraphType<StringGraphType>>(
-                "breadcrumbsPath",
-                "Breadcrumbs path",
-                resolve: context => context.Source.IndexedProduct.GetBreadcrumbs(context).Path);
+                resolve: context => context.Source.IndexedProduct.Outlines.GetBreadcrumbs(context));
 
             ExtendableField<VendorType>("vendor",
                 "Product vendor",
