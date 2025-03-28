@@ -95,7 +95,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var defaultUnit = measure?.Units.FirstOrDefault(x => x.IsDefault);
                 var valueUnit = measure?.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
                 var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
-                result = $"{decimalValue.FormatDecimal(languageCode)} {defaultUnit.Symbol}";
+                result = $"{decimalValue.FormatDecimal(languageCode)} {defaultUnit?.Symbol}";
             }
             else
             {
