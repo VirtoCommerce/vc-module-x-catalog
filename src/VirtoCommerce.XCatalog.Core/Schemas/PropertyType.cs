@@ -92,18 +92,30 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             if (source.ValueType == PropertyValueType.Measure && !string.IsNullOrEmpty(source.MeasureId) && !string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
             {
                 var measure = await _measureService.GetByIdAsync(source.MeasureId);
-                var defaultUnit = measure?.Units.FirstOrDefault(x => x.IsDefault);
-                var valueUnit = measure?.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
-                var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
 
-                var symbol = defaultUnit?.Symbol;
-                var localizedName = defaultUnit?.LocalizedSymbol?.GetValue(languageCode);
-                if (!string.IsNullOrEmpty(localizedName))
+                if (measure != null)
                 {
-                    symbol = localizedName;
-                }
+                    var symbol = string.Empty;
+                    var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
+                    var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
+                    var defaultUnit = measure.Units.FirstOrDefault(x => x.IsDefault);
 
-                result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
+                    if (defaultUnit != null)
+                    {
+                        symbol = defaultUnit.Symbol;
+                        var localizedName = defaultUnit.LocalizedSymbol?.GetValue(languageCode);
+                        if (!string.IsNullOrEmpty(localizedName))
+                        {
+                            symbol = localizedName;
+                        }
+                    }
+
+                    result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
+                }
+                else
+                {
+                    result = propertyValue.Value;
+                }
             }
             else
             {
