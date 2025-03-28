@@ -102,12 +102,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                     if (defaultUnit != null)
                     {
-                        symbol = defaultUnit.Symbol;
-                        var localizedName = defaultUnit.LocalizedSymbol?.GetValue(languageCode);
-                        if (!string.IsNullOrEmpty(localizedName))
-                        {
-                            symbol = localizedName;
-                        }
+                        symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
                     }
 
                     result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
