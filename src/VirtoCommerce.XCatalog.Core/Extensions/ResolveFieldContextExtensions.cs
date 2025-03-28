@@ -15,6 +15,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             result.OrganizationId = context.GetCurrentOrganizationId();
             result.CurrencyCode = context.GetArgumentOrValue<string>("currencyCode");
             result.CultureName = context.GetArgumentOrValue<string>("cultureName");
+            result.PreviousBreadcrumbsPath = context.GetArgumentOrValue<string>("previousBreadcrumbsPath");
 
             return result;
         }

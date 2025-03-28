@@ -16,6 +16,35 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
+        public static string GetBestSeoPath(this IList<Outline> outlines, Store store, string language, string previousBreadcrumbsPath)
+        {
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousBreadcrumbsPath);
+
+            return outline?.Items?.GetSeoPath(store, language);
+        }
+
+        public static string GetBestOutlinePath(this IList<Outline> outlines, string catalogId, string previousBreadcrumbsPath)
+        {
+            var outline = outlines.GetBestMatchingOutline(catalogId, previousBreadcrumbsPath);
+
+            return outline?.Items?.GetOutlinePath();
+        }
+
+        public static string GetOutlinePath(this IEnumerable<OutlineItem> outlineItems)
+        {
+            var pathSegments = outlineItems
+                ?.Where(x => !x.IsCatalog())
+                .Select(x => x.Id)
+                .ToList();
+
+            if (pathSegments is null || pathSegments.Count == 0 || pathSegments.Any(x => x is null))
+            {
+                return null;
+            }
+
+            return string.Join('/', pathSegments);
+        }
+
         /// <summary>
         /// Returns SEO path if all outline items of the first outline have SEO keywords, otherwise returns default value.
         /// Path: GrandParentCategory/ParentCategory/ProductCategory/Product
@@ -129,7 +158,8 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
         public static Breadcrumbs GetBreadcrumbs(this IEnumerable<Outline> outlines, Store store, string cultureName = null, string previousBreadcrumbsPath = null)
         {
-            var items = GetBreadcrumbItems(outlines, store, cultureName, previousBreadcrumbsPath);
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousBreadcrumbsPath);
+            var items = outline?.GetBreadcrumbs(store, cultureName) ?? [];
 
             return new Breadcrumbs
             {
@@ -140,22 +170,20 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             };
         }
 
-
-        private static List<Breadcrumb> GetBreadcrumbItems(IEnumerable<Outline> outlines, Store store, string cultureName, string previousBreadcrumbsPath)
+        public static Outline GetBestMatchingOutline(this IEnumerable<Outline> outlines, string catalogId, string previousBreadcrumbsPath)
         {
-            var catalogOutlines = outlines?.Where(x => x.Items.ContainsCatalog(store.Catalog)).ToList();
+            var catalogOutlines = outlines?.Where(x => x.Items.ContainsCatalog(catalogId)).ToList();
 
             if (catalogOutlines is null || catalogOutlines.Count == 0)
             {
-                return [];
+                return null;
             }
 
-            var bestOutline = string.IsNullOrEmpty(previousBreadcrumbsPath)
+            return string.IsNullOrEmpty(previousBreadcrumbsPath)
                 ? catalogOutlines.First()
                 : catalogOutlines.GetBestMatchingOutline(previousBreadcrumbsPath);
-
-            return bestOutline.GetBreadcrumbs(store, cultureName);
         }
+
 
         private static Outline GetBestMatchingOutline(this List<Outline> outlines, string previousBreadcrumbsPath)
         {
