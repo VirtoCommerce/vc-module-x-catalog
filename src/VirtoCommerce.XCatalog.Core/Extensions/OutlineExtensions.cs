@@ -16,33 +16,18 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
-        public static string GetBestSeoPath(this IList<Outline> outlines, Store store, string language, string previousOutlinePath)
+        public static string GetBestMatchingSeoPath(this IEnumerable<Outline> outlines, Store store, string language, string previousOutlinePath)
         {
             var outline = outlines.GetBestMatchingOutline(store.Catalog, previousOutlinePath);
 
             return outline?.Items?.GetSeoPath(store, language);
         }
 
-        public static string GetBestOutlinePath(this IList<Outline> outlines, string catalogId, string previousOutlinePath)
+        public static string GetBestMatchingOutlinePath(this IEnumerable<Outline> outlines, string catalogId, string previousOutlinePath)
         {
             var outline = outlines.GetBestMatchingOutline(catalogId, previousOutlinePath);
 
             return outline?.Items?.GetOutlinePath();
-        }
-
-        public static string GetOutlinePath(this IEnumerable<OutlineItem> outlineItems)
-        {
-            var pathSegments = outlineItems
-                ?.Where(x => !x.IsCatalog())
-                .Select(x => x.Id)
-                .ToList();
-
-            if (pathSegments is null || pathSegments.Count == 0 || pathSegments.Any(x => x is null))
-            {
-                return null;
-            }
-
-            return string.Join('/', pathSegments);
         }
 
         /// <summary>

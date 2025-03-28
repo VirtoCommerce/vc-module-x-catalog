@@ -28,7 +28,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             return new LoadRelatedSlugPathResponse
             {
-                Slug = request.Outlines.GetBestSeoPath(store, request.CultureName, request.PreviousOutline),
+                Slug = request.Outlines.GetBestMatchingSeoPath(store, request.CultureName, request.PreviousOutline),
             };
         }
     }

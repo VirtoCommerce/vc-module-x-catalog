@@ -34,7 +34,7 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
             var outlines = CreateOutlines(SeoProduct, "p1", "catalog", store, "s1/c1", "s1/c1/c11", "s1/c1/c12", "s1/c2/c21", "s1/c2/c22");
 
             // Act
-            var actualOutlinePath = outlines.GetBestOutlinePath(store.Catalog, previousOutlinePath);
+            var actualOutlinePath = outlines.GetBestMatchingOutlinePath(store.Catalog, previousOutlinePath);
 
             // Assert
             Assert.Equal(expectedOutlinePath, actualOutlinePath);
@@ -50,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
             var outlines = CreateOutlines(SeoProduct, "p1", catalogSemanticUrl, store, "s1/c1", "s1/c1/c11", "s1/c1/c12", "s1/c2/c21", "s1/c2/c22");
 
             // Act
-            var actualOutlinePath = outlines.GetBestOutlinePath(store.Catalog, previousOutlinePath);
+            var actualOutlinePath = outlines.GetBestMatchingOutlinePath(store.Catalog, previousOutlinePath);
             var actualBreadcrumbs = outlines.GetBreadcrumbs(store, store.DefaultLanguage, previousOutlinePath);
 
             // Assert
