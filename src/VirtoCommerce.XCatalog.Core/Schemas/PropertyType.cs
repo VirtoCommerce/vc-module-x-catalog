@@ -83,7 +83,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
         protected virtual async Task<object> ResolveValue(Property source, string languageCode)
         {
-            object result;
             var propertyValue = source.Values.FirstOrDefault();
 
             if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
@@ -92,12 +91,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             }
 
             var measure = await _measureService.GetByIdAsync(source.MeasureId);
-
             if (measure == null)
             {
                 return propertyValue.Value;
             }
 
+            object result;
             var symbol = string.Empty;
             var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
             var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
