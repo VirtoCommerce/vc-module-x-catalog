@@ -97,12 +97,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var symbol = string.Empty;
             var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
-            var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
-            var defaultUnit = measure.Units.FirstOrDefault(x => x.IsDefault);
+            var decimalValue = (decimal)propertyValue.Value;
 
-            if (defaultUnit != null)
+            if (valueUnit != null)
             {
-                symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
+                symbol = valueUnit.LocalizedSymbol?.GetValue(languageCode) ?? valueUnit.Symbol;
             }
 
             return string.IsNullOrEmpty(symbol)
