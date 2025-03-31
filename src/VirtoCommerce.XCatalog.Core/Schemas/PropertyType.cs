@@ -106,7 +106,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             }
 
             return string.IsNullOrEmpty(symbol)
-                ? $"{decimalValue.FormatDecimal(languageCode)}"
+                ? decimalValue.FormatDecimal(languageCode)
                 : $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
         }
 
