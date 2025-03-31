@@ -105,9 +105,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
             }
 
-            return string.IsNullOrEmpty(symbol) ?
-                $"{decimalValue.FormatDecimal(languageCode)}" :
-                $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
+            return string.IsNullOrEmpty(symbol)
+                ? $"{decimalValue.FormatDecimal(languageCode)}"
+                : $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
         }
 
         private static async Task<object> ResolveConnectionAsync(IMediator mediator, IResolveConnectionContext<Property> context)
