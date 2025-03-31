@@ -68,10 +68,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("ValueType of the property.");
 
             Field<PropertyValueGraphType>("value")
-                .ResolveAsync(async context =>
-                {
-                    return await ResolveValue(context.Source, context.GetCultureName());
-                });
+                .ResolveAsync(context => ResolveValue(context.Source, context.GetCultureName()));
 
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
@@ -89,7 +86,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             object result;
             var propertyValue = source.Values.FirstOrDefault();
 
-            if (source.ValueType == PropertyValueType.Measure && !string.IsNullOrEmpty(source.MeasureId) && !string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
+            if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
+            {
+                return source.Values.Select(x => x.Value).FirstOrDefault();
+            }
+            else
             {
                 var measure = await _measureService.GetByIdAsync(source.MeasureId);
 
@@ -111,10 +112,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 {
                     result = propertyValue.Value;
                 }
-            }
-            else
-            {
-                result = source.Values.Select(x => x.Value).FirstOrDefault();
             }
 
             return result;
