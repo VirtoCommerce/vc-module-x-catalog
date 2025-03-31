@@ -5,13 +5,13 @@ public static class FormatExtensions
 {
     public static string FormatDecimal(this decimal value, string cultureName)
     {
-        var cultureInfo = TryGetCultureInfo(cultureName) ?? CultureInfo.InvariantCulture;
+        var cultureInfo = GetCultureInfo(cultureName) ?? CultureInfo.InvariantCulture;
         var stringValue = value.ToString("N29", cultureInfo).TrimEnd(['0']).TrimEnd(['.', ',']);
         return stringValue;
     }
 
 
-    private static CultureInfo TryGetCultureInfo(string languageCode)
+    private static CultureInfo GetCultureInfo(string languageCode)
     {
         try
         {
