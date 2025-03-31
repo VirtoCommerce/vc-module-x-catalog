@@ -93,24 +93,22 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var measure = await _measureService.GetByIdAsync(source.MeasureId);
 
-            if (measure != null)
+            if (measure == null)
             {
-                var symbol = string.Empty;
-                var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
-                var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
-                var defaultUnit = measure.Units.FirstOrDefault(x => x.IsDefault);
-
-                if (defaultUnit != null)
-                {
-                    symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
-                }
-
-                result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
+                return propertyValue.Value;
             }
-            else
+
+            var symbol = string.Empty;
+            var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
+            var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
+            var defaultUnit = measure.Units.FirstOrDefault(x => x.IsDefault);
+
+            if (defaultUnit != null)
             {
-                result = propertyValue.Value;
+                symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
             }
+
+            result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
 
             return result;
         }
