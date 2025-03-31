@@ -84,7 +84,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         protected virtual async Task<object> ResolveValue(Property source, string languageCode)
         {
             var propertyValue = source.Values.FirstOrDefault();
-
             if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
             {
                 return source.Values.Select(x => x.Value).FirstOrDefault();
@@ -96,7 +95,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return propertyValue.Value;
             }
 
-            object result;
             var symbol = string.Empty;
             var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
             var decimalValue = (decimal)propertyValue.Value * valueUnit?.ConversionFactor ?? 1;
@@ -107,9 +105,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 symbol = defaultUnit.LocalizedSymbol?.GetValue(languageCode) ?? defaultUnit.Symbol;
             }
 
-            result = $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
-
-            return result;
+            return $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
         }
 
         private static async Task<object> ResolveConnectionAsync(IMediator mediator, IResolveConnectionContext<Property> context)
