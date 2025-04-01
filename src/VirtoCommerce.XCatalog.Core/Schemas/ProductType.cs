@@ -12,6 +12,7 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -145,14 +146,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<SeoInfoType>>("seoInfo", resolve: context =>
             {
                 var source = context.Source;
-                var storeId = context.GetArgumentOrValue<string>("storeId");
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
 
                 SeoInfo seoInfo = null;
 
                 if (!source.IndexedProduct.SeoInfos.IsNullOrEmpty())
                 {
-                    seoInfo = source.IndexedProduct.SeoInfos.GetBestMatchingSeoInfo(storeId, cultureName);
+                    var store = context.GetArgumentOrValue<Store>("store");
+                    seoInfo = source.IndexedProduct.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
                 return seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.IndexedProduct.Name, cultureName);
