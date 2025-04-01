@@ -84,7 +84,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         protected virtual async Task<object> ResolveValue(Property source, string languageCode)
         {
             var propertyValue = source.Values.FirstOrDefault();
-            if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue.UnitOfMeasureId))
+            if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue?.UnitOfMeasureId))
             {
                 return source.Values.Select(x => x.Value).FirstOrDefault();
             }
