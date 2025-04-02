@@ -27,6 +27,18 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 }
                 return group.Name;
             }).Description("The localized name of the property group.");
+
+            Field<NonNullGraphType<StringGraphType>>("localizedDescription").Resolve(context =>
+            {
+                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+                var group = context.Source;
+                var localizedDescription = group.LocalizedDescription?.GetValue(cultureName);
+                if (!string.IsNullOrEmpty(localizedDescription))
+                {
+                    return localizedDescription;
+                }
+                return null;
+            }).Description("The localized description of the property group.");
         }
     }
 }
