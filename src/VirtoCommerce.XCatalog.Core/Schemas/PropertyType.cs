@@ -77,7 +77,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<PropertyGroupType>(),
                 Resolver = new FuncFieldResolver<Property, IDataLoaderResult<PropertyGroup>>(context =>
                 {
-                    var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
                     var loader = dataLoader.Context.GetOrAddBatchLoader<string, PropertyGroup>("propertyGroupLoader", async (ids) =>
                     {
                         var groups = await propertyGroupService.GetNoCloneAsync(ids.ToList());
