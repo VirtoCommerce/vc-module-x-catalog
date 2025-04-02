@@ -1,12 +1,16 @@
 using System.Linq;
 using System.Threading.Tasks;
+using GraphQL;
 using GraphQL.Builders;
 using GraphQL.DataLoader;
+using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -17,7 +21,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class PropertyType : ExtendableGraphType<Property>
     {
-        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader, IPropertyGroupService propertyGroupService)
         {
             Name = "Property";
             Description = "Products attributes.";
@@ -66,6 +70,23 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
+
+            var group = new FieldType
+            {
+                Name = "group",
+                Type = GraphTypeExtensionHelper.GetActualType<PropertyGroupType>(),
+                Resolver = new FuncFieldResolver<Property, IDataLoaderResult<PropertyGroup>>(context =>
+                {
+                    var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, PropertyGroup>("propertyGroupLoader", async (ids) =>
+                    {
+                        var groups = await propertyGroupService.GetNoCloneAsync(ids.ToList());
+                        return groups.ToDictionary(x => x.Id);
+                    });
+                    return loader.LoadAsync(context.Source.PropertyGroupId);
+                })
+            };
+            AddField(group);
 
             Connection<PropertyDictionaryItemType>("propertyDictionaryItems")
                 .PageSize(Connections.DefaultPageSize)
