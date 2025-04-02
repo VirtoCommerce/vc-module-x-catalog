@@ -5,10 +5,12 @@ using GraphQL.DataLoader;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas.ScalarTypes;
 using static VirtoCommerce.Xapi.Core.ModuleConstants;
@@ -17,8 +19,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class PropertyType : ExtendableGraphType<Property>
     {
-        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+        private readonly IMeasureService _measureService;
+
+        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader, IMeasureService measureService)
         {
+            _measureService = measureService;
+
             Name = "Property";
             Description = "Products attributes.";
 
@@ -62,7 +68,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("ValueType of the property.");
 
             Field<PropertyValueGraphType>("value")
-                .Resolve(context => context.Source.Values.Select(x => x.Value).FirstOrDefault());
+                .ResolveAsync(context => ResolveValue(context.Source, context.GetCultureName()));
 
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
@@ -73,6 +79,34 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 {
                     return await ResolveConnectionAsync(mediator, context);
                 });
+        }
+
+        protected virtual async Task<object> ResolveValue(Property source, string languageCode)
+        {
+            var propertyValue = source.Values.FirstOrDefault();
+            if (source.ValueType != PropertyValueType.Measure || string.IsNullOrEmpty(source.MeasureId) || string.IsNullOrEmpty(propertyValue?.UnitOfMeasureId))
+            {
+                return source.Values.Select(x => x.Value).FirstOrDefault();
+            }
+
+            var measure = await _measureService.GetByIdAsync(source.MeasureId);
+            if (measure == null)
+            {
+                return propertyValue.Value;
+            }
+
+            var symbol = string.Empty;
+            var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
+            var decimalValue = (decimal)propertyValue.Value;
+
+            if (valueUnit != null)
+            {
+                symbol = valueUnit.LocalizedSymbol?.GetValue(languageCode) ?? valueUnit.Symbol;
+            }
+
+            return string.IsNullOrEmpty(symbol)
+                ? decimalValue.FormatDecimal(languageCode)
+                : $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
         }
 
         private static async Task<object> ResolveConnectionAsync(IMediator mediator, IResolveConnectionContext<Property> context)
