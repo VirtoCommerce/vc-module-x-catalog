@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 
@@ -28,7 +28,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             return new LoadRelatedCatalogOutlineResponse
             {
-                Outline = request.Outlines.GetOutlinePath(store.Catalog)
+                Outline = request.Outlines.GetBestMatchingOutlinePath(store.Catalog, request.PreviousOutline),
             };
         }
     }

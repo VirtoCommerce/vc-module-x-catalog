@@ -1,18 +1,35 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GraphQL;
 using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Outlines;
 using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Extensions
 {
     public static class OutlineExtensions
     {
+        public static string GetBestMatchingSeoPath(this IEnumerable<Outline> outlines, Store store, string language, string previousOutlinePath)
+        {
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousOutlinePath);
+
+            return outline?.Items?.GetSeoPath(store, language);
+        }
+
+        public static string GetBestMatchingOutlinePath(this IEnumerable<Outline> outlines, string catalogId, string previousOutlinePath)
+        {
+            var outline = outlines.GetBestMatchingOutline(catalogId, previousOutlinePath);
+
+            return outline?.Items?.GetOutlinePath();
+        }
+
         /// <summary>
         /// Returns SEO path if all outline items of the first outline have SEO keywords, otherwise returns default value.
         /// Path: GrandParentCategory/ParentCategory/ProductCategory/Product
@@ -89,85 +106,149 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             return outline?.Items is null
                 ? null
                 : string.Join('/',
-                outline.Items
+                    outline.Items
                         .Where(x => x != null && !x.IsCatalog())
                         .Select(x => x.Id));
         }
 
+        [Obsolete("Use GetBreadcrumbs()", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/platform/user-guide/versions/virto3-products-versions/")]
         public static IEnumerable<Breadcrumb> GetBreadcrumbsFromOutLine(this IEnumerable<Outline> outlines, Store store, string cultureName)
         {
-            var outlineItems = outlines
-                ?.FirstOrDefault(outline => outline.Items != null && outline.Items.Any(item => item.Id == store.Catalog && item.SeoObjectType == "Catalog"))
-                ?.Items
+            return outlines.GetBreadcrumbs(store, cultureName);
+        }
+
+        public static IList<Breadcrumb> GetBreadcrumbs(this IEnumerable<Outline> outlines, IResolveFieldContext context)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            var store = context.GetValue<Store>("store");
+            var cultureName = context.GetArgumentOrValue<string>("cultureName");
+            var previousOutlinePath = context.GetArgumentOrValue<string>("previousOutline");
+
+            return outlines.GetBreadcrumbs(store, cultureName, previousOutlinePath);
+        }
+
+        public static IList<Breadcrumb> GetBreadcrumbs(this IEnumerable<Outline> outlines, Store store, string cultureName = null, string previousOutlinePath = null)
+        {
+            var outline = outlines.GetBestMatchingOutline(store.Catalog, previousOutlinePath);
+
+            // Exclude catalog item if it has no SEO information
+            var breadcrumbs = outline?.GetBreadcrumbs(store, cultureName)
+                .Where(x => !string.IsNullOrEmpty(x.SemanticUrl))
                 .ToList();
 
-            if (outlineItems.IsNullOrEmpty())
+            return breadcrumbs ?? [];
+        }
+
+        public static Outline GetBestMatchingOutline(this IEnumerable<Outline> outlines, string catalogId, string previousOutlinePath)
+        {
+            var catalogOutlines = outlines?.Where(x => x.Items.ContainsCatalog(catalogId)).ToList();
+
+            if (catalogOutlines is null || catalogOutlines.Count == 0)
             {
-                return Enumerable.Empty<Breadcrumb>();
+                return null;
             }
 
-            var breadcrumbs = new List<Breadcrumb>();
+            return string.IsNullOrEmpty(previousOutlinePath)
+                ? catalogOutlines.First()
+                : catalogOutlines.GetBestMatchingOutline(previousOutlinePath);
+        }
 
-#pragma warning disable S2259 // False positive by IsNullOrEmpty
-            for (var i = outlineItems.Count - 1; i > 0; i--)
+
+        private static Outline GetBestMatchingOutline(this List<Outline> outlines, string previousOutlinePath)
+        {
+            Outline bestOutline = null;
+            var previousIds = previousOutlinePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var (previousId, i) in previousIds.Select((x, i) => (x, i)))
             {
-                var item = outlineItems[i];
+                var matchingOutlines = new List<Outline>();
 
-                var innerOutline = new List<Outline> { new Outline { Items = outlineItems } };
-                var seoPath = innerOutline.GetSeoPath(store, cultureName);
+                // Skip catalog item
+                var itemIndex = i + 1;
 
-                outlineItems.Remove(item);
-                if (string.IsNullOrWhiteSpace(seoPath))
+                foreach (var outline in outlines.Where(x => x.Items.Count > itemIndex))
                 {
-                    continue;
+                    var item = outline.Items is IList<OutlineItem> list
+                        ? list[itemIndex]
+                        : outline.Items.Skip(itemIndex).First();
+
+                    if (item.Id.EqualsIgnoreCase(previousId))
+                    {
+                        matchingOutlines.Add(outline);
+                    }
                 }
 
-                var seoInfoForStoreAndLanguage = SeoInfoForStoreAndLanguage(item, store.Id, cultureName);
-
-                var breadcrumb = new Breadcrumb(item.SeoObjectType)
+                if (matchingOutlines.Count > 0)
                 {
-                    ItemId = item.Id,
-                    Title = ResolveItemTitle(item, seoInfoForStoreAndLanguage, cultureName),
-                    SemanticUrl = seoInfoForStoreAndLanguage?.SemanticUrl,
-                    SeoPath = seoPath
-                };
-                breadcrumbs.Insert(0, breadcrumb);
+                    outlines = matchingOutlines;
+                    bestOutline = matchingOutlines.First();
+                }
+                else
+                {
+                    break;
+                }
             }
-#pragma warning restore S2259 // Null pointers should not be dereferenced
 
-            var catalog = outlineItems[0];
-            var catalogSeoInfoForStoreAndLanguage = SeoInfoForStoreAndLanguage(catalog, store.Id, cultureName);
-            if (catalog.SeoObjectType == "Catalog" && catalogSeoInfoForStoreAndLanguage != null)
+            return bestOutline ?? outlines.First();
+        }
+
+        private static List<Breadcrumb> GetBreadcrumbs(this Outline outline, Store store, string cultureName)
+        {
+            var breadcrumbs = new List<Breadcrumb>();
+            var items = outline.Items?.ToList() ?? [];
+
+            while (items.Count > 0)
             {
-                var breadcrumb = new Breadcrumb(catalog.SeoObjectType)
+                var breadcrumb = items.GetBreadcrumbForLastItem(store, cultureName);
+
+                if (breadcrumb != null)
                 {
-                    ItemId = catalog.Id,
-                    Title = catalogSeoInfoForStoreAndLanguage.PageTitle?.EmptyToNull() ?? "Catalog",
-                    SemanticUrl = catalogSeoInfoForStoreAndLanguage.SemanticUrl?.EmptyToNull() ?? "catalog",
-                    SeoPath = catalogSeoInfoForStoreAndLanguage.SemanticUrl?.EmptyToNull() ?? "catalog"
-                };
-                breadcrumbs.Insert(0, breadcrumb);
+                    breadcrumbs.Insert(0, breadcrumb);
+                }
+
+                items.RemoveAt(items.Count - 1);
             }
 
             return breadcrumbs;
         }
 
-        private static string ResolveItemTitle(OutlineItem item, SeoInfo seoInfoForStoreAndLanguage, string cultureName)
+        private static Breadcrumb GetBreadcrumbForLastItem(this List<OutlineItem> items, Store store, string cultureName)
         {
-            var pageTitle = seoInfoForStoreAndLanguage?.PageTitle?.EmptyToNull();
-            if (!string.IsNullOrEmpty(pageTitle))
+            var item = items.Last();
+            var seo = item.GetBestMatchingSeoInfo(store, cultureName);
+            var seoTitle = seo?.PageTitle.EmptyToNull();
+            var semanticUrl = seo?.SemanticUrl.EmptyToNull();
+
+            if (item.IsCatalog())
             {
-                return pageTitle;
+                var catalogSemanticUrl = seo is null
+                    ? null
+                    : semanticUrl ?? "catalog";
+
+                return new Breadcrumb(item.SeoObjectType)
+                {
+                    ItemId = item.Id,
+                    Title = seoTitle ?? "Catalog",
+                    SemanticUrl = catalogSemanticUrl,
+                    SeoPath = catalogSemanticUrl,
+                };
             }
 
-            if (item.LocalizedName != null && item.LocalizedName.TryGetValue(cultureName, out var localizedTitle))
-            {
-                return localizedTitle;
-            }
+            var seoPath = items.GetSeoPath(store, cultureName);
 
-            return item.Name;
+            return string.IsNullOrEmpty(seoPath)
+                ? null
+                : new Breadcrumb(item.SeoObjectType)
+                {
+                    ItemId = item.Id,
+                    Title = seoTitle ?? item.LocalizedName?.GetValue(cultureName).EmptyToNull() ?? item.Name,
+                    SemanticUrl = semanticUrl,
+                    SeoPath = seoPath,
+                };
         }
 
+        [Obsolete("Use VirtoCommerce.StoreModule.Core.Extensions.GetBestMatchingSeoInfo()", DiagnosticId = "VC0010", UrlFormat = "https://docs.virtocommerce.org/platform/user-guide/versions/virto3-products-versions/")]
         public static SeoInfo SeoInfoForStoreAndLanguage(OutlineItem item, string storeId, string cultureName)
         {
             return item.SeoInfos?.FirstOrDefault(x => x.StoreId == storeId && x.LanguageCode == cultureName);
