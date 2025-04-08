@@ -8,6 +8,7 @@ using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Settings;
+using VirtoCommerce.Platform.Modules;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model.Search;
 using VirtoCommerce.TaxModule.Core.Services;
@@ -52,9 +53,13 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         {
             // Arrange
             var mapper = new Mock<IMapper>();
-            var taxProviderSearchService = new Mock<IOptionalDependency<ITaxProviderSearchService>>();
+            var serviceProvider = new Mock<IServiceProvider>();
+            var taxProviderSearchServiceOptionalDependency = new Mock<OptionalDependencyManager<ITaxProviderSearchService>>(serviceProvider.Object);
+            var taxProviderSearchService = new Mock<ITaxProviderSearchService>();
+
+            serviceProvider.Setup(x => x.GetService(typeof(ITaxProviderSearchService))).Returns(taxProviderSearchService.Object);
             taxProviderSearchService
-                .Setup(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
+                .Setup(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
                 .ReturnsAsync(() => new TaxProviderSearchResult()
                 {
                     TotalCount = 0,
@@ -62,7 +67,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
                 });
             var genericPipelineLauncher = new Mock<IGenericPipelineLauncher>();
 
-            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchService.Object, genericPipelineLauncher.Object);
+            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchServiceOptionalDependency.Object, genericPipelineLauncher.Object);
 
             var response = new SearchProductResponse()
             {
@@ -82,7 +87,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             // Assert
             action.Should().NotThrow();
             taxProviderSearchService
-                .Verify(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
+                .Verify(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
         }
 
         [Fact]
@@ -93,9 +98,13 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             taxProvider.Object.IsActive = true;
 
             var mapper = new Mock<IMapper>();
-            var taxProviderSearchService = new Mock<IOptionalDependency<ITaxProviderSearchService>>();
+            var serviceProvider = new Mock<IServiceProvider>();
+            var taxProviderSearchServiceOptionalDependency = new Mock<OptionalDependencyManager<ITaxProviderSearchService>>(serviceProvider.Object);
+            var taxProviderSearchService = new Mock<ITaxProviderSearchService>();
+
+            serviceProvider.Setup(x => x.GetService(typeof(ITaxProviderSearchService))).Returns(taxProviderSearchService.Object);
             taxProviderSearchService
-                .Setup(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
+                .Setup(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
                 .ReturnsAsync(() => new TaxProviderSearchResult()
                 {
                     TotalCount = 1,
@@ -103,7 +112,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
                 });
             var genericPipelineLauncher = new Mock<IGenericPipelineLauncher>();
 
-            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchService.Object, genericPipelineLauncher.Object);
+            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchServiceOptionalDependency.Object, genericPipelineLauncher.Object);
 
             var response = new SearchProductResponse()
             {
@@ -126,7 +135,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             // Assert
             action.Should().NotThrow();
             taxProviderSearchService
-                .Verify(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
+                .Verify(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
             taxProvider.Verify(x => x.CalculateRates(It.IsAny<TaxEvaluationContext>()), Times.Once);
         }
 
@@ -152,9 +161,13 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
                 .Returns(() => new List<TaxRate>() { new TaxRate() { Currency = "USD", Rate = 50, Line = new TaxLine() { Id = "someId", Quantity = 0 } } });
 
             var mapper = new Mock<IMapper>();
-            var taxProviderSearchService = new Mock<IOptionalDependency<ITaxProviderSearchService>>();
+            var serviceProvider = new Mock<IServiceProvider>();
+            var taxProviderSearchServiceOptionalDependency = new Mock<OptionalDependencyManager<ITaxProviderSearchService>>(serviceProvider.Object);
+            var taxProviderSearchService = new Mock<ITaxProviderSearchService>();
+
+            serviceProvider.Setup(x => x.GetService(typeof(ITaxProviderSearchService))).Returns(taxProviderSearchService.Object);
             taxProviderSearchService
-                .Setup(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
+                .Setup(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()))
                 .ReturnsAsync(() => new TaxProviderSearchResult()
                 {
                     TotalCount = 0,
@@ -162,7 +175,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
                 });
             var genericPipelineLauncher = new Mock<IGenericPipelineLauncher>();
 
-            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchService.Object, genericPipelineLauncher.Object);
+            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapper.Object, taxProviderSearchServiceOptionalDependency.Object, genericPipelineLauncher.Object);
 
             var response = new SearchProductResponse()
             {
@@ -188,7 +201,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             // Assert
             action.Should().NotThrow();
             taxProviderSearchService
-                .Verify(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
+                .Verify(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Once);
             taxProvider.Verify(x => x.CalculateRates(It.IsAny<TaxEvaluationContext>()), Times.Once);
             productPrice.TaxPercentRate.Should().Be(0.5m);
         }

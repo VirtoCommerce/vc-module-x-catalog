@@ -58,7 +58,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -102,7 +102,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -145,7 +145,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
@@ -190,12 +190,12 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("properties")).Resolver.ResolveAsync(resolveContext);
+            var result = await _productType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("properties")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<List<Property>>();
             ((List<Property>)result).Count.Should().Be(1);
-            ((List<Property>)result).Any(p => p.Values.Any(pv => pv.Value.ToString().EqualsInvariant(alias))).Should().BeTrue();
+            ((List<Property>)result).Any(p => p.Values.Any(pv => pv.Value.ToString().EqualsIgnoreCase(alias))).Should().BeTrue();
         }
 
         #endregion Properties
