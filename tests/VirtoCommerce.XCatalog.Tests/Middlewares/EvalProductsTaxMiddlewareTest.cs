@@ -28,11 +28,14 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         {
             // Arrange
             var mapperMock = new Mock<IMapper>();
-            var taxProviderSearchServiceMock = new Mock<IOptionalDependency<ITaxProviderSearchService>>();
+            var serviceProviderMock = new Mock<IServiceProvider>();
+            var taxProviderSearchServiceMock = new Mock<ITaxProviderSearchService>();
+            var taxProviderSearchServiceOptionalDependency = new OptionalDependencyManager<ITaxProviderSearchService>(serviceProviderMock.Object);
             var genericPipelineLauncherMock = new Mock<IGenericPipelineLauncher>();
 
-            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapperMock.Object, taxProviderSearchServiceMock.Object, genericPipelineLauncherMock.Object);
+            var evalProductsTaxMiddleware = new EvalProductsTaxMiddleware(mapperMock.Object, taxProviderSearchServiceOptionalDependency, genericPipelineLauncherMock.Object);
 
+            serviceProviderMock.Setup(x => x.GetService(typeof(ITaxProviderSearchService))).Returns(taxProviderSearchServiceMock.Object);
             var response = new SearchProductResponse()
             {
                 TotalCount = 1,
@@ -45,7 +48,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
 
             // Assert
             taxProviderSearchServiceMock
-                .Verify(x => x.Value.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Never);
+                .Verify(x => x.SearchAsync(It.IsAny<TaxProviderSearchCriteria>(), It.IsAny<bool>()), Times.Never);
         }
 
         [Fact]
