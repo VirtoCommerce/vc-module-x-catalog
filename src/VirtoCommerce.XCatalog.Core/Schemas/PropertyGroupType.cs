@@ -1,5 +1,7 @@
+using GraphQL;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Schemas;
 
@@ -13,32 +15,26 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Description = "Property group.";
 
             Field(x => x.Id, nullable: false).Description("The unique ID of the property group.");
-            Field(x => x.Name, nullable: false).Description("The name of the property group.");
             Field(x => x.Priority, nullable: true).Description("The display order of the property group.");
 
-            Field<StringGraphType>("localizedName").Resolve(context =>
-            {
-                var cultureName = context.GetArgumentOrValue<string>("cultureName");
-                var group = context.Source;
-                var localizedName = group.LocalizedName?.GetValue(cultureName);
-                if (!string.IsNullOrEmpty(localizedName))
-                {
-                    return localizedName;
-                }
-                return group.Name;
-            }).Description("The localized name of the property group.");
+            Field<StringGraphType>("name")
+                .Resolve(context => GetLocalizedValue(context, context.Source.LocalizedName, context.Source.Name))
+                .Description("The localized name of the property group.");
 
-            Field<StringGraphType>("localizedDescription").Resolve(context =>
+            Field<StringGraphType>("description")
+                .Resolve(context => GetLocalizedValue(context, context.Source.LocalizedDescription))
+                .Description("The localized description of the property group.");
+        }
+
+        private static string GetLocalizedValue(IResolveFieldContext<PropertyGroup> context, LocalizedString localizedString, string fallbackValue = null)
+        {
+            var cultureName = context.GetArgumentOrValue<string>("cultureName");
+            var localizedValue = localizedString?.GetValue(cultureName);
+            if (!string.IsNullOrEmpty(localizedValue))
             {
-                var cultureName = context.GetArgumentOrValue<string>("cultureName");
-                var group = context.Source;
-                var localizedDescription = group.LocalizedDescription?.GetValue(cultureName);
-                if (!string.IsNullOrEmpty(localizedDescription))
-                {
-                    return localizedDescription;
-                }
-                return null;
-            }).Description("The localized description of the property group.");
+                return localizedValue;
+            }
+            return fallbackValue;
         }
     }
 }
