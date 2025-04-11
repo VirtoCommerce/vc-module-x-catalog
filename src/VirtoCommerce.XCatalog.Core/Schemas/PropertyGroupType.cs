@@ -16,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Name, nullable: false).Description("The name of the property group.");
             Field(x => x.Priority, nullable: true).Description("The display order of the property group.");
 
-            Field<NonNullGraphType<StringGraphType>>("localizedName").Resolve(context =>
+            Field<StringGraphType>("localizedName").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var group = context.Source;
@@ -28,7 +28,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return group.Name;
             }).Description("The localized name of the property group.");
 
-            Field<NonNullGraphType<StringGraphType>>("localizedDescription").Resolve(context =>
+            Field<StringGraphType>("localizedDescription").Resolve(context =>
             {
                 var cultureName = context.GetArgumentOrValue<string>("cultureName");
                 var group = context.Source;
