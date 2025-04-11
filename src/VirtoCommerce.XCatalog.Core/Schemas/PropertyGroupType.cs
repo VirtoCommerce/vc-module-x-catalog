@@ -26,7 +26,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("The localized description of the property group.");
         }
 
-        private static string GetLocalizedValue(IResolveFieldContext<PropertyGroup> context, LocalizedString localizedString, string fallbackValue = null)
+        private static string GetLocalizedValue(IResolveFieldContext context, LocalizedString localizedString, string fallbackValue = null)
         {
             var cultureName = context.GetArgumentOrValue<string>("cultureName");
             var localizedValue = localizedString?.GetValue(cultureName);
