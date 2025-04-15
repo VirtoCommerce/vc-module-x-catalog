@@ -14,7 +14,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 {
     public class PropertyTypeTests : XCatalogMoqHelper
     {
-        private readonly PropertyType _propertyType = new(null, null);
+        private readonly PropertyType _propertyType = new(null, null, null);
 
         [Fact]
         public async Task PropertyType_Properties_ShouldFilterPropertiesByCultureName()
