@@ -369,6 +369,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.WishlistIds, nullable: false).Description("List of wishlist ID with this product");
 
+            Field(x => x.IsPurchasedBefore, nullable: false).Description("Product was purchased before");
+
             Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
