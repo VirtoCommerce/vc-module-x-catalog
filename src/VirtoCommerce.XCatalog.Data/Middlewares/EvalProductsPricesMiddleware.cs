@@ -69,6 +69,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                     {
                         options.Items["all_currencies"] = parameter.AllStoreCurrencies;
                         options.Items["currency"] = parameter.Currency;
+                        options.Items["pricelists"] = evalContext.Pricelists;
                     }).ToList();
 
                     product.ApplyStaticDiscounts();
