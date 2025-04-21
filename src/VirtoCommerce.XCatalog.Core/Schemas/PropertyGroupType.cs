@@ -15,7 +15,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Description = "Property group.";
 
             Field(x => x.Id, nullable: false).Description("The unique ID of the property group.");
-            Field(x => x.Priority, nullable: true).Description("The display order of the property group.");
+            Field(x => x.DisplayOrder, nullable: true).Description("The display order of the property group.");
 
             Field<StringGraphType>("name")
                 .Resolve(context => GetLocalizedValue(context, context.Source.LocalizedName, context.Source.Name))
