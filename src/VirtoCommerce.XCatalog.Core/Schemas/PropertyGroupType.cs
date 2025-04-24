@@ -29,11 +29,16 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         private static string GetLocalizedValue(IResolveFieldContext context, LocalizedString localizedString, string fallbackValue = null)
         {
             var cultureName = context.GetArgumentOrValue<string>("cultureName");
-            var localizedValue = localizedString?.GetValue(cultureName);
-            if (!string.IsNullOrEmpty(localizedValue))
+
+            if (!string.IsNullOrEmpty(cultureName))
             {
-                return localizedValue;
+                var localizedValue = localizedString?.GetValue(cultureName);
+                if (!string.IsNullOrEmpty(localizedValue))
+                {
+                    return localizedValue;
+                }
             }
+
             return fallbackValue;
         }
     }
