@@ -20,26 +20,9 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
 
-        private SearchRequest SearchRequest { get; set; }
-
-        #region Experimental
-        public int Take
-        {
-            get => SearchRequest.Take;
-            set => SearchRequest.Take = value;
-        }
-
-        public int Skip
-        {
-            get => SearchRequest.Skip;
-            set => SearchRequest.Skip = value;
-        }
-
-        public int TakeBackup { get; set; }
-        public int SkipBackup { get; set; }
-
         public IFilter Filter => SearchRequest.Filter;
-        #endregion
+
+        private SearchRequest SearchRequest { get; set; }
 
         public IndexSearchRequestBuilder()
         {
@@ -79,8 +62,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder WithPaging(int skip, int take)
         {
-            SearchRequest.Skip = SkipBackup = skip;
-            SearchRequest.Take = TakeBackup = take;
+            SearchRequest.Skip = skip;
+            SearchRequest.Take = take;
 
             return this;
         }

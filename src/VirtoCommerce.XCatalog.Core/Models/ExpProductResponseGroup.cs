@@ -14,7 +14,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
         LoadWishlists = 1 << 5,
         LoadPropertyMetadata = 1 << 6,
         LoadVariationPrices = 1 << 7,
-        LoadPurchasedBefore = 1 << 8,
-        Full = LoadPrices | LoadInventories | LoadFacets | LoadVendors | LoadRating | LoadWishlists | LoadPropertyMetadata | LoadVariationPrices | LoadPurchasedBefore,
+        LoadPurchased = 1 << 8,
+        Full = LoadPrices | LoadInventories | LoadFacets | LoadVendors | LoadRating | LoadWishlists | LoadPropertyMetadata | LoadVariationPrices | LoadPurchased,
     }
 }

@@ -91,7 +91,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public IList<string> WishlistIds { get; set; } = [];
 
-        public bool IsPurchasedBefore { get; set; }
+        public bool IsPurchased { get; set; }
 
         public virtual long AvailableQuantity
         {
