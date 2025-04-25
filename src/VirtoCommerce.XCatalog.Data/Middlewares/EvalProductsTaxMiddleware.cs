@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model.Search;
@@ -18,12 +19,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
     public class EvalProductsTaxMiddleware : IAsyncMiddleware<SearchProductResponse>
     {
         private readonly IMapper _mapper;
-        private readonly ITaxProviderSearchService _taxProviderSearchService;
+        private readonly IOptionalDependency<ITaxProviderSearchService> _taxProviderSearchService;
         private readonly IGenericPipelineLauncher _pipeline;
 
         public EvalProductsTaxMiddleware(
             IMapper mapper,
-            ITaxProviderSearchService taxProviderSearchService,
+            IOptionalDependency<ITaxProviderSearchService> taxProviderSearchService,
             IGenericPipelineLauncher pipeline)
         {
             _mapper = mapper;
@@ -48,12 +49,15 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             var query = parameter.Query;
             // If tax evaluation requested
             var responseGroup = EnumUtility.SafeParse(query.GetResponseGroup(), ExpProductResponseGroup.None);
-            if (responseGroup.HasFlag(ExpProductResponseGroup.LoadPrices) &&
+            if (_taxProviderSearchService.HasValue &&
+                responseGroup.HasFlag(ExpProductResponseGroup.LoadPrices) &&
                 parameter.Store?.Settings?.GetValue<bool>(StoreSetting.TaxCalculationEnabled) == true)
             {
                 //Evaluate taxes
-                var storeTaxProviders = await _taxProviderSearchService.SearchAsync(new TaxProviderSearchCriteria
-                { StoreIds = [query.StoreId] });
+                var taxProviderSearchCriteria = AbstractTypeFactory<TaxProviderSearchCriteria>.TryCreateInstance();
+                taxProviderSearchCriteria.StoreIds = [query.StoreId];
+                var storeTaxProviders = await _taxProviderSearchService.Value.SearchAsync(taxProviderSearchCriteria);
+
                 var activeTaxProvider = storeTaxProviders.Results.FirstOrDefault(x => x.IsActive);
                 if (activeTaxProvider != null)
                 {

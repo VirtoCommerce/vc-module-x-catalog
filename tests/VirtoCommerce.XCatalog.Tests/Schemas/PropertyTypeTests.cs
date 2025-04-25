@@ -14,7 +14,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 {
     public class PropertyTypeTests : XCatalogMoqHelper
     {
-        private readonly PropertyType _propertyType = new(null, null);
+        private readonly PropertyType _propertyType = new(null, null, null);
 
         [Fact]
         public async Task PropertyType_Properties_ShouldFilterPropertiesByCultureName()
@@ -50,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.ResolveAsync(resolveContext);
+            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("label")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<string>();
@@ -83,7 +83,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // Act
-            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsInvariant("label")).Resolver.ResolveAsync(resolveContext);
+            var result = await _propertyType.Fields.FirstOrDefault(x => x.Name.EqualsIgnoreCase("label")).Resolver.ResolveAsync(resolveContext);
 
             // Assert
             result.Should().BeOfType<string>();
