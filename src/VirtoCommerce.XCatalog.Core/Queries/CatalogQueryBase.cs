@@ -15,6 +15,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         public string UserId { get; set; }
         public string CultureName { get; set; }
         public string CurrencyCode { get; set; }
+        public string PreviousOutline { get; set; }
+
         public string OrganizationId { get; set; }
         public Store Store { get; set; }
         public IList<string> IncludeFields { get; set; } = Array.Empty<string>();
@@ -25,6 +27,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             yield return Argument<StringGraphType>(nameof(UserId), description: "User Id");
             yield return Argument<StringGraphType>(nameof(CultureName), description: "Currency code (\"USD\")");
             yield return Argument<StringGraphType>(nameof(CurrencyCode), description: "Culture name (\"en-US\")");
+            yield return Argument<StringGraphType>(nameof(PreviousOutline), description: "Previous outline");
         }
 
         public override void Map(IResolveFieldContext context)
@@ -34,6 +37,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             OrganizationId = context.GetCurrentOrganizationId();
             CultureName = context.GetArgument<string>(nameof(CultureName));
             CurrencyCode = context.GetArgument<string>(nameof(CurrencyCode));
+            PreviousOutline = context.GetArgument<string>(nameof(PreviousOutline));
         }
     }
 }
