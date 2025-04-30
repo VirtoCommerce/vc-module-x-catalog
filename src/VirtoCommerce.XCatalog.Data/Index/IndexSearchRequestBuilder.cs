@@ -20,6 +20,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
 
+        public IFilter Filter => SearchRequest.Filter;
+
         private SearchRequest SearchRequest { get; set; }
 
         public IndexSearchRequestBuilder()
@@ -62,6 +64,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
         {
             SearchRequest.Skip = skip;
             SearchRequest.Take = take;
+
             return this;
         }
 
