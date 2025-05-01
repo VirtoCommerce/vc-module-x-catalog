@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 
@@ -26,12 +26,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 return new LoadRelatedSlugPathResponse();
             }
 
-            var language = request.CultureName ?? store.DefaultLanguage;
-            var slug = request.Outlines.GetSeoPath(store, language);
-
             return new LoadRelatedSlugPathResponse
             {
-                Slug = slug
+                Slug = request.Outlines.GetBestMatchingSeoPath(store, request.CultureName, request.PreviousOutline),
             };
         }
     }

@@ -114,6 +114,10 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             {
                 result |= ExpProductResponseGroup.LoadPropertyMetadata;
             }
+            if (IncludeFields.ContainsAny("isPurchased"))
+            {
+                result |= ExpProductResponseGroup.LoadPurchased;
+            }
             return result.ToString();
         }
 
