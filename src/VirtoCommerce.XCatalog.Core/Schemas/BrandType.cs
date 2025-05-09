@@ -1,74 +1,73 @@
-using System.Collections.Generic;
-using GraphQL;
-using GraphQL.Builders;
+using System.Linq;
 using GraphQL.Types;
+using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Extensions;
-using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.XCatalog.Core.Queries;
-using static VirtoCommerce.Xapi.Core.ModuleConstants;
+using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class Brand : Entity
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Image { get; set; }
-        public string Permalink { get; set; }
-        public bool Featured { get; set; }
-    }
-
-    public class SearchBrandResponse : GenericSearchResult<Brand>
-    {
-    }
-
-    public class BrandType : ObjectGraphType<Brand>
+    public class BrandType : ExtendableGraphType<BrandAggregate>
     {
         public BrandType()
         {
             Field(x => x.Id, nullable: false).Description("Brand ID.");
             Field(x => x.Name, true).Description("Brand name.");
             Field(x => x.Image, true).Description("Brand logo URL.");
-            Field(x => x.Description, true).Description("Brand description.");
-            Field(x => x.Featured, true).Description("Brand.");
-        }
-    }
+            Field(x => x.BrandPropertyName, true).Description("Brand property name.");
 
-    public class SearchBrandQuery : CatalogQueryBase<SearchBrandResponse>, ISearchQuery
-    {
-        public string Sort { get; set; }
-        public int Skip { get; set; }
-        public int Take { get; set; }
-        public string Keyword { get => Query; set => Query = value; }
-        public string Query { get; set; }
-        public string Filter { get; set; }
+            Field<BooleanGraphType>("featured")
+                .Description("Indicates if the brand is featured.")
+                .Resolve(context =>
+                {
+                    var featured = context.Source.Properties
+                        ?.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Featured"))
+                        ?.Values
+                        ?.FirstOrDefault(x => x.Value != null)
+                        ?.Value;
 
-        public override IEnumerable<QueryArgument> GetArguments()
-        {
-            yield return Argument<NonNullGraphType<StringGraphType>>(nameof(StoreId));
-            yield return Argument<StringGraphType>(nameof(UserId));
-            yield return Argument<StringGraphType>(nameof(CurrencyCode));
-            yield return Argument<StringGraphType>(nameof(CultureName));
+                    return featured ?? false;
+                });
 
-            yield return Argument<StringGraphType>(nameof(Sort));
-            yield return Argument<StringGraphType>(nameof(Query), "The query parameter performs the full-text search");
-            yield return Argument<StringGraphType>(nameof(Filter), "This parameter applies a filter to the query results");
-        }
+            Field<StringGraphType>("description")
+                .Arguments(new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }))
+                .Resolve(context =>
+                {
+                    var descriptions = context.Source.Descriptions;
+                    var type = context.GetArgumentOrValue<string>("type");
+                    var cultureName = context.GetArgumentOrValue<string>("cultureName");
 
-        public override void Map(IResolveFieldContext context)
-        {
-            base.Map(context);
+                    if (!descriptions.IsNullOrEmpty())
+                    {
+                        var result = descriptions.Where(x => x.DescriptionType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
+                            ?? descriptions.FirstBestMatchForLanguage(cultureName) as CategoryDescription;
 
-            Query = context.GetArgument<string>(nameof(Query));
-            Filter = context.GetArgument<string>(nameof(Filter));
-            Sort = context.GetArgument<string>(nameof(Sort));
+                        return result.Content;
+                    }
 
-            if (context is IResolveConnectionContext connectionContext)
+                    return null;
+                });
+
+            ExtendableField<NonNullGraphType<StringGraphType>>("permalink", resolve: context =>
             {
-                Skip = int.TryParse(connectionContext.After, out var skip) ? skip : 0;
-                Take = connectionContext.First ?? connectionContext.PageSize ?? Connections.DefaultPageSize;
-            }
+                var source = context.Source;
+                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+
+                SeoInfo seoInfo = null;
+
+                if (!source.SeoInfos.IsNullOrEmpty())
+                {
+                    var store = source.Store;
+                    seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+                }
+
+                var result = seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
+
+                return $"{source.Catalog.Name}/{result.SemanticUrl}";
+            }, description: "Request related SEO info");
         }
     }
 }

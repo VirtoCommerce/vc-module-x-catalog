@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using GraphQL;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,16 +10,16 @@ using VirtoCommerce.XCatalog.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
-public class SearchBrandsQueryBuilder : SearchQueryBuilder<SearchBrandQuery, SearchBrandResponse, BrandAggregate, BrandType>
+public class GetBrandQueryBuilder : QueryBuilder<GetBrandQuery, BrandAggregate, BrandType>
 {
-    public SearchBrandsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
+    protected override string Name => "brand";
+
+    public GetBrandQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
         : base(mediator, authorizationService)
     {
     }
 
-    protected override string Name => "brands";
-
-    protected override Task BeforeMediatorSend(IResolveFieldContext<object> context, SearchBrandQuery request)
+    protected override Task BeforeMediatorSend(IResolveFieldContext<object> context, GetBrandQuery request)
     {
         context.CopyArgumentsToUserContext();
         return base.BeforeMediatorSend(context, request);
