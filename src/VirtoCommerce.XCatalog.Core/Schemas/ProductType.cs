@@ -347,13 +347,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<OutlineType>>>>("outlines", "Outlines", resolve: context => context.Source.IndexedProduct.Outlines ?? Array.Empty<Outline>());
 
-            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>("breadcrumbs", "Breadcrumbs", resolve: context =>
-            {
-                var store = context.GetArgumentOrValue<Store>("store");
-                var cultureName = context.GetValue<string>("cultureName");
-
-                return context.Source.IndexedProduct.Outlines.GetBreadcrumbsFromOutLine(store, cultureName);
-            });
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>(
+                "breadcrumbs",
+                "Breadcrumbs",
+                resolve: context => context.Source.IndexedProduct.Outlines.GetBreadcrumbs(context));
 
             ExtendableField<VendorType>("vendor",
                 "Product vendor",
@@ -368,6 +365,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.InWishlist, nullable: false).Description("Product added at least in one wishlist");
 
             Field(x => x.WishlistIds, nullable: false).Description("List of wishlist ID with this product");
+
+            Field(x => x.IsPurchased, nullable: false).Description("Product was purchased");
 
             Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
