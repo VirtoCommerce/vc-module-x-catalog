@@ -120,7 +120,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
         public virtual void ApplyRewards(CatalogItemAmountReward[] allRewards)
         {
-            var productRewards = allRewards?.Where(r => r.ProductId.IsNullOrEmpty() || r.ProductId.EqualsInvariant(Id));
+            var productRewards = allRewards?.Where(r => r.ProductId.IsNullOrEmpty() || r.ProductId.EqualsIgnoreCase(Id));
             if (productRewards == null)
             {
                 return;

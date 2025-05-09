@@ -34,7 +34,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             {
                 var userGroups = new List<string> { "__any" };
 
-                if (!string.IsNullOrEmpty(parameter?.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsInvariant(parameter.UserId))
+                if (!string.IsNullOrEmpty(parameter?.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsIgnoreCase(parameter.UserId))
                 {
                     var member = await _memberResolver.ResolveMemberByIdAsync(parameter.UserId);
 

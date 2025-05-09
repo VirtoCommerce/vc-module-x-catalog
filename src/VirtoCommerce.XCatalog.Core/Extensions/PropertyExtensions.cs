@@ -23,7 +23,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                         ? property.Values
                             .GroupBy(propertyValue => propertyValue.Alias)
                             .Select(aliasGroup
-                                => aliasGroup.FirstOrDefault(propertyValue => propertyValue.LanguageCode.EqualsInvariant(cultureName))
+                                => aliasGroup.FirstOrDefault(propertyValue => propertyValue.LanguageCode.EqualsIgnoreCase(cultureName))
                                 // If localization not found build default value
                                 ?? aliasGroup.Select(propertyValue =>
                                 {
@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                                     return clonedValue;
                                 }).First()
                             )
-                        : property.Values.Where(x => x.LanguageCode.EqualsInvariant(cultureName) || x.LanguageCode.IsNullOrEmpty());
+                        : property.Values.Where(x => x.LanguageCode.EqualsIgnoreCase(cultureName) || x.LanguageCode.IsNullOrEmpty());
 
                     // wrap each PropertyValue into a Property
                     return propertyValues
@@ -71,10 +71,10 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             }
 
             properties = properties
-                .Where(x => !x.Attributes.IsNullOrEmpty() && x.Attributes.Any(a => a.Name.EqualsInvariant(ModuleConstants.KeyProperty)))
+                .Where(x => !x.Attributes.IsNullOrEmpty() && x.Attributes.Any(a => a.Name.EqualsIgnoreCase(ModuleConstants.KeyProperty)))
                 .OrderBy(x =>
                 {
-                    var keyPropertyAttr = x.Attributes?.FirstOrDefault(x => x.Name.EqualsInvariant(ModuleConstants.KeyProperty));
+                    var keyPropertyAttr = x.Attributes?.FirstOrDefault(x => x.Name.EqualsIgnoreCase(ModuleConstants.KeyProperty));
                     return keyPropertyAttr?.Value.TryParse(int.MaxValue);
                 });
 

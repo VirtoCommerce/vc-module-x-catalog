@@ -21,7 +21,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
             foreach (var childFilter in searchRequest.GetChildFilters())
             {
-                var aggregationItems = aggregations.Where(x => x.Field.EqualsInvariant(childFilter.GetFieldName()))
+                var aggregationItems = aggregations.Where(x => x.Field.EqualsIgnoreCase(childFilter.GetFieldName()))
                     .SelectMany(x => x.Items)
                     .ToArray();
 
@@ -62,12 +62,12 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 {
                     case TermFilter termFilter:
                         // For term filters: just check result value in filter values
-                        aggregationItem.IsApplied = termFilter.Values.Any(x => x.EqualsInvariant(aggregationItem.Value?.ToString()));
+                        aggregationItem.IsApplied = termFilter.Values.Any(x => x.EqualsIgnoreCase(aggregationItem.Value?.ToString()));
                         break;
                     case RangeFilter rangeFilter:
                         // For range filters check the values have the same bounds
                         aggregationItem.IsApplied = rangeFilter.Values.Any(x =>
-                            x.Lower.EqualsInvariant(aggregationItem.RequestedLowerBound) && x.Upper.EqualsInvariant(aggregationItem.RequestedUpperBound));
+                            x.Lower.EqualsIgnoreCase(aggregationItem.RequestedLowerBound) && x.Upper.EqualsIgnoreCase(aggregationItem.RequestedUpperBound));
                         break;
                     default:
                         break;

@@ -231,7 +231,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                     }
 
                 case RangeFilter rangeFilter:
-                    if (rangeFilter.FieldName.EqualsInvariant("price"))
+                    if (rangeFilter.FieldName.EqualsIgnoreCase("price"))
                     {
                         rangeFilter.FieldName = $"price_{CurrencyCode}".ToLowerInvariant();
                     }

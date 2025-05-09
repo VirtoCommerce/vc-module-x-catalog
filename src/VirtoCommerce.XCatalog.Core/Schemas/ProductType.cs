@@ -168,11 +168,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     var type = context.GetArgumentOrValue<string>("type");
                     if (cultureName != null)
                     {
-                        reviews = reviews.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsInvariant(cultureName)).ToList();
+                        reviews = reviews.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsIgnoreCase(cultureName)).ToList();
                     }
                     if (type != null)
                     {
-                        reviews = reviews.Where(x => x.ReviewType?.EqualsInvariant(type) ?? true).ToList();
+                        reviews = reviews.Where(x => x.ReviewType?.EqualsIgnoreCase(type) ?? true).ToList();
                     }
                     return reviews;
                 });
@@ -187,7 +187,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 if (!reviews.IsNullOrEmpty())
                 {
-                    return reviews.Where(x => x.ReviewType.EqualsInvariant(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as EditorialReview
+                    return reviews.Where(x => x.ReviewType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as EditorialReview
                         ?? reviews.FirstBestMatchForLanguage(cultureName) as EditorialReview;
                 }
 
@@ -228,7 +228,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Resolve(context =>
                 {
                     var brandName = context.Source.IndexedProduct.Properties
-                        ?.FirstOrDefault(x => x.Name.EqualsInvariant("Brand"))
+                        ?.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Brand"))
                         ?.Values
                         ?.FirstOrDefault(x => x.Value != null)
                         ?.Value;
@@ -280,7 +280,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return context.GetValue<string>("cultureName") switch
                     {
                         // Get images with null or current cultureName value if cultureName is passed
-                        string languageCode => images.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsInvariant(languageCode)).ToList(),
+                        string languageCode => images.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsIgnoreCase(languageCode)).ToList(),
 
                         // CultureName is null
                         _ => images
@@ -338,7 +338,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return context.GetValue<string>("cultureName") switch
                     {
                         // Get assets with null or current cultureName value if cultureName is passed
-                        string languageCode => assets.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsInvariant(languageCode)).ToList(),
+                        string languageCode => assets.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsIgnoreCase(languageCode)).ToList(),
 
                         // CultureName is null
                         _ => assets

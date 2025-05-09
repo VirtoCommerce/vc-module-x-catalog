@@ -40,7 +40,7 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 }
                 var currency = currencyObj as Currency;
 
-                var productPrice = src.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsInvariant(currency.Code));
+                var productPrice = src.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsIgnoreCase(currency.Code));
 
                 result.CatalogId = src.IndexedProduct.CatalogId;
                 result.CategoryId = src.IndexedProduct.CategoryId;
