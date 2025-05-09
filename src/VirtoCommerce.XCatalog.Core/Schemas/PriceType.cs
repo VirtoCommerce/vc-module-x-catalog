@@ -50,6 +50,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Resolve(context => context.Source.Discounts);
 
             Field(d => d.PricelistId, nullable: true).Description("The product price list");
+            Field(d => d.PricelistName, nullable: true).Description("The product price list name");
             Field(d => d.MinQuantity, nullable: true).Description("The product min qty");
         }
     }
