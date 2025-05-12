@@ -60,7 +60,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
             return result;
         }
 
-        var brandPropertyName = brandStoreSettings.BrandPropertyId ?? DefaultBrandPropertyName;
+        var brandPropertyName = brandStoreSettings.BrandPropertyName ?? DefaultBrandPropertyName;
 
         var store = await GetStoreAsync(request.StoreId);
 

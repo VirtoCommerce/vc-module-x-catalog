@@ -43,7 +43,7 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
             return null;
         }
 
-        var brandPropertyName = brandStoreSettings.BrandPropertyId ?? DefaultBrandPropertyName;
+        var brandPropertyName = brandStoreSettings.BrandPropertyName ?? DefaultBrandPropertyName;
 
         var store = await GetStoreAsync(request.StoreId);
         var brandsCatalog = await GetBrandsCatalog(brandStoreSettings.BrandCatalogId);
