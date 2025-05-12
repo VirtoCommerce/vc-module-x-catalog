@@ -4,5 +4,11 @@
     "XCatalog:read": "View xCatalog related data",
     "XCatalog:update": "Update xCatalog related data",
     "XCatalog:delete": "Delete xCatalog related data"
+  },
+  "settings": {
+    "XCatalog.BrandsEnabled": {
+      "title": "Enable Brands",
+      "description": ""
+    }
   }
 }
