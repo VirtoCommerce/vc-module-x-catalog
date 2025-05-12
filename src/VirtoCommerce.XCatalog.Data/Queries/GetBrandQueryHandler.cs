@@ -19,18 +19,15 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
     private readonly ICategoryService _categoryService;
     private readonly IStoreService _storeService;
     private readonly ICatalogService _catalogService;
-    private readonly IMediator _mediator;
 
     public GetBrandQueryHandler(
                IBrandStoreSettingSearchService brandStoreSettingSearchService,
                ICategoryService categoryService,
-               IMediator mediator,
                IStoreService storeService,
                ICatalogService catalogService)
     {
         _brandStoreSettingSearchService = brandStoreSettingSearchService;
         _categoryService = categoryService;
-        _mediator = mediator;
         _storeService = storeService;
         _catalogService = catalogService;
     }

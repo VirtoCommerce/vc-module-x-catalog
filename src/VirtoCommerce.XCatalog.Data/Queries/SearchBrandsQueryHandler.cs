@@ -69,7 +69,6 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
 
         // get categories 
         var brandCategories = await GetBrandCategories(brandStoreSettings.BrandCatalogId);
-        //var brandsCatalog = await GetBrandsCatalog(brandStoreSettings.BrandCatalogId);
         var brandsCatalog = brandCategories.FirstOrDefault().Catalog;
 
         // compare the two
@@ -187,7 +186,6 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         productsRequest.CultureName = request?.CultureName;
         productsRequest.CurrencyCode = request?.CurrencyCode;
         productsRequest.UserId = request?.UserId ?? ModuleConstants.AnonymousUser.UserName;
-        //productsRequest.Filter = request?.Filter;
         productsRequest.Take = 0;
         productsRequest.Facet = brandPropertyName;
         productsRequest.IncludeFields =

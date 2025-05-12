@@ -7,8 +7,9 @@ namespace VirtoCommerce.XCatalog.Core
     {
         public const string KeyProperty = "KeyProperty";
 
-        public const string BrandSeoType = "Brand";
         public const string DefaultBrandPropertyName = "Brand";
+        public const string BrandSeoType = "Brand";
+        public const string BrandsSeoType = "Brands";
 
         public static class Settings
         {
