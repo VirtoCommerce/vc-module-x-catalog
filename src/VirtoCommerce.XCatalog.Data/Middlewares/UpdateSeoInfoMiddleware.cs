@@ -29,12 +29,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public virtual async Task Run(PipelineSeoInfoRequest parameter, Func<PipelineSeoInfoRequest, Task> next)
         {
-            var permalink = parameter.SeoSearchCriteria?.Permalink.TrimStart('/');
-            var slug = parameter.SeoSearchCriteria?.Slug.TrimStart('/');
+            var permalink = parameter.SeoSearchCriteria?.Permalink.TrimStart('/') ?? string.Empty;
 
-            if (slug.EqualsIgnoreCase("brands"))
+            // return Brands seo immediately if slug is "brands"
+            if (permalink.EqualsIgnoreCase("brands"))
             {
-                parameter.SeoInfo = CreateSeoInfo(BrandsSeoType, parameter.SeoSearchCriteria.Slug);
+                parameter.SeoInfo = CreateSeoInfo(BrandsSeoType, parameter.SeoSearchCriteria, null);
                 await next(parameter);
                 return;
             }
@@ -44,34 +44,38 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 var brandStoreSettings = await GetBrandStoreSetting(parameter.SeoSearchCriteria.StoreId);
                 if (brandStoreSettings != null)
                 {
-                    var catalog = await _catalogService.GetNoCloneAsync(brandStoreSettings.BrandCatalogId);
-
-                    if (IsBrandCatalogQuery(catalog, permalink, slug))
-                    {
-                        if (parameter.SeoInfo?.ObjectType == nameof(Category))
-                        {
-                            var category = await _categoryService.GetNoCloneAsync(parameter.SeoInfo.ObjectId);
-                            if (category.CatalogId == brandStoreSettings.BrandCatalogId)
-                            {
-                                parameter.SeoInfo.ObjectType = BrandSeoType;
-                                await next(parameter);
-                                return;
-                            }
-                        }
-
-                        parameter.SeoInfo = CreateSeoInfo(BrandSeoType, parameter.SeoSearchCriteria.Slug);
-                    }
+                    parameter.SeoInfo = await GetSeoInfoAsync(brandStoreSettings, parameter, permalink);
                 }
             }
 
             await next(parameter);
         }
 
-        private static bool IsBrandCatalogQuery(Catalog catalog, string permalink, string slug)
+        private async Task<SeoInfo> GetSeoInfoAsync(BrandStoreSetting brandStoreSettings, PipelineSeoInfoRequest parameter, string permalink)
         {
-            return catalog != null &&
-                    (permalink?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true ||
-                        slug?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true);
+            var seoInfo = parameter.SeoInfo;
+
+            var catalog = await _catalogService.GetNoCloneAsync(brandStoreSettings.BrandCatalogId);
+            if (!IsBrandCatalogQuery(catalog, permalink))
+            {
+                return seoInfo;
+            }
+
+            var isExistingBrandSeo = false;
+            if (seoInfo != null)
+            {
+                var category = await _categoryService.GetNoCloneAsync(parameter.SeoInfo.ObjectId);
+                isExistingBrandSeo = category.CatalogId == brandStoreSettings.BrandCatalogId;
+            }
+
+            seoInfo = CreateSeoInfo(BrandSeoType, parameter.SeoSearchCriteria, isExistingBrandSeo ? seoInfo : null);
+            return seoInfo;
+        }
+
+        private static bool IsBrandCatalogQuery(Catalog catalog, string permalink)
+        {
+            var segments = permalink.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            return catalog != null && segments.First().EqualsIgnoreCase(catalog.Name);
         }
 
         protected virtual async Task<BrandStoreSetting> GetBrandStoreSetting(string storeId)
@@ -84,14 +88,23 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return brandStoreSetting.Results.FirstOrDefault();
         }
 
-        protected virtual SeoInfo CreateSeoInfo(string seoType, string slug)
+        protected virtual SeoInfo CreateSeoInfo(string seoType, SeoSearchCriteria criteria, SeoInfo existingBrandSeo)
         {
             var seoInfo = AbstractTypeFactory<SeoInfo>.TryCreateInstance();
-            seoInfo.ObjectType = BrandSeoType;
-            seoInfo.Id = slug;
-            seoInfo.SemanticUrl = slug;
-            seoInfo.ObjectId = slug;
 
+            if (existingBrandSeo != null)
+            {
+                seoInfo = existingBrandSeo.CloneTyped();
+            }
+            else
+            {
+                seoInfo.Id = criteria.Slug;
+                seoInfo.SemanticUrl = criteria.Slug;
+                seoInfo.ObjectId = criteria.Slug;
+                seoInfo.LanguageCode = criteria.LanguageCode;
+            }
+
+            seoInfo.ObjectType = seoType;
             return seoInfo;
         }
     }
