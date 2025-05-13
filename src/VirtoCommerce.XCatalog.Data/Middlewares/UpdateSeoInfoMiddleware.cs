@@ -44,14 +44,14 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 var brandStoreSettings = await GetBrandStoreSetting(parameter.SeoSearchCriteria.StoreId);
                 if (brandStoreSettings != null)
                 {
-                    parameter.SeoInfo = await GetSeoInfoAsync(brandStoreSettings, parameter, permalink);
+                    parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);
                 }
             }
 
             await next(parameter);
         }
 
-        private async Task<SeoInfo> GetSeoInfoAsync(BrandStoreSetting brandStoreSettings, PipelineSeoInfoRequest parameter, string permalink)
+        private async Task<SeoInfo> CreateBrandSeoInfoAsync(BrandStoreSetting brandStoreSettings, PipelineSeoInfoRequest parameter, string permalink)
         {
             var seoInfo = parameter.SeoInfo;
 
