@@ -69,7 +69,8 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
 
         // get categories 
         var brandCategories = await GetBrandCategories(brandStoreSettings.BrandCatalogId);
-        var brandsCatalog = brandCategories.FirstOrDefault().Catalog;
+
+        var brandsCatalog = brandCategories.FirstOrDefault()?.Catalog;
 
         // compare the two
         var brands = CreateBrandsByCategories(brandNames, brandCategories, brandsCatalog, store, brandPropertyName, request.CultureName);
@@ -131,7 +132,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         IList<Category> result = new List<Category>();
 
         var treeNodes = await _categoryTreeService.GetNodesWithChildren(brandCatalogId, new List<string> { null }, false);
-        var firstLevelCategoryIds = treeNodes.FirstOrDefault().ChildIds;
+        var firstLevelCategoryIds = treeNodes?.FirstOrDefault()?.ChildIds ?? [];
         if (firstLevelCategoryIds.Count > 0)
         {
             result = await _categoryService.GetNoCloneAsync(firstLevelCategoryIds, _defaultResponseGroup.ToString());
@@ -200,9 +201,13 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         var productsResult = await _mediator.Send(productsRequest);
 
         var facet = productsResult.Facets.OfType<TermFacetResult>().FirstOrDefault(x => x.Name.EqualsIgnoreCase(brandPropertyName));
-        foreach (var term in facet.Terms)
+
+        if (facet != null)
         {
-            result.Add(term.Term);
+            foreach (var term in facet.Terms)
+            {
+                result.Add(term.Term);
+            }
         }
 
         return result;
