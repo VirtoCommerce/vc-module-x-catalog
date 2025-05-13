@@ -34,12 +34,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (slug.EqualsIgnoreCase("brands"))
             {
-                parameter.SeoInfo = AbstractTypeFactory<SeoInfo>.TryCreateInstance();
-                parameter.SeoInfo.ObjectType = BrandsSeoType;
-                parameter.SeoInfo.Id = parameter.SeoSearchCriteria.Slug;
-                parameter.SeoInfo.SemanticUrl = parameter.SeoSearchCriteria.Slug;
-                parameter.SeoInfo.ObjectId = parameter.SeoSearchCriteria.Slug;
-
+                parameter.SeoInfo = CreateSeoInfo(BrandsSeoType, parameter.SeoSearchCriteria.Slug);
                 await next(parameter);
                 return;
             }
@@ -51,9 +46,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 {
                     var catalog = await _catalogService.GetNoCloneAsync(brandStoreSettings.BrandCatalogId);
 
-                    if (catalog != null &&
-                        (permalink?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true ||
-                         slug?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true))
+                    if (IsBrandCatalogQuery(catalog, permalink, slug))
                     {
                         if (parameter.SeoInfo?.ObjectType == nameof(Category))
                         {
@@ -66,16 +59,19 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                             }
                         }
 
-                        parameter.SeoInfo = AbstractTypeFactory<SeoInfo>.TryCreateInstance();
-                        parameter.SeoInfo.ObjectType = BrandSeoType;
-                        parameter.SeoInfo.Id = parameter.SeoSearchCriteria.Slug;
-                        parameter.SeoInfo.SemanticUrl = parameter.SeoSearchCriteria.Slug;
-                        parameter.SeoInfo.ObjectId = parameter.SeoSearchCriteria.Slug;
+                        parameter.SeoInfo = CreateSeoInfo(BrandSeoType, parameter.SeoSearchCriteria.Slug);
                     }
                 }
             }
 
             await next(parameter);
+        }
+
+        private static bool IsBrandCatalogQuery(Catalog catalog, string permalink, string slug)
+        {
+            return catalog != null &&
+                    (permalink?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true ||
+                        slug?.StartsWith(catalog.Name, StringComparison.OrdinalIgnoreCase) == true);
         }
 
         protected virtual async Task<BrandStoreSetting> GetBrandStoreSetting(string storeId)
@@ -86,6 +82,17 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             var brandStoreSetting = await _brandStoreSettingSearchService.SearchAsync(criteria);
             return brandStoreSetting.Results.FirstOrDefault();
+        }
+
+        protected virtual SeoInfo CreateSeoInfo(string seoType, string slug)
+        {
+            var seoInfo = AbstractTypeFactory<SeoInfo>.TryCreateInstance();
+            seoInfo.ObjectType = BrandSeoType;
+            seoInfo.Id = slug;
+            seoInfo.SemanticUrl = slug;
+            seoInfo.ObjectId = slug;
+
+            return seoInfo;
         }
     }
 }
