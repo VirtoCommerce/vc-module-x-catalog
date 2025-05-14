@@ -70,13 +70,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             ExtendableField<StringGraphType>("bannerUrl", resolve: context =>
             {
-                var result = context.Source.Images.FirstOrDefault(x => x.TypeId.EqualsIgnoreCase("Banner"))?.Url;
+                var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Banner"))?.Url;
                 return result;
             });
 
             ExtendableField<StringGraphType>("logoUrl", resolve: context =>
             {
-                var result = context.Source.Images.FirstOrDefault(x => x.TypeId.EqualsIgnoreCase("Logo"))?.Url;
+                var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Logo"))?.Url;
                 return result;
             });
         }
