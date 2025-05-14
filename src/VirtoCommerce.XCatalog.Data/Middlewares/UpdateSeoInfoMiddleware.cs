@@ -43,7 +43,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             if (parameter.SeoInfo == null || parameter.SeoInfo?.ObjectType == nameof(Category))
             {
                 var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
-                if (brandStoreSettings != null || brandStoreSettings.BrandCatalogId == null)
+                if (brandStoreSettings != null && brandStoreSettings.BrandCatalogId != null)
                 {
                     parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);
                 }

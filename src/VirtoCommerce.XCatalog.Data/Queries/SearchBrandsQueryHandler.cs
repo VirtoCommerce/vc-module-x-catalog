@@ -23,7 +23,6 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
     private readonly ICategoryService _categoryService;
     private readonly ICategoryTreeService _categoryTreeService;
     private readonly IStoreService _storeService;
-    private readonly ICatalogService _catalogService;
     private readonly IMediator _mediator;
 
     private readonly CategoryResponseGroup _defaultResponseGroup =
@@ -38,15 +37,13 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         ICategoryService categoryService,
         ICategoryTreeService categoryTreeService,
         IMediator mediator,
-        IStoreService storeService,
-        ICatalogService catalogService)
+        IStoreService storeService)
     {
         _brandStoreSettingService = brandStoreSettingService;
         _categoryService = categoryService;
         _categoryTreeService = categoryTreeService;
         _mediator = mediator;
         _storeService = storeService;
-        _catalogService = catalogService;
     }
 
     public virtual async Task<SearchBrandResponse> Handle(SearchBrandQuery request, CancellationToken cancellationToken)
