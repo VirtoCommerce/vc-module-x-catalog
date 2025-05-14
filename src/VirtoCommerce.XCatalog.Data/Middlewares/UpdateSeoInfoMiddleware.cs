@@ -13,17 +13,18 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class UpdateSeoInfoMiddleware : IAsyncMiddleware<PipelineSeoInfoRequest>
     {
+        private readonly IBrandStoreSettingService _brandStoreSettingService;
         private readonly ICategoryService _categoryService;
         private readonly ICatalogService _catalogService;
-        private readonly IBrandStoreSettingSearchService _brandStoreSettingSearchService;
+
 
         public UpdateSeoInfoMiddleware(
+            IBrandStoreSettingService brandStoreSettingService,
             ICategoryService categoryService,
-            IBrandStoreSettingSearchService brandStoreSettingSearchService,
             ICatalogService catalogService)
         {
+            _brandStoreSettingService = brandStoreSettingService;
             _categoryService = categoryService;
-            _brandStoreSettingSearchService = brandStoreSettingSearchService;
             _catalogService = catalogService;
         }
 
@@ -41,8 +42,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (parameter.SeoInfo == null || parameter.SeoInfo?.ObjectType == nameof(Category))
             {
-                var brandStoreSettings = await GetBrandStoreSetting(parameter.SeoSearchCriteria.StoreId);
-                if (brandStoreSettings != null)
+                var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
+                if (brandStoreSettings != null || brandStoreSettings.BrandCatalogId == null)
                 {
                     parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);
                 }
@@ -76,16 +77,6 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         {
             var segments = permalink.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             return catalog != null && segments.First().EqualsIgnoreCase(catalog.Name);
-        }
-
-        protected virtual async Task<BrandStoreSetting> GetBrandStoreSetting(string storeId)
-        {
-            var criteria = AbstractTypeFactory<BrandStoreSettingSearchCriteria>.TryCreateInstance();
-            criteria.StoreId = storeId;
-            criteria.Take = 1;
-
-            var brandStoreSetting = await _brandStoreSettingSearchService.SearchAsync(criteria);
-            return brandStoreSetting.Results.FirstOrDefault();
         }
 
         protected virtual SeoInfo CreateSeoInfo(string seoType, SeoSearchCriteria criteria, SeoInfo existingBrandSeo)

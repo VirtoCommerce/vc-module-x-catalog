@@ -1,11 +1,8 @@
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -15,18 +12,18 @@ namespace VirtoCommerce.XCatalog.Data.Queries;
 
 public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregate>
 {
-    private readonly IBrandStoreSettingSearchService _brandStoreSettingSearchService;
+    private readonly IBrandStoreSettingService _brandStoreSettingService;
     private readonly ICategoryService _categoryService;
     private readonly IStoreService _storeService;
     private readonly ICatalogService _catalogService;
 
     public GetBrandQueryHandler(
-               IBrandStoreSettingSearchService brandStoreSettingSearchService,
+               IBrandStoreSettingService brandStoreSettingService,
                ICategoryService categoryService,
                IStoreService storeService,
                ICatalogService catalogService)
     {
-        _brandStoreSettingSearchService = brandStoreSettingSearchService;
+        _brandStoreSettingService = brandStoreSettingService;
         _categoryService = categoryService;
         _storeService = storeService;
         _catalogService = catalogService;
@@ -34,16 +31,16 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
 
     public async Task<BrandAggregate> Handle(GetBrandQuery request, CancellationToken cancellationToken)
     {
-        var brandStoreSettings = await GetBrandStoreSetting(request.StoreId);
-        if (brandStoreSettings == null)
+        var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(request.StoreId);
+        if (brandStoreSettings == null || brandStoreSettings.BrandCatalogId == null)
         {
             return null;
         }
 
         var brandPropertyName = brandStoreSettings.BrandPropertyName ?? DefaultBrandPropertyName;
 
-        var store = await GetStoreAsync(request.StoreId);
-        var brandsCatalog = await GetBrandsCatalog(brandStoreSettings.BrandCatalogId);
+        var store = await _storeService.GetNoCloneAsync(request.StoreId);
+        var brandsCatalog = await _catalogService.GetNoCloneAsync(brandStoreSettings.BrandCatalogId);
 
         var brand = new BrandAggregate
         {
@@ -71,25 +68,5 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
         }
 
         return brand;
-    }
-
-    protected virtual async Task<BrandStoreSetting> GetBrandStoreSetting(string storeId)
-    {
-        var criteria = AbstractTypeFactory<BrandStoreSettingSearchCriteria>.TryCreateInstance();
-        criteria.StoreId = storeId;
-        criteria.Take = 1;
-
-        var brandStoreSetting = await _brandStoreSettingSearchService.SearchAsync(criteria);
-        return brandStoreSetting.Results.FirstOrDefault();
-    }
-
-    protected virtual async Task<Store> GetStoreAsync(string storeId)
-    {
-        return await _storeService.GetNoCloneAsync(storeId);
-    }
-
-    protected virtual async Task<Catalog> GetBrandsCatalog(string brandCatalogId)
-    {
-        return await _catalogService.GetNoCloneAsync(brandCatalogId);
     }
 }
