@@ -19,7 +19,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries;
 
 public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, SearchBrandResponse>
 {
-    private readonly IBrandStoreSettingService _brandStoreSettingService;
+    private readonly IBrandSettingService _brandSettingService;
     private readonly ICategoryService _categoryService;
     private readonly ICategoryTreeService _categoryTreeService;
     private readonly IStoreService _storeService;
@@ -33,13 +33,13 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         CategoryResponseGroup.WithDescriptions;
 
     public SearchBrandsQueryHandler(
-        IBrandStoreSettingService brandStoreSettingService,
+        IBrandSettingService brandSettingService,
         ICategoryService categoryService,
         ICategoryTreeService categoryTreeService,
         IMediator mediator,
         IStoreService storeService)
     {
-        _brandStoreSettingService = brandStoreSettingService;
+        _brandSettingService = brandSettingService;
         _categoryService = categoryService;
         _categoryTreeService = categoryTreeService;
         _mediator = mediator;
@@ -51,7 +51,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         var result = new SearchBrandResponse();
 
         // get brands settings (catalog and property)
-        var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(request.StoreId);
+        var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(request.StoreId);
         if (brandStoreSettings == null || brandStoreSettings.BrandCatalogId == null)
         {
             return null;

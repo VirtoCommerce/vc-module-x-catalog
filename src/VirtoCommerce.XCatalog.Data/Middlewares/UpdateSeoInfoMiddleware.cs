@@ -13,17 +13,17 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class UpdateSeoInfoMiddleware : IAsyncMiddleware<PipelineSeoInfoRequest>
     {
-        private readonly IBrandStoreSettingService _brandStoreSettingService;
+        private readonly IBrandSettingService _brandSettingService;
         private readonly ICategoryService _categoryService;
         private readonly ICatalogService _catalogService;
 
 
         public UpdateSeoInfoMiddleware(
-            IBrandStoreSettingService brandStoreSettingService,
+            IBrandSettingService brandSettingService,
             ICategoryService categoryService,
             ICatalogService catalogService)
         {
-            _brandStoreSettingService = brandStoreSettingService;
+            _brandSettingService = brandSettingService;
             _categoryService = categoryService;
             _catalogService = catalogService;
         }
@@ -42,7 +42,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (parameter.SeoInfo == null || parameter.SeoInfo?.ObjectType == nameof(Category))
             {
-                var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
+                var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
                 if (brandStoreSettings != null && brandStoreSettings.BrandCatalogId != null)
                 {
                     parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);

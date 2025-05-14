@@ -12,18 +12,18 @@ namespace VirtoCommerce.XCatalog.Data.Queries;
 
 public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregate>
 {
-    private readonly IBrandStoreSettingService _brandStoreSettingService;
+    private readonly IBrandSettingService _brandSettingService;
     private readonly ICategoryService _categoryService;
     private readonly IStoreService _storeService;
     private readonly ICatalogService _catalogService;
 
     public GetBrandQueryHandler(
-               IBrandStoreSettingService brandStoreSettingService,
+               IBrandSettingService brandSettingService,
                ICategoryService categoryService,
                IStoreService storeService,
                ICatalogService catalogService)
     {
-        _brandStoreSettingService = brandStoreSettingService;
+        _brandSettingService = brandSettingService;
         _categoryService = categoryService;
         _storeService = storeService;
         _catalogService = catalogService;
@@ -31,7 +31,7 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
 
     public async Task<BrandAggregate> Handle(GetBrandQuery request, CancellationToken cancellationToken)
     {
-        var brandStoreSettings = await _brandStoreSettingService.GetByStoreIdAsync(request.StoreId);
+        var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(request.StoreId);
         if (brandStoreSettings == null || brandStoreSettings.BrandCatalogId == null)
         {
             return null;
