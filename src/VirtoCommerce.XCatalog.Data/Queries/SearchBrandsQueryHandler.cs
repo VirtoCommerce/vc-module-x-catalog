@@ -160,14 +160,14 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
             {
                 brand.Id = brandCategory.Id;
                 brand.Name = brandCategory.Name;
-                brand.Descriptions = brandCategory.Descriptions?.ToList();
-                brand.SeoInfos = brandCategory.SeoInfos?.ToList();
-                brand.Properties = brandCategory.Properties?.ToList();
-                brand.Image = brandCategory.Images?.FirstOrDefault()?.Url;
+                brand.Descriptions = brandCategory.Descriptions;
+                brand.SeoInfos = brandCategory.SeoInfos;
+                brand.Properties = brandCategory.Properties;
+                brand.Images = brandCategory.Images;
             }
             else
             {
-                // fallback
+                // fallback brand
                 brand.Id = brandName;
                 brand.Name = brandName;
             }

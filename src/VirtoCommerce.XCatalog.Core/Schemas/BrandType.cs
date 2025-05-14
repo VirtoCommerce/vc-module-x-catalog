@@ -16,7 +16,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
             Field(x => x.Id, nullable: false).Description("Brand ID.");
             Field(x => x.Name, true).Description("Brand name.");
-            Field(x => x.Image, true).Description("Brand logo URL.");
             Field(x => x.BrandPropertyName, true).Description("Brand property name.");
 
             Field<BooleanGraphType>("featured")
@@ -68,6 +67,18 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                 return $"{source.Catalog.Name}/{result.SemanticUrl}";
             }, description: "Request related SEO info");
+
+            ExtendableField<StringGraphType>("bannerUrl", resolve: context =>
+            {
+                var result = context.Source.Images.FirstOrDefault(x => x.TypeId.EqualsIgnoreCase("Banner"))?.Url;
+                return result;
+            });
+
+            ExtendableField<StringGraphType>("logoUrl", resolve: context =>
+            {
+                var result = context.Source.Images.FirstOrDefault(x => x.TypeId.EqualsIgnoreCase("Logo"))?.Url;
+                return result;
+            });
         }
     }
 }

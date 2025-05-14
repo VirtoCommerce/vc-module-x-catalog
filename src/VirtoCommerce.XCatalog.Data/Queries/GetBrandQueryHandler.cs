@@ -61,7 +61,6 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
             brand.Descriptions = brandCategory.Descriptions?.ToList();
             brand.SeoInfos = brandCategory.SeoInfos?.ToList();
             brand.Properties = brandCategory.Properties?.ToList();
-            brand.Image = brandCategory.Images?.FirstOrDefault()?.Url;
         }
         else
         {
