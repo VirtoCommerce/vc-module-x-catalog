@@ -14,6 +14,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
         public Store Store { get; set; }
         public Catalog Catalog { get; set; }
 
+        public LocalizedString LocalizedName { get; set; }
         public IList<Property> Properties { get; set; } = [];
         public IList<CategoryDescription> Descriptions { get; set; } = [];
         public IList<SeoInfo> SeoInfos { get; set; } = [];

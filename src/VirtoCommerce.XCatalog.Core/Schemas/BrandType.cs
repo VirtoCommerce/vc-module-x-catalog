@@ -15,8 +15,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         public BrandType()
         {
             Field(x => x.Id, nullable: false).Description("Brand ID.");
-            Field(x => x.Name, true).Description("Brand name.");
             Field(x => x.BrandPropertyName, true).Description("Brand property name.");
+
+            Field<StringGraphType>("name").Resolve(context =>
+            {
+                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+                var localizedName = context.Source.LocalizedName?.GetValue(cultureName);
+                if (!string.IsNullOrEmpty(localizedName))
+                {
+                    return localizedName;
+                }
+
+                return context.Source.Name;
+            }).Description("Brand name.");
 
             Field<BooleanGraphType>("featured")
                 .Description("Indicates if the brand is featured.")

@@ -137,6 +137,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
             {
                 brand.Id = brandCategory.Id;
                 brand.Name = brandCategory.Name;
+                brand.LocalizedName = brandCategory.LocalizedName;
                 brand.Descriptions = brandCategory.Descriptions;
                 brand.SeoInfos = brandCategory.SeoInfos;
                 brand.Properties = brandCategory.Properties;

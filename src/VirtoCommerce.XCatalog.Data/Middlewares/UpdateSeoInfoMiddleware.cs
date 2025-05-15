@@ -6,8 +6,11 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Settings;
+using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Models;
 using static VirtoCommerce.XCatalog.Core.ModuleConstants;
+using CatalogSettings = VirtoCommerce.CatalogModule.Core.ModuleConstants.Settings.General;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
@@ -16,20 +19,36 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         private readonly IBrandSettingService _brandSettingService;
         private readonly ICategoryService _categoryService;
         private readonly ICatalogService _catalogService;
-
+        private readonly IStoreService _storeService;
 
         public UpdateSeoInfoMiddleware(
             IBrandSettingService brandSettingService,
             ICategoryService categoryService,
-            ICatalogService catalogService)
+            ICatalogService catalogService,
+            IStoreService storeService)
         {
             _brandSettingService = brandSettingService;
             _categoryService = categoryService;
             _catalogService = catalogService;
+            _storeService = storeService;
         }
 
         public virtual async Task Run(PipelineSeoInfoRequest parameter, Func<PipelineSeoInfoRequest, Task> next)
         {
+            var store = await _storeService.GetNoCloneAsync(parameter.SeoSearchCriteria.StoreId);
+            if (store == null)
+            {
+                await next(parameter);
+                return;
+            }
+
+            var brandsEnabled = store.Settings.GetValue<bool>(CatalogSettings.BrandsEnabled);
+            if (!brandsEnabled)
+            {
+                await next(parameter);
+                return;
+            }
+
             var permalink = parameter.SeoSearchCriteria?.Permalink.TrimStart('/') ?? string.Empty;
 
             // return Brands seo immediately if slug is "brands"
