@@ -5,7 +5,6 @@ using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Infrastructure;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
@@ -41,11 +40,6 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
             services.AddPipeline<IndexSearchRequestBuilder>(builder =>
             {
                 builder.AddMiddleware(typeof(EvalSearchRequestUserGroupsMiddleware));
-            });
-
-            services.AddPipeline<PipelineSeoInfoRequest>(builder =>
-            {
-                builder.AddMiddleware(typeof(UpdateSeoInfoMiddleware));
             });
 
             services.AddPipeline<InventorySearchCriteria>();
