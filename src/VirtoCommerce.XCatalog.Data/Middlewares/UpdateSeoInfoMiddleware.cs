@@ -59,13 +59,10 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 return;
             }
 
-            if (parameter.SeoInfo == null || parameter.SeoInfo?.ObjectType == nameof(Category))
+            var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
+            if (brandStoreSettings != null && brandStoreSettings.BrandCatalogId != null)
             {
-                var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(parameter.SeoSearchCriteria.StoreId);
-                if (brandStoreSettings != null && brandStoreSettings.BrandCatalogId != null)
-                {
-                    parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);
-                }
+                parameter.SeoInfo = await CreateBrandSeoInfoAsync(brandStoreSettings, parameter, permalink);
             }
 
             await next(parameter);
@@ -82,7 +79,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             }
 
             var isExistingBrandSeo = false;
-            if (seoInfo != null)
+            if (seoInfo != null && seoInfo.ObjectType == nameof(Category))
             {
                 var category = await _categoryService.GetNoCloneAsync(parameter.SeoInfo.ObjectId);
                 isExistingBrandSeo = category.CatalogId == brandStoreSettings.BrandCatalogId;
