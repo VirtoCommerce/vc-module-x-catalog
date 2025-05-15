@@ -35,19 +35,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Arguments(new QueryArguments(new QueryArgument<StringGraphType> { Name = "type" }))
                 .Resolve(context =>
                 {
+                    if (context.Source.Descriptions.IsNullOrEmpty())
+                    {
+                        return null;
+                    }
+
                     var descriptions = context.Source.Descriptions;
                     var type = context.GetArgumentOrValue<string>("type");
                     var cultureName = context.GetArgumentOrValue<string>("cultureName");
 
-                    if (!descriptions.IsNullOrEmpty())
-                    {
-                        var result = descriptions.Where(x => x.DescriptionType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
+                    var result = descriptions.Where(x => x.DescriptionType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
                             ?? descriptions.FirstBestMatchForLanguage(cultureName) as CategoryDescription;
 
-                        return result.Content;
-                    }
-
-                    return null;
+                    return result?.Content;
                 });
 
             ExtendableField<NonNullGraphType<StringGraphType>>("permalink", resolve: context =>
