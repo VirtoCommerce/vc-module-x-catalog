@@ -15,7 +15,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         public BrandType()
         {
             Field(x => x.Id, nullable: false).Description("Brand ID.");
+
             Field(x => x.BrandPropertyName, true).Description("Brand property name.");
+            Field<StringGraphType>("brandPropertyValue")
+                .Resolve(context => context.Source.Name)
+                .Description("Unlocalized brand name.");
 
             Field<StringGraphType>("name").Resolve(context =>
             {
