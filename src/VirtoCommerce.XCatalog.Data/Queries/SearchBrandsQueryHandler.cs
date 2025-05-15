@@ -54,7 +54,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(request.StoreId);
         if (brandStoreSettings == null || brandStoreSettings.BrandCatalogId == null)
         {
-            return null;
+            return result;
         }
 
         var brandPropertyName = brandStoreSettings.BrandPropertyName ?? DefaultBrandPropertyName;
