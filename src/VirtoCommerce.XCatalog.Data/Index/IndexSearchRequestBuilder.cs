@@ -21,6 +21,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string CurrencyCode { get; private set; }
 
         public IFilter Filter => SearchRequest.Filter;
+        public IList<AggregationRequest> Aggregations => SearchRequest.Aggregations;
 
         private SearchRequest SearchRequest { get; set; }
 
