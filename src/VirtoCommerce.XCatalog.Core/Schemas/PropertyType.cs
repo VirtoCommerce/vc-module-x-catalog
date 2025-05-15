@@ -48,7 +48,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                     var label = cultureName != null
                         ? context.Source.DisplayNames
-                            ?.FirstOrDefault(x => x.LanguageCode.EqualsInvariant(cultureName))
+                            ?.FirstOrDefault(x => x.LanguageCode.EqualsIgnoreCase(cultureName))
                             ?.Name
                         : default;
 
