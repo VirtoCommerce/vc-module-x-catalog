@@ -17,7 +17,7 @@ using static VirtoCommerce.XCatalog.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
-public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, SearchBrandResponse>
+public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchBrandResponse>
 {
     private readonly IBrandSettingService _brandSettingService;
     private readonly ICategoryService _categoryService;
@@ -32,7 +32,7 @@ public class SearchBrandsQueryHandler : IRequestHandler<SearchBrandQuery, Search
         CategoryResponseGroup.WithSeo |
         CategoryResponseGroup.WithDescriptions;
 
-    public SearchBrandsQueryHandler(
+    public SearchBrandQueryHandler(
         IBrandSettingService brandSettingService,
         ICategoryService categoryService,
         ICategoryTreeService categoryTreeService,

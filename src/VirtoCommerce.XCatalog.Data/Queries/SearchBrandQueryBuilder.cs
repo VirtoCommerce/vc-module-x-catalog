@@ -10,9 +10,9 @@ using VirtoCommerce.XCatalog.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
-public class SearchBrandsQueryBuilder : SearchQueryBuilder<SearchBrandQuery, SearchBrandResponse, BrandAggregate, BrandType>
+public class SearchBrandQueryBuilder : SearchQueryBuilder<SearchBrandQuery, SearchBrandResponse, BrandAggregate, BrandType>
 {
-    public SearchBrandsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
+    public SearchBrandQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
         : base(mediator, authorizationService)
     {
     }

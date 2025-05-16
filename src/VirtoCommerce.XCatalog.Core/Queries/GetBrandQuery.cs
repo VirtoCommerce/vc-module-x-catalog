@@ -6,6 +6,7 @@ using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Queries;
+
 public class GetBrandQuery : Query<BrandAggregate>
 {
     public string Id { get; set; }
