@@ -32,7 +32,7 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
     public async Task<BrandAggregate> Handle(GetBrandQuery request, CancellationToken cancellationToken)
     {
         var brandStoreSettings = await _brandSettingService.GetByStoreIdAsync(request.StoreId);
-        if (brandStoreSettings == null || brandStoreSettings.BrandCatalogId == null)
+        if (brandStoreSettings?.BrandCatalogId == null)
         {
             return null;
         }

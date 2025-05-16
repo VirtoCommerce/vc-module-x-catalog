@@ -82,11 +82,11 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
 
     protected virtual IList<BrandAggregate> PrepareResult(IList<BrandAggregate> brands, SearchBrandQuery request)
     {
-        var querable = brands.AsQueryable();
+        var queryable = brands.AsQueryable();
 
         if (!string.IsNullOrEmpty(request.Keyword))
         {
-            querable = querable.Where(x => x.Name.Contains(request.Keyword, StringComparison.InvariantCulture));
+            queryable = queryable.Where(x => x.Name.Contains(request.Keyword, StringComparison.InvariantCulture));
         }
 
         var sortInfos = new List<SortInfo> { new() { SortColumn = nameof(BrandAggregate.Id) } };
@@ -95,7 +95,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
             sortInfos = SortInfo.Parse(request.Sort).ToList();
         }
 
-        var results = querable
+        var results = queryable
             .OrderBySortInfos(sortInfos)
             .Skip(request.Skip)
             .Take(request.Take)

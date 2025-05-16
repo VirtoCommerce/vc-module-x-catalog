@@ -20,5 +20,5 @@ public class BrandAggregate : Entity, ISeoSupport
     public IList<Image> Images = [];
 
     public IList<SeoInfo> SeoInfos { get; set; } = [];
-    public string SeoObjectType => "Brand";
+    public string SeoObjectType => ModuleConstants.BrandSeoType;
 }
