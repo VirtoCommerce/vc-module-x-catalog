@@ -15,23 +15,28 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
     public BrandType()
     {
         Field(x => x.Id, nullable: false).Description("Brand ID.");
-
         Field(x => x.BrandPropertyName, true).Description("Brand property name.");
         Field<StringGraphType>("brandPropertyValue")
             .Resolve(context => context.Source.Name)
             .Description("Unlocalized brand name.");
 
-        Field<StringGraphType>("name").Resolve(context =>
-        {
-            var cultureName = context.GetArgumentOrValue<string>("cultureName");
-            var localizedName = context.Source.LocalizedName?.GetValue(cultureName);
-            if (!string.IsNullOrEmpty(localizedName))
+        Field<StringGraphType>("name")
+            .Resolve(context =>
             {
-                return localizedName;
-            }
+                var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
+                if (cultureName == null)
+                {
+                    return context.Source.Name;
+                }
 
-            return context.Source.Name;
-        }).Description("Brand name.");
+                var localizedName = context.Source.LocalizedName?.GetValue(cultureName);
+                if (string.IsNullOrEmpty(localizedName))
+                {
+                    return context.Source.Name;
+                }
+
+                return localizedName;
+            }).Description("Brand name.");
 
         Field<BooleanGraphType>("featured")
             .Description("Indicates if the brand is featured.")
@@ -55,9 +60,14 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
                     return null;
                 }
 
-                var descriptions = context.Source.Descriptions;
+                var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
+                if (cultureName == null)
+                {
+                    return null;
+                }
+
                 var type = context.GetArgumentOrValue<string>("type");
-                var cultureName = context.GetArgumentOrValue<string>("cultureName");
+                var descriptions = context.Source.Descriptions;
 
                 var result = descriptions.Where(x => x.DescriptionType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
                         ?? descriptions.FirstBestMatchForLanguage(cultureName) as CategoryDescription;
@@ -65,34 +75,37 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
                 return result?.Content;
             });
 
-        ExtendableField<NonNullGraphType<StringGraphType>>("permalink", resolve: context =>
-        {
-            var source = context.Source;
-            var cultureName = context.GetArgumentOrValue<string>("cultureName");
-
-            SeoInfo seoInfo = null;
-
-            if (!source.SeoInfos.IsNullOrEmpty())
+        Field<NonNullGraphType<StringGraphType>>("permalink")
+            .Resolve(context =>
             {
-                var store = source.Store;
-                seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
-            }
+                var source = context.Source;
+                var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
 
-            var result = seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
+                SeoInfo seoInfo = null;
 
-            return $"{source.Catalog.Name}/{result.SemanticUrl}";
-        }, description: "Request related SEO info");
+                if (!source.SeoInfos.IsNullOrEmpty())
+                {
+                    var store = source.Store;
+                    seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+                }
 
-        ExtendableField<StringGraphType>("bannerUrl", resolve: context =>
-        {
-            var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Banner"))?.Url;
-            return result;
-        });
+                var result = seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
 
-        ExtendableField<StringGraphType>("logoUrl", resolve: context =>
-        {
-            var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Logo"))?.Url;
-            return result;
-        });
+                return $"{source.Catalog.Name}/{result.SemanticUrl}";
+            });
+
+        Field<StringGraphType>("bannerUrl")
+            .Resolve(context =>
+            {
+                var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Banner"))?.Url;
+                return result;
+            });
+
+        Field<StringGraphType>("logoUrl")
+            .Resolve(context =>
+            {
+                var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Logo"))?.Url;
+                return result;
+            });
     }
 }
