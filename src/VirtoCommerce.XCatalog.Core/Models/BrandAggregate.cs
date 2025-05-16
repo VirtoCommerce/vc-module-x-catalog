@@ -17,7 +17,7 @@ public class BrandAggregate : Entity, ISeoSupport
     public LocalizedString LocalizedName { get; set; }
     public IList<Property> Properties { get; set; } = [];
     public IList<CategoryDescription> Descriptions { get; set; } = [];
-    public IList<Image> Images = [];
+    public IList<Image> Images { get; set; } = [];
 
     public IList<SeoInfo> SeoInfos { get; set; } = [];
     public string SeoObjectType => ModuleConstants.BrandSeoType;
