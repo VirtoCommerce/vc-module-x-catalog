@@ -4,10 +4,10 @@ using System.Linq;
 using GraphQL;
 using VirtoCommerce.CatalogModule.Core.Extensions;
 using VirtoCommerce.CatalogModule.Core.Model;
-using VirtoCommerce.CoreModule.Core.Outlines;
-using VirtoCommerce.CoreModule.Core.Seo;
+using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.StoreModule.Core.Extensions;
+using VirtoCommerce.Seo.Core.Extensions;
+using VirtoCommerce.Seo.Core.Models;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
@@ -216,7 +216,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         private static Breadcrumb GetBreadcrumbForLastItem(this List<OutlineItem> items, Store store, string cultureName)
         {
             var item = items.Last();
-            var seo = item.GetBestMatchingSeoInfo(store, cultureName);
+            var seo = item.GetBestMatchingSeoInfo(store.Id, store.DefaultLanguage, cultureName);
             var seoTitle = seo?.PageTitle.EmptyToNull();
             var semanticUrl = seo?.SemanticUrl.EmptyToNull();
 
