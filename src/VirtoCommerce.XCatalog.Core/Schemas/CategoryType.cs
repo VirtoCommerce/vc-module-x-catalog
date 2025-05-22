@@ -104,11 +104,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                       var type = context.GetArgumentOrValue<string>("type");
                       if (cultureName != null)
                       {
-                          descriptions = descriptions.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsInvariant(cultureName)).ToList();
+                          descriptions = descriptions.Where(x => string.IsNullOrEmpty(x.LanguageCode) || x.LanguageCode.EqualsIgnoreCase(cultureName)).ToList();
                       }
                       if (type != null)
                       {
-                          descriptions = descriptions.Where(x => x.DescriptionType?.EqualsInvariant(type) ?? true).ToList();
+                          descriptions = descriptions.Where(x => x.DescriptionType?.EqualsIgnoreCase(type) ?? true).ToList();
                       }
                       return descriptions;
                   });
@@ -123,7 +123,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                     if (!descriptions.IsNullOrEmpty())
                     {
-                        return descriptions.Where(x => x.DescriptionType.EqualsInvariant(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
+                        return descriptions.Where(x => x.DescriptionType.EqualsIgnoreCase(type ?? "FullReview")).FirstBestMatchForLanguage(cultureName) as CategoryDescription
                             ?? descriptions.FirstBestMatchForLanguage(cultureName) as CategoryDescription;
                     }
 
