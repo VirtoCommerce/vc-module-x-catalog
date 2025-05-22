@@ -98,14 +98,9 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 }
                 var result = new List<ProductPrice>();
                 var allCurrencies = (allCurrenciesObj as IEnumerable<Currency>).ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
+                var pricelists = context.Items.GetValueSafe("pricelists") as IDictionary<string, Pricelist>;
 
-                var allPriceLists = new List<Pricelist>();
-                if (context.Items.TryGetValue("pricelists", out var pricelistsObj) && pricelistsObj is IEnumerable<Pricelist> pricelists)
-                {
-                    allPriceLists = pricelists.ToList();
-                }
-
-                static IEnumerable<ProductPrice> PricesToProductPrices(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IList<Pricelist> pricelists)
+                static IEnumerable<ProductPrice> PricesToProductPrices(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IDictionary<string, Pricelist> pricelists)
                 {
                     foreach (var price in prices)
                     {
@@ -124,7 +119,7 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                             productPrice.SalePrice = price.Sale == null ? productPrice.ListPrice : new Money(price.Sale ?? 0m, currency);
                             productPrice.MinQuantity = price.MinQuantity;
 
-                            var pricelist = pricelists.FirstOrDefault(x => x.Id == price.PricelistId);
+                            var pricelist = pricelists?.GetValueSafe(price.PricelistId);
                             productPrice.PricelistName = pricelist?.Name;
 
                             yield return productPrice;
@@ -133,7 +128,7 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 }
 
                 //group prices by currency
-                var groupByCurrencyPrices = PricesToProductPrices(src, allCurrencies, allPriceLists).GroupBy(x => x.Currency).Where(x => x.Any());
+                var groupByCurrencyPrices = PricesToProductPrices(src, allCurrencies, pricelists).GroupBy(x => x.Currency).Where(x => x.Any());
                 foreach (var currencyGroup in groupByCurrencyPrices)
                 {
                     //For each currency need get nominal price (with min qty)
