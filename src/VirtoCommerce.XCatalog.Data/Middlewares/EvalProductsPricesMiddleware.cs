@@ -6,13 +6,14 @@ using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.PricingModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using XapiProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
@@ -65,12 +66,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                 foreach (var product in parameter.Results)
                 {
-                    product.AllPrices = _mapper.Map<IEnumerable<ProductPrice>>(prices.Where(x => x.ProductId == product.Id), options =>
-                    {
-                        options.Items["all_currencies"] = parameter.AllStoreCurrencies;
-                        options.Items["currency"] = parameter.Currency;
-                        options.Items["pricelists"] = evalContext.Pricelists?.ToDictionary(x => x.Id);
-                    }).ToList();
+                    product.AllPrices = MapPrices(prices.Where(x => x.ProductId == product.Id), parameter, evalContext);
 
                     product.ApplyStaticDiscounts();
                 }
@@ -78,15 +74,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadVariationPrices) && parameter.Results.Any())
             {
-                foreach (var expProducts in parameter.Results)
+                foreach (var expProduct in parameter.Results)
                 {
-                    var minVariationPrices = _mapper.Map<IEnumerable<ProductPrice>>(expProducts.IndexedMinVariationPrices, options =>
-                    {
-                        options.Items["all_currencies"] = parameter.AllStoreCurrencies;
-                        options.Items["currency"] = parameter.Currency;
-                    }).ToList();
+                    var minVariationPrices = MapPrices(expProduct.IndexedMinVariationPrices, parameter);
 
-                    expProducts.MinVariationPrice = parameter.Currency != null
+                    expProduct.MinVariationPrice = parameter.Currency != null
                         ? minVariationPrices.FirstOrDefault(x => x.Currency.Equals(parameter.Currency))
                         : minVariationPrices.FirstOrDefault();
                 }
@@ -95,9 +87,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await next(parameter);
         }
 
-        protected virtual async Task<PricingModule.Core.Model.PriceEvaluationContext> GetPriceEvaluationContext(SearchProductQuery query, Store store)
+        protected virtual async Task<PriceEvaluationContext> GetPriceEvaluationContext(SearchProductQuery query, Store store)
         {
-            var evalContext = AbstractTypeFactory<PricingModule.Core.Model.PriceEvaluationContext>.TryCreateInstance();
+            var evalContext = AbstractTypeFactory<PriceEvaluationContext>.TryCreateInstance();
             evalContext.Currency = query.CurrencyCode;
             evalContext.StoreId = query.StoreId;
             evalContext.CatalogId = store?.Catalog;
@@ -108,6 +100,20 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await _pipeline.Execute(evalContext);
 
             return evalContext;
+        }
+
+        private IList<XapiProductPrice> MapPrices(IEnumerable<Price> prices, SearchProductResponse parameter, PriceEvaluationContext evalContext = null)
+        {
+            return _mapper.Map<IEnumerable<XapiProductPrice>>(prices, options =>
+            {
+                options.Items["all_currencies"] = parameter.AllStoreCurrencies;
+                options.Items["currency"] = parameter.Currency;
+
+                if (evalContext != null && !evalContext.Pricelists.IsNullOrEmpty())
+                {
+                    options.Items["pricelists"] = evalContext.Pricelists.ToDictionary(x => x.Id);
+                }
+            }).ToList();
         }
     }
 }
