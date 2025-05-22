@@ -102,7 +102,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return evalContext;
         }
 
-        private IList<XapiProductPrice> MapPrices(IEnumerable<Price> prices, SearchProductResponse parameter, PriceEvaluationContext evalContext = null)
+        private List<XapiProductPrice> MapPrices(IEnumerable<Price> prices, SearchProductResponse parameter, PriceEvaluationContext evalContext = null)
         {
             return _mapper.Map<IEnumerable<XapiProductPrice>>(prices, options =>
             {
