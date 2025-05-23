@@ -19,7 +19,6 @@ using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using SeoInfoType = VirtoCommerce.Seo.ExperienceApi.Schemas.SeoInfoType;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {

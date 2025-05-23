@@ -1,7 +1,6 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Xapi.Core.Schemas;
-using SeoInfoType = VirtoCommerce.Seo.ExperienceApi.Schemas.SeoInfoType;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
