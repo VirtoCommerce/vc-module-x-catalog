@@ -10,8 +10,8 @@ using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Seo.Core.Extensions;
 using VirtoCommerce.Seo.Core.Models;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
@@ -19,6 +19,8 @@ using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+
+using SeoExtensions = VirtoCommerce.Seo.Core.Extensions.SeoExtensions;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -89,7 +91,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 if (!source.Category.SeoInfos.IsNullOrEmpty())
                 {
                     var store = context.GetArgumentOrValue<Store>("store");
-                    seoInfo = source.Category.SeoInfos.GetBestMatchingSeoInfo(store.Id, store.DefaultLanguage, cultureName);
+                    seoInfo = source.Category.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
                 return seoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Category.Name, cultureName);

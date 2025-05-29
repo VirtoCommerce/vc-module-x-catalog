@@ -2,11 +2,13 @@ using System.Linq;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Seo.Core.Extensions;
 using VirtoCommerce.Seo.Core.Models;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Models;
+
+using SeoExtensions = VirtoCommerce.Seo.Core.Extensions.SeoExtensions;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas;
 
@@ -86,7 +88,7 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
                 if (!source.SeoInfos.IsNullOrEmpty())
                 {
                     var store = source.Store;
-                    seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store.Id, store.DefaultLanguage, cultureName);
+                    seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
                 var result = seoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);

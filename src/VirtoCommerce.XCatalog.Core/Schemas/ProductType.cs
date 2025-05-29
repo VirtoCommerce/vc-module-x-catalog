@@ -12,6 +12,7 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Seo.Core.Models;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -153,7 +154,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 if (!source.IndexedProduct.SeoInfos.IsNullOrEmpty())
                 {
                     var store = context.GetArgumentOrValue<Store>("store");
-                    seoInfo = SeoExtensions.GetBestMatchingSeoInfo(source.IndexedProduct.SeoInfos, store.Id, store.DefaultLanguage, cultureName);
+                    seoInfo = source.IndexedProduct.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
                 return seoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.IndexedProduct.Name, cultureName);

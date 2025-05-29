@@ -13,5 +13,8 @@
   </ItemGroup>
 
   <!-- [Obsolete("Added temporarily to avoid runtime errors until all dependent modules have been updated", DiagnosticId = "VC0010")] -->
+  <ItemGroup>
+    <PackageReference Include="VirtoCommerce.Tools" Version="3.808.0" />
+  </ItemGroup>
 
 </Project>
