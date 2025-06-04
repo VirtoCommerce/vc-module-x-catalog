@@ -99,7 +99,13 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 var result = new List<ProductPrice>();
                 var allCurrencies = (allCurrenciesObj as IEnumerable<Currency>).ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
 
-                static IEnumerable<ProductPrice> PricesToProductPrices(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies)
+                var allPriceLists = new List<Pricelist>();
+                if (context.Items.TryGetValue("pricelists", out var pricelistsObj) && pricelistsObj is IEnumerable<Pricelist> pricelists)
+                {
+                    allPriceLists = pricelists.ToList();
+                }
+
+                static IEnumerable<ProductPrice> PricesToProductPrices(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IList<Pricelist> pricelists)
                 {
                     foreach (var price in prices)
                     {
@@ -117,13 +123,17 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                             };
                             productPrice.SalePrice = price.Sale == null ? productPrice.ListPrice : new Money(price.Sale ?? 0m, currency);
                             productPrice.MinQuantity = price.MinQuantity;
+
+                            var pricelist = pricelists.FirstOrDefault(x => x.Id == price.PricelistId);
+                            productPrice.PricelistName = pricelist?.Name;
+
                             yield return productPrice;
                         }
                     }
                 }
 
                 //group prices by currency
-                var groupByCurrencyPrices = PricesToProductPrices(src, allCurrencies).GroupBy(x => x.Currency).Where(x => x.Any());
+                var groupByCurrencyPrices = PricesToProductPrices(src, allCurrencies, allPriceLists).GroupBy(x => x.Currency).Where(x => x.Any());
                 foreach (var currencyGroup in groupByCurrencyPrices)
                 {
                     //For each currency need get nominal price (with min qty)
