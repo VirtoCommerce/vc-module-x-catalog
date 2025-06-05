@@ -23,23 +23,23 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IFilter Filter => SearchRequest.Filter;
         public IList<AggregationRequest> Aggregations => SearchRequest.Aggregations;
 
-        private SearchRequest SearchRequest { get; set; }
+        protected SearchRequest SearchRequest { get; set; }
+
+        private static readonly string[] _wildcards = ["?", "*"];
 
         public IndexSearchRequestBuilder()
         {
-            SearchRequest = new SearchRequest
+            SearchRequest = AbstractTypeFactory<SearchRequest>.TryCreateInstance();
+            SearchRequest.Filter = new AndFilter
             {
-                Filter = new AndFilter()
-                {
-                    ChildFilters = new List<IFilter>(),
-                },
-                SearchFields = new List<string> { "__content" },
-                Sorting = new List<SortingField> { new SortingField(ScoreSortingFieldName, true) },
-                Skip = 0,
-                Take = 20,
-                Aggregations = new List<AggregationRequest>(),
-                IncludeFields = new List<string>(),
+                ChildFilters = new List<IFilter>(),
             };
+            SearchRequest.SearchFields = ["__content"];
+            SearchRequest.Sorting = [new SortingField(ScoreSortingFieldName, true)];
+            SearchRequest.Skip = 0;
+            SearchRequest.Take = 20;
+            SearchRequest.Aggregations = [];
+            SearchRequest.IncludeFields = [];
         }
 
         public IndexSearchRequestBuilder WithStoreId(string storeId)
@@ -89,10 +89,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder WithIncludeFields(params string[] includeFields)
         {
-            if (SearchRequest.IncludeFields == null)
-            {
-                SearchRequest.IncludeFields = new List<string>() { };
-            }
+            SearchRequest.IncludeFields ??= [];
 
             if (!includeFields.IsNullOrEmpty())
             {
@@ -135,10 +132,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder AddObjectIds(IEnumerable<string> ids)
         {
-            if (!ids.IsNullOrEmpty())
+            var values = ids as string[] ?? ids?.ToArray();
+            if (!values.IsNullOrEmpty())
             {
-                AddFiltersToSearchRequest(new IFilter[] { new IdsFilter { Values = ids.ToArray() } });
-                SearchRequest.Take = ids.Count();
+                AddFiltersToSearchRequest([new IdsFilter { Values = values }]);
+                SearchRequest.Take = values.Length;
             }
 
             return this;
@@ -201,7 +199,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
             {
                 case TermFilter termFilter:
                     {
-                        var wildcardValues = termFilter.Values.Where(x => new[] { "?", "*" }.Any(x.Contains)).ToArray();
+                        var wildcardValues = termFilter.Values.Where(x => _wildcards.Any(x.Contains)).ToArray();
 
                         if (wildcardValues.Length != 0)
                         {
@@ -225,7 +223,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                                 orFilter.ChildFilters.Add(termFilter);
                             }
 
-                            // return OrFilter with added termFilters instead 
+                            // return OrFilter with added termFilters instead
                             result = orFilter;
                         }
                         break;
@@ -362,11 +360,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder ApplyMultiSelectFacetSearch()
         {
-            foreach (var aggr in SearchRequest.Aggregations ?? Array.Empty<AggregationRequest>())
+            foreach (var aggr in SearchRequest.Aggregations ?? [])
             {
                 var aggregationFilterFieldName = aggr.FieldName ?? (aggr.Filter as INamedFilter)?.FieldName;
 
-                var clonedFilter = SearchRequest.Filter.Clone() as AndFilter;
+                var clonedFilter = (AndFilter)SearchRequest.Filter.Clone();
 
                 // For multi-select facet mechanism, we should select
                 // search request filters which do not have the same
@@ -398,7 +396,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
             return SearchRequest;
         }
 
-        private void AddFiltersToSearchRequest(IFilter[] filters, bool skipIfExists = false)
+        protected void AddFiltersToSearchRequest(IFilter[] filters, bool skipIfExists = false)
         {
             var childFilters = ((AndFilter)SearchRequest.Filter).ChildFilters;
 
@@ -423,16 +421,16 @@ namespace VirtoCommerce.XCatalog.Data.Index
         {
             const string commaEscapeString = "%x2C";
 
-            var nameValueDelimeter = new[] { ':' };
-            var valuesDelimeter = new[] { ',' };
+            var nameValueDelimiter = new[] { ':' };
+            var valuesDelimiter = new[] { ',' };
 
-            return terms.Select(item => item.Split(nameValueDelimeter, 2))
+            return terms.Select(item => item.Split(nameValueDelimiter, 2))
                 .Where(item => item.Length == 2)
                 .Select(item => new TermFilter
                 {
                     FieldName = item[0],
-                    Values = item[1].Split(valuesDelimeter, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(x => x?.Replace(commaEscapeString, ","))
+                    Values = item[1].Split(valuesDelimiter, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(x => x.Replace(commaEscapeString, ","))
                         .ToArray()
                 }).ToArray<IFilter>();
         }
