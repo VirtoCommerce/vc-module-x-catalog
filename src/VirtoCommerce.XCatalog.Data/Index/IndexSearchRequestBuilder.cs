@@ -29,7 +29,10 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder()
         {
-            SearchRequest = AbstractTypeFactory<SearchRequest>.TryCreateInstance();
+            //TODO: Move to AbstractTypeFactory<T> when it will be implemented
+            SearchRequest = AbstractTypeFactory<SearchRequest>.HasOverrides
+                ? AbstractTypeFactory<SearchRequest>.TryCreateInstance()
+                : new SearchRequest();
             SearchRequest.Filter = new AndFilter
             {
                 ChildFilters = new List<IFilter>(),
@@ -132,11 +135,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder AddObjectIds(IEnumerable<string> ids)
         {
-            var values = ids as string[] ?? ids?.ToArray();
+            var values = ids as IList<string> ?? ids?.ToArray();
             if (!values.IsNullOrEmpty())
             {
                 AddFiltersToSearchRequest([new IdsFilter { Values = values }]);
-                SearchRequest.Take = values.Length;
+                SearchRequest.Take = values.Count;
             }
 
             return this;
@@ -246,7 +249,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
         {
             ArgumentNullException.ThrowIfNull(phraseParser);
 
-            SearchRequest.Aggregations = predefinedAggregations ?? new List<AggregationRequest>();
+            SearchRequest.Aggregations = predefinedAggregations ?? [];
 
             if (string.IsNullOrEmpty(facetPhrase))
             {
@@ -396,7 +399,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
             return SearchRequest;
         }
 
-        protected void AddFiltersToSearchRequest(IFilter[] filters, bool skipIfExists = false)
+        protected void AddFiltersToSearchRequest(IList<IFilter> filters, bool skipIfExists = false)
         {
             var childFilters = ((AndFilter)SearchRequest.Filter).ChildFilters;
 
