@@ -15,6 +15,7 @@ using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
@@ -62,13 +63,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 options.Items["cultureName"] = request.CultureName;
             })).ToList() ?? [];
 
-            var result = new SearchCategoryResponse
-            {
-                Query = request,
-                Results = categories,
-                Store = store,
-                TotalCount = (int)searchResult.TotalCount,
-            };
+            var result = OverridenType<SearchCategoryResponse>.New();
+            result.Query = request;
+            result.Results = categories;
+            result.Store = store;
+            result.TotalCount = (int)searchResult.TotalCount;
 
             await _pipeline.Execute(result);
 
