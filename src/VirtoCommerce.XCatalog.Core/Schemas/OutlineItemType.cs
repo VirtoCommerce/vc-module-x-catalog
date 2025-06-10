@@ -1,5 +1,5 @@
 using GraphQL.Types;
-using VirtoCommerce.CoreModule.Core.Outlines;
+using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Xapi.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
