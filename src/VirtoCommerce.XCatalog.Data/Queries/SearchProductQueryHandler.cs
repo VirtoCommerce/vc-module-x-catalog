@@ -17,6 +17,7 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
@@ -108,16 +109,14 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // Mark applied aggregation items
             searchRequest.SetAppliedAggregations(resultAggregations);
 
-            var result = new SearchProductResponse
-            {
-                Query = request,
-                AllStoreCurrencies = allStoreCurrencies,
-                Currency = currency,
-                Store = store,
-                Results = ConvertProducts(searchResult),
-                Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode),
-                TotalCount = (int)searchResult.TotalCount
-            };
+            var result = OverridenType<SearchProductResponse>.New();
+            result.Query = request;
+            result.AllStoreCurrencies = allStoreCurrencies;
+            result.Currency = currency;
+            result.Store = store;
+            result.Results = ConvertProducts(searchResult);
+            result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
+            result.TotalCount = (int)searchResult.TotalCount;
 
             await _pipeline.Execute(result);
 
