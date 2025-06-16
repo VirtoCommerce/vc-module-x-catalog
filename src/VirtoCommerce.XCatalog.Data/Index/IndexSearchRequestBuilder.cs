@@ -134,7 +134,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IndexSearchRequestBuilder AddObjectIds(IEnumerable<string> ids)
         {
             var values = ids as IList<string> ?? ids?.ToArray();
-            if (!values.IsNullOrEmpty())
+            if (values?.Count > 0)
             {
                 AddFiltersToSearchRequest([new IdsFilter { Values = values }]);
                 SearchRequest.Take = values.Count;
