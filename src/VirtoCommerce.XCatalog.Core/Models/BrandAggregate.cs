@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using VirtoCommerce.CatalogModule.Core.Model;
-using VirtoCommerce.CoreModule.Core.Seo;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Seo.Core.Models;
 using VirtoCommerce.StoreModule.Core.Model;
 
 namespace VirtoCommerce.XCatalog.Core.Models;

@@ -9,9 +9,9 @@ using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
-using VirtoCommerce.CoreModule.Core.Outlines;
-using VirtoCommerce.CoreModule.Core.Seo;
+using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Seo.Core.Models;
 using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
@@ -22,6 +22,7 @@ using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using static VirtoCommerce.Xapi.Core.ModuleConstants;
+using SeoExtensions = VirtoCommerce.Seo.Core.Extensions.SeoExtensions;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -156,7 +157,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     seoInfo = source.IndexedProduct.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
-                return seoInfo ?? SeoInfosExtensions.GetFallbackSeoInfo(source.Id, source.IndexedProduct.Name, cultureName);
+                return seoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.IndexedProduct.Name, cultureName);
             }, description: "Request related SEO info");
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<DescriptionType>>>>("descriptions",
