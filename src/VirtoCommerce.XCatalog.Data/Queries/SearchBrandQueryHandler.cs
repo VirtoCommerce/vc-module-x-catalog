@@ -118,7 +118,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         return result;
     }
 
-    protected virtual IList<BrandAggregate> CreateBrandsByCategories(HashSet<string> brandNames, IList<Category> brandCategories, Catalog brandsCatalog, Store store, string brandPropertyName, string cultureName)
+    protected virtual IList<BrandAggregate> CreateBrandsByCategories(IList<string> brandNames, IList<Category> brandCategories, Catalog brandsCatalog, Store store, string brandPropertyName, string cultureName)
     {
         var brands = new List<BrandAggregate>();
 
@@ -156,9 +156,9 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         return brands;
     }
 
-    private async Task<HashSet<string>> GetProductBrandNames(SearchBrandQuery request, string brandPropertyName)
+    protected virtual async Task<List<string>> GetProductBrandNames(SearchBrandQuery request, string brandPropertyName)
     {
-        var result = new HashSet<string>();
+        var result = new List<string>();
 
         var productsRequest = AbstractTypeFactory<SearchProductQuery>.TryCreateInstance();
         productsRequest.StoreId = request?.StoreId;
@@ -186,6 +186,11 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
             {
                 result.Add(term.Term);
             }
+        }
+
+        if (!request.BrandNames.IsNullOrEmpty())
+        {
+            result = result.Intersect(request.BrandNames, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         return result;
