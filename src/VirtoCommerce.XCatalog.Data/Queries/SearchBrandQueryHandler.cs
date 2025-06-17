@@ -188,7 +188,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
             }
         }
 
-        if (!request.BrandNames.IsNullOrEmpty())
+        if (request != null && !request.BrandNames.IsNullOrEmpty())
         {
             result = result.Intersect(request.BrandNames, StringComparer.OrdinalIgnoreCase).ToList();
         }
