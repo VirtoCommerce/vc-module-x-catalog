@@ -63,7 +63,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 options.Items["cultureName"] = request.CultureName;
             })).ToList() ?? [];
 
-            var result = OverridenType<SearchCategoryResponse>.New();
+            var result = OverridableType<SearchCategoryResponse>.New();
             result.Query = request;
             result.Results = categories;
             result.Store = store;

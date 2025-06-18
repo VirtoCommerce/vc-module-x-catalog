@@ -109,7 +109,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // Mark applied aggregation items
             searchRequest.SetAppliedAggregations(resultAggregations);
 
-            var result = OverridenType<SearchProductResponse>.New();
+            var result = OverridableType<SearchProductResponse>.New();
             result.Query = request;
             result.AllStoreCurrencies = allStoreCurrencies;
             result.Currency = currency;

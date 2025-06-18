@@ -30,7 +30,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder()
         {
-            SearchRequest = OverridenType<SearchRequest>.New();
+            SearchRequest = OverridableType<SearchRequest>.New();
             SearchRequest.Filter = new AndFilter
             {
                 ChildFilters = new List<IFilter>(),
