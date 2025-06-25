@@ -156,7 +156,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         return brands;
     }
 
-    protected virtual async Task<List<string>> GetProductBrandNames(SearchBrandQuery request, string brandPropertyName)
+    protected virtual async Task<IList<string>> GetProductBrandNames(SearchBrandQuery request, string brandPropertyName)
     {
         var result = new List<string>();
 

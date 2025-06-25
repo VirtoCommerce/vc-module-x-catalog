@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -89,17 +90,35 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
         else if (!request.Name.IsNullOrEmpty())
         {
             // If Id is not specified, then the brand will be resolved by Name.
-            var categorySearchCriteria = AbstractTypeFactory<CategorySearchCriteria>.TryCreateInstance();
-            categorySearchCriteria.CatalogId = brandsCatalog.Id;
-            categorySearchCriteria.Keyword = request.Name;
-            categorySearchCriteria.ResponseGroup = CategoryResponseGroup.Full.ToString();
-
-            var categorySearchResult = await _categorySearchService.SearchAsync(categorySearchCriteria);
-            if (!categorySearchResult.Results.IsNullOrEmpty())
+            var brandCategories = await GetBrandCategories(request, brandsCatalog);
+            if (!brandCategories.IsNullOrEmpty())
             {
-                result = categorySearchResult.Results.FirstOrDefault(x => x.Name.EqualsIgnoreCase(request.Name));
+                result = brandCategories.FirstOrDefault(x => x.Name.EqualsIgnoreCase(request.Name));
             }
         }
+
+        return result;
+    }
+
+    private async Task<List<Category>> GetBrandCategories(GetBrandQuery request, Catalog brandsCatalog)
+    {
+        var categorySearchCriteria = AbstractTypeFactory<CategorySearchCriteria>.TryCreateInstance();
+        categorySearchCriteria.CatalogId = brandsCatalog.Id;
+        categorySearchCriteria.Keyword = request.Name;
+        categorySearchCriteria.ResponseGroup = CategoryResponseGroup.Full.ToString();
+
+        int totalCount;
+        var result = new List<Category>();
+
+        do
+        {
+            var categorySearchResult = await _categorySearchService.SearchAsync(categorySearchCriteria);
+            result.AddRange(categorySearchResult.Results);
+
+            totalCount = categorySearchResult.TotalCount;
+            categorySearchCriteria.Skip += categorySearchCriteria.Take;
+        }
+        while (categorySearchCriteria.Skip < totalCount);
 
         return result;
     }
