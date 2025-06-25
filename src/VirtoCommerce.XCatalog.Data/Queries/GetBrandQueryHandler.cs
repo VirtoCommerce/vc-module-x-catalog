@@ -1,6 +1,11 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Model.Search;
+using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Services;
@@ -16,17 +21,20 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
     private readonly ICategoryService _categoryService;
     private readonly IStoreService _storeService;
     private readonly ICatalogService _catalogService;
+    private readonly ICategorySearchService _categorySearchService;
 
     public GetBrandQueryHandler(
                IBrandSettingService brandSettingService,
                ICategoryService categoryService,
                IStoreService storeService,
-               ICatalogService catalogService)
+               ICatalogService catalogService,
+               ICategorySearchService categorySearchService)
     {
         _brandSettingService = brandSettingService;
         _categoryService = categoryService;
         _storeService = storeService;
         _catalogService = catalogService;
+        _categorySearchService = categorySearchService;
     }
 
     public async Task<BrandAggregate> Handle(GetBrandQuery request, CancellationToken cancellationToken)
@@ -50,7 +58,7 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
         };
 
         // check for category
-        var brandCategory = await _categoryService.GetNoCloneAsync(request.Id);
+        var brandCategory = await GetBrandCategory(request, brandsCatalog);
         if (brandCategory != null)
         {
             brand.Id = brandCategory.Id;
@@ -69,5 +77,49 @@ public class GetBrandQueryHandler : IRequestHandler<GetBrandQuery, BrandAggregat
         }
 
         return brand;
+    }
+
+    private async Task<Category> GetBrandCategory(GetBrandQuery request, Catalog brandsCatalog)
+    {
+        var result = default(Category);
+
+        if (!request.Id.IsNullOrEmpty())
+        {
+            result = await _categoryService.GetNoCloneAsync(request.Id);
+        }
+        else if (!request.Name.IsNullOrEmpty())
+        {
+            // If Id is not specified, then the brand will be resolved by Name.
+            var brandCategories = await GetBrandCategories(request, brandsCatalog);
+            if (!brandCategories.IsNullOrEmpty())
+            {
+                result = brandCategories.FirstOrDefault(x => x.Name.EqualsIgnoreCase(request.Name));
+            }
+        }
+
+        return result;
+    }
+
+    private async Task<List<Category>> GetBrandCategories(GetBrandQuery request, Catalog brandsCatalog)
+    {
+        var categorySearchCriteria = AbstractTypeFactory<CategorySearchCriteria>.TryCreateInstance();
+        categorySearchCriteria.CatalogId = brandsCatalog.Id;
+        categorySearchCriteria.Keyword = request.Name;
+        categorySearchCriteria.ResponseGroup = CategoryResponseGroup.Full.ToString();
+
+        int totalCount;
+        var result = new List<Category>();
+
+        do
+        {
+            var categorySearchResult = await _categorySearchService.SearchAsync(categorySearchCriteria);
+            result.AddRange(categorySearchResult.Results);
+
+            totalCount = categorySearchResult.TotalCount;
+            categorySearchCriteria.Skip += categorySearchCriteria.Take;
+        }
+        while (categorySearchCriteria.Skip < totalCount);
+
+        return result;
     }
 }
