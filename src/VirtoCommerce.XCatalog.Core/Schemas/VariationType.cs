@@ -50,17 +50,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "Availability data",
                 resolve: context => AbstractTypeFactory<ExpAvailabilityData>.TryCreateInstance().FromProduct(context.Source));
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>("images")
-                .Description("Product images")
-                .Resolve(context => context.Source.IndexedProduct.Images ?? Array.Empty<Image>());
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<ImageType>>>>(
+                "images",
+                "Product images",
+                resolve: context => context.Source.IndexedProduct.Images ?? Array.Empty<Image>());
 
-            Field<NonNullGraphType<PriceType>>("price")
-                .Description("Product price")
-                .Resolve(context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
-
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>("prices")
-                .Description("Product prices")
-                .Resolve(context => context.Source.AllPrices);
+            ExtendableField<NonNullGraphType<PriceType>>(
+                "price",
+                "Product price",
+                resolve: context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PropertyType>>>>("properties", resolve: context =>
             {
@@ -68,13 +66,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return context.Source.IndexedProduct.Properties.ExpandByValues(cultureName);
             });
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<AssetType>>>>("assets")
-                .Description("Assets")
-                .Resolve(context => context.Source.IndexedProduct.Assets ?? Array.Empty<Asset>());
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<AssetType>>>>(
+                "assets",
+                "Assets",
+                resolve: context => context.Source.IndexedProduct.Assets ?? Array.Empty<Asset>());
 
-            Field<ListGraphType<NonNullGraphType<OutlineType>>>("outlines")
-                .Description("Outlines")
-                .Resolve(context => context.Source.IndexedProduct.Outlines);
+            ExtendableField<ListGraphType<NonNullGraphType<OutlineType>>>(
+                "outlines",
+                "Outlines",
+                resolve: context => context.Source.IndexedProduct.Outlines);
 
             Field<StringGraphType>("slug").ResolveAsync(async context =>
             {
