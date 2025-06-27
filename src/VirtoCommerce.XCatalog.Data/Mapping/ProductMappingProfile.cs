@@ -45,6 +45,7 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 result.CatalogId = src.IndexedProduct.CatalogId;
                 result.CategoryId = src.IndexedProduct.CategoryId;
                 result.ProductId = src.Id;
+                result.ParentId = src.IndexedProduct.MainProductId;
                 result.Code = src.IndexedProduct.Code;
                 result.Outline = src.IndexedProduct.Outline;
                 if (productPrice != null)
