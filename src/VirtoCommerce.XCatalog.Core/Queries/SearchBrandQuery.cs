@@ -15,6 +15,7 @@ public class SearchBrandQuery : CatalogQueryBase<SearchBrandResponse>, ISearchQu
     public int Skip { get; set; }
     public int Take { get; set; }
     public string Keyword { get; set; }
+    public IList<string> BrandNames { get; set; }
 
     public override IEnumerable<QueryArgument> GetArguments()
     {

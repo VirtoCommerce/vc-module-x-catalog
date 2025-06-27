@@ -11,6 +11,11 @@ public class GetBrandQuery : Query<BrandAggregate>
 {
     public string Id { get; set; }
 
+    /// <summary>
+    /// Optional. If Id is not specified, then the brand will be resolved by Name.
+    /// </summary>
+    public string Name { get; set; }
+
     public string StoreId { get; set; }
 
     public string CultureName { get; set; }

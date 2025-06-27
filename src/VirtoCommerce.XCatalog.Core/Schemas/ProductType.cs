@@ -228,14 +228,34 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("Get brandName for product.")
                 .Resolve(context =>
                 {
-                    var brandName = context.Source.IndexedProduct.Properties
-                        ?.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Brand"))
-                        ?.Values
-                        ?.FirstOrDefault(x => x.Value != null)
-                        ?.Value;
-
-                    return brandName?.ToString();
+                    return GetBrandName(context);
                 });
+
+            var brandField = new FieldType
+            {
+                Name = "brand",
+                Type = typeof(BrandType),
+                Resolver = new FuncFieldResolver<ExpProduct, IDataLoaderResult<BrandAggregate>>(context =>
+                {
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, BrandAggregate>("brandAggregateLoader", async (brandNames) =>
+                    {
+                        var brandsQuery = AbstractTypeFactory<SearchBrandQuery>.TryCreateInstance();
+
+                        brandsQuery.StoreId = context.GetArgumentOrValue<Store>("store")?.Id;
+                        brandsQuery.CultureName = context.GetArgumentOrValue<string>("cultureName");
+                        brandsQuery.BrandNames = brandNames.ToList();
+                        brandsQuery.Take = brandsQuery.BrandNames.Count;
+
+                        var response = await mediator.Send(brandsQuery);
+
+                        var result = response.Results.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
+                        return result;
+                    });
+
+                    return loader.LoadAsync(GetBrandName(context));
+                })
+            };
+            AddField(brandField);
 
             ExtendableFieldAsync<VariationType>(
                 "masterVariation",
@@ -379,6 +399,17 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Connection<VideoType>("videos")
               .PageSize(Connections.DefaultPageSize)
               .ResolveAsync(async context => await ResolveVideosConnectionAsync(mediator, context));
+        }
+
+        private static string GetBrandName(IResolveFieldContext<ExpProduct> context)
+        {
+            var brandName = context.Source.IndexedProduct.Properties
+                ?.FirstOrDefault(x => x.Name.EqualsIgnoreCase("Brand"))
+                ?.Values
+                ?.FirstOrDefault(x => x.Value != null)
+                ?.Value;
+
+            return brandName?.ToString();
         }
 
         protected virtual async Task<object> ResolveVariationsFieldAsync(IMediator mediator, IResolveFieldContext<ExpProduct> context)
