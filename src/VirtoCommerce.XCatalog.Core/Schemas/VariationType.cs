@@ -60,6 +60,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "Product price",
                 resolve: context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
 
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>(
+                "prices",
+                "Product prices",
+                resolve: context => context.Source.AllPrices);
+
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PropertyType>>>>("properties", resolve: context =>
             {
                 var cultureName = context.GetValue<string>("cultureName");
