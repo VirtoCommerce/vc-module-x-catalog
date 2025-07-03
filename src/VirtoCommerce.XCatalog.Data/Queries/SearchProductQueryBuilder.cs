@@ -8,6 +8,7 @@ using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
+using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
@@ -47,6 +48,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             });
 
             return builder.FieldType;
+        }
+
+        protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, SearchProductQuery request)
+        {
+            await base.BeforeMediatorSend(context, request);
+
+            await Authorize(context, request.Store, new CanAccessStoreAuthorizationRequirement());
         }
 
         protected override Task AfterMediatorSend(IResolveFieldContext<object> context, SearchProductQuery request, SearchProductResponse response)

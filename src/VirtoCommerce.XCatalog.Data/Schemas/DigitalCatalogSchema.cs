@@ -8,13 +8,17 @@ using GraphQL.DataLoader;
 using GraphQL.Resolvers;
 using GraphQL.Types;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.Xapi.Core.Security.Authorization;
+using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -30,13 +34,20 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
         private readonly IDataLoaderContextAccessor _dataLoader;
         private readonly ICurrencyService _currencyService;
         private readonly IStoreService _storeService;
+        private readonly IAuthorizationService _authorizationService;
 
-        public DigitalCatalogSchema(IMediator mediator, IDataLoaderContextAccessor dataLoader, ICurrencyService currencyService, IStoreService storeService)
+        public DigitalCatalogSchema(
+            IMediator mediator,
+            IDataLoaderContextAccessor dataLoader,
+            ICurrencyService currencyService,
+            IStoreService storeService,
+            IAuthorizationService authorizationService)
         {
             _mediator = mediator;
             _dataLoader = dataLoader;
             _currencyService = currencyService;
             _storeService = storeService;
+            _authorizationService = authorizationService;
         }
 
         /// <summary>
@@ -71,6 +82,9 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                     context.UserContext["store"] = store;
 
+                    // Authorize access to the store
+                    await AuthorizeAsync(context, store);
+
                     //Store all currencies in the user context for future resolve in the schema types
                     var allCurrencies = await _currencyService.GetAllCurrenciesAsync();
                     var cultureName = context.GetArgument<string>("cultureName");
@@ -102,6 +116,9 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                    var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                    context.UserContext["store"] = store;
 
+                   // Authorize access to the store
+                   await AuthorizeAsync(context, store);
+
                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(_mediator, ids, context));
                    return loader.LoadAsync(context.GetArgument<string>("id"));
                })
@@ -131,6 +148,9 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                 context.UserContext["store"] = store;
 
+                // Authorize access to the store
+                await AuthorizeAsync(context, store);
+
                 return await ResolveCategoriesConnectionAsync(_mediator, context);
             });
 
@@ -150,6 +170,9 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 
                 var store = await _storeService.GetByIdAsync(context.GetArgument<string>("storeId"));
                 context.UserContext["catalog"] = store.Catalog;
+
+                // Authorize access to the store
+                await AuthorizeAsync(context, store);
 
                 return await ResolvePropertiesConnectionAsync(_mediator, context);
             });
@@ -258,6 +281,16 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             var response = await mediator.Send(query);
 
             return new PagedConnection<Property>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
+        }
+
+        private async Task AuthorizeAsync(IResolveFieldContext context, Store store)
+        {
+            var authorizationResult = await _authorizationService.AuthorizeAsync(context.GetCurrentPrincipal(), store, new CanAccessStoreAuthorizationRequirement());
+
+            if (!authorizationResult.Succeeded)
+            {
+                throw AuthorizationError.AnonymousAccessDenied();
+            }
         }
     }
 }
