@@ -16,12 +16,9 @@ public class CanAccessStoreAuthorizationHandler : AuthorizationHandler<CanAccess
     {
         var result = context.User.Identity.IsAuthenticated;
 
-        if (!result)
+        if (!result && context.Resource is Store store)
         {
-            if (context.Resource is Store store)
-            {
-                result = store.Settings?.GetValue<bool>(StoreSetting.AllowAnonymousUsers) == true;
-            }
+            result = store.Settings?.GetValue<bool>(StoreSetting.AllowAnonymousUsers) == true;
         }
 
         if (result)
