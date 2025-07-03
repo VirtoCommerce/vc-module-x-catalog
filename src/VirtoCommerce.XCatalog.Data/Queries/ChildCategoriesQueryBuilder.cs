@@ -9,6 +9,7 @@ using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.StoreModule.Core.Services;
+using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -34,6 +35,12 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
         _categoryService = categoryService;
     }
 
+    protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, ChildCategoriesQuery request)
+    {
+        await base.BeforeMediatorSend(context, request);
+
+        await Authorize(context, request.Store, new CanAccessStoreAuthorizationRequirement());
+    }
 
     protected override async Task AfterMediatorSend(IResolveFieldContext<object> context, ChildCategoriesQuery request, ChildCategoriesQueryResponse response)
     {
