@@ -116,6 +116,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             result.Store = store;
             result.Results = ConvertProducts(searchResult);
             result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
+            result.Filters = CreateFilters(request);
             result.TotalCount = (int)searchResult.TotalCount;
 
             await _pipeline.Execute(result);
@@ -189,6 +190,27 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             builder.AddTerms(new[] { "is:product" }, skipIfExists: true);
             builder.AddTerms(new[] { "status:visible" }, skipIfExists: true);
             builder.AddTerms(new[] { $"__outline:{catalog}" });
+        }
+
+        protected virtual List<SearchProductFilterResult> CreateFilters(SearchProductQuery request)
+        {
+            var userSearchRequestContairer = new IndexSearchRequestBuilder().ParseFilters(_phraseParser, request.Filter).Build();
+            return userSearchRequestContairer
+                .GetChildFilters()
+                .Select(f => new SearchProductFilterResult
+                {
+                    Name = f.GetFieldName(),
+                    FilterType = f is TermFilter ? "term" : "range",
+                    TermValues = f is TermFilter termFilter ? termFilter.Values.Select(x => new SearchProductFilterTermValue { Value = x }).ToList() : null,
+                    RangeValues = f is RangeFilter rangeFilter ? rangeFilter.Values.Select(x => new SearchProductFilterRangeValue
+                    {
+                        Lower = x.Lower,
+                        Upper = x.Upper,
+                        IncludeLowerBound = x.IncludeLower,
+                        IncludeUpperBound = x.IncludeUpper
+                    }).ToList() : null
+                })
+                .ToList();
         }
     }
 }
