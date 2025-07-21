@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GraphQL;
 using GraphQL.Types;
+using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.BaseQueries;
 using VirtoCommerce.XCatalog.Core.Models;
 
@@ -11,6 +12,8 @@ public class ProductSuggestionsQuery : Query<ProductSuggestionsQueryResponse>
     public string StoreId { get; set; }
     public string Query { get; set; }
     public int Size { get; set; }
+
+    public Store Store { get; set; }
 
     public override IEnumerable<QueryArgument> GetArguments()
     {
