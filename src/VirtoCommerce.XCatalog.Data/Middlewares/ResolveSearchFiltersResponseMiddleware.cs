@@ -16,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares;
 
 public class ResolveSearchFiltersResponseMiddleware(IPropertyService propertyService, ISearchPhraseParser phraseParser) : IAsyncMiddleware<SearchProductResponse>
 {
-    public async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
+    public virtual async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
     {
         var responseGroup = EnumUtility.SafeParse(parameter.Query.GetResponseGroup(), ExpProductResponseGroup.None);
         if (responseGroup.HasFlag(ExpProductResponseGroup.ParseFilters))
@@ -40,6 +40,16 @@ public class ResolveSearchFiltersResponseMiddleware(IPropertyService propertySer
         var cultureName = parameter.Query.CultureName ?? parameter.Store.DefaultLanguage;
 
         // try resolve terms names via product properties
+        ResolveTermLabelsByProductProperties(parameter, termFilters, cultureName);
+
+        // try resolve terms names via property metadata service
+        await ResolveTermLabelsByPropertyMetadata(parameter, termFilters, cultureName);
+
+        await next(parameter);
+    }
+
+    private static void ResolveTermLabelsByProductProperties(SearchProductResponse parameter, List<SearchProductFilterResult> termFilters, string cultureName)
+    {
         var productProperties = parameter.Results
             .Where(x => x.IndexedProduct is not null && x.IndexedProduct.Properties is not null)
             .SelectMany(x => x.IndexedProduct.Properties)
@@ -55,12 +65,13 @@ public class ResolveSearchFiltersResponseMiddleware(IPropertyService propertySer
                 termFilter.Label = displayName.Name;
             }
         }
+    }
 
-        // try resolve terms names via property metadata service
+    private async Task ResolveTermLabelsByPropertyMetadata(SearchProductResponse parameter, List<SearchProductFilterResult> termFilters, string cultureName)
+    {
         var allProperties = await propertyService.GetAllCatalogPropertiesAsync(parameter.Store.Catalog);
 
-        termFilters = termFilters.Where(x => x.Label == null).ToList();
-        foreach (var termFilter in termFilters)
+        foreach (var termFilter in termFilters.Where(x => x.Label == null))
         {
             var property = allProperties.FirstOrDefault(x => x.Name.EqualsIgnoreCase(termFilter.Name));
             if (property != null)
@@ -72,11 +83,9 @@ public class ResolveSearchFiltersResponseMiddleware(IPropertyService propertySer
                 }
             }
         }
-
-        await next(parameter);
     }
 
-    protected virtual List<SearchProductFilterResult> CreateFilters(SearchProductQuery request)
+    private List<SearchProductFilterResult> CreateFilters(SearchProductQuery request)
     {
         var userSearchRequestContairer = new IndexSearchRequestBuilder()
             .ParseFilters(phraseParser, request.Filter)
