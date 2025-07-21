@@ -26,7 +26,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("Term facets")
                 .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Facets.OfType<TermFacetResult>());
 
-            Field<NonNullGraphType<ListGraphType<NonNullGraphType<SearchProductFilterResultType>>>>("filters")
+            Field<ListGraphType<NonNullGraphType<SearchProductFilterResultType>>>("filters")
                 .Description("Parsed filters")
                 .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Filters);
         }

@@ -23,6 +23,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
     public class SearchProductFilterResult
     {
         public string Name { get; set; }
+        public string Label { get; set; }
 
         /// <summary>
         /// "term" or "range"

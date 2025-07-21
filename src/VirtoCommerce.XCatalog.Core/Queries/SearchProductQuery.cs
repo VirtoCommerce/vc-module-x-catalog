@@ -118,6 +118,10 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             {
                 result |= ExpProductResponseGroup.LoadPurchased;
             }
+            if (IncludeFields.ContainsAny("filters"))
+            {
+                result |= ExpProductResponseGroup.ParseFilters;
+            }
             return result.ToString();
         }
 
