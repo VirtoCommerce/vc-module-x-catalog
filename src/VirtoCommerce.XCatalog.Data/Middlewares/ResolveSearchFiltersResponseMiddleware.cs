@@ -87,11 +87,11 @@ public class ResolveSearchFiltersResponseMiddleware(IPropertyService propertySer
 
     private List<SearchProductFilterResult> CreateFilters(SearchProductQuery request)
     {
-        var userSearchRequestContairer = new IndexSearchRequestBuilder()
+        var userSearchRequestContainer = new IndexSearchRequestBuilder()
             .ParseFilters(phraseParser, request.Filter)
             .Build();
 
-        return userSearchRequestContairer
+        return userSearchRequestContainer
             .GetChildFilters()
             .Select(f => new SearchProductFilterResult
             {
