@@ -104,6 +104,7 @@ public class ChildCategoriesQueryHandler : IQueryHandler<ChildCategoriesQuery, C
         productsRequest.CultureName = childCategoriesQuery?.CultureName;
         productsRequest.CurrencyCode = childCategoriesQuery?.CurrencyCode;
         productsRequest.UserId = childCategoriesQuery?.UserId ?? ModuleConstants.AnonymousUser.UserName;
+        productsRequest.OrganizationId = childCategoriesQuery.OrganizationId;
         productsRequest.Filter = childCategoriesQuery?.ProductFilter;
         productsRequest.Take = 0;
         productsRequest.Facet = "__outline";

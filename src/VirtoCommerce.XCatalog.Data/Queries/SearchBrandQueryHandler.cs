@@ -165,6 +165,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         productsRequest.CultureName = request?.CultureName;
         productsRequest.CurrencyCode = request?.CurrencyCode;
         productsRequest.UserId = request?.UserId ?? ModuleConstants.AnonymousUser.UserName;
+        productsRequest.OrganizationId = request.OrganizationId;
         productsRequest.Take = 0;
         productsRequest.Facet = brandPropertyName;
         productsRequest.IncludeFields =
