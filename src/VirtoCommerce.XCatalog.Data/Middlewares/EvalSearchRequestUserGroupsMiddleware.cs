@@ -51,7 +51,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await next(parameter);
         }
 
-        private IList<string> GetUserGroupsFromContact(Contact contact)
+        private static IList<string> GetUserGroupsFromContact(Contact contact)
         {
             var userGroups = new List<string>();
 
@@ -63,7 +63,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return userGroups;
         }
 
-        private async Task<IEnumerable<string>> GetUserGroupsFromOrganizartion(string organizationId)
+        private async Task<IList<string>> GetUserGroupsFromOrganizartion(string organizationId)
         {
             var userGroups = new List<string>();
 
