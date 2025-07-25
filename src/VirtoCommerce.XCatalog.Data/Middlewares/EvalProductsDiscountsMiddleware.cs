@@ -78,7 +78,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             promoEvalContext.StoreId = query.StoreId;
             promoEvalContext.Language = query.CultureName;
             promoEvalContext.CustomerId = query.UserId;
-            promoEvalContext.OrganizaitonId = query.OrganizationId;
+            promoEvalContext.OrganizationId = query.OrganizationId;
 
             await _pipeline.Execute(promoEvalContext);
 
