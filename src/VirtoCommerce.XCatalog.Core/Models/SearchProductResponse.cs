@@ -30,6 +30,11 @@ namespace VirtoCommerce.XCatalog.Core.Models
         /// </summary>
         public string FilterType { get; set; }
 
+        /// <summary>
+        /// For term filters (except outlines), this is the property Id.
+        /// </summary>
+        public string PropertyId { get; set; }
+
         public IList<SearchProductFilterTermValue> TermValues { get; set; } = [];
         public IList<SearchProductFilterRangeValue> RangeValues { get; set; } = [];
     }
@@ -37,6 +42,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
     public class SearchProductFilterTermValue
     {
         public string Value { get; set; }
+        public string Label { get; set; }
     }
 
     public class SearchProductFilterRangeValue
