@@ -6,6 +6,7 @@ using PipelineNet.Middleware;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Extensions;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core;
 using VirtoCommerce.XCatalog.Data.Index;
@@ -14,9 +15,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class EvalSearchRequestUserGroupsMiddleware : IAsyncMiddleware<IndexSearchRequestBuilder>
     {
-        protected readonly IMemberResolver _memberResolver;
-        protected readonly IMemberService _memberService;
-        protected readonly IModuleCatalog _moduleCatalog;
+        private readonly IMemberResolver _memberResolver;
+        private readonly IMemberService _memberService;
+        private readonly IModuleCatalog _moduleCatalog;
 
         public EvalSearchRequestUserGroupsMiddleware(IMemberResolver memberResolver, IMemberService memberService, IModuleCatalog moduleCatalog)
         {
@@ -27,10 +28,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public virtual async Task Run(IndexSearchRequestBuilder parameter, Func<IndexSearchRequestBuilder, Task> next)
         {
-            // Please note that this solution is temporary. In the upcoming release, we are actively working on resolving this issue by introducing optional dependencies.
-            // With optional dependencies, the XAPI will seamlessly integrate with the Catalog Personalization Module if it is installed, and gracefully handle scenarios where the module is not present.
-            // This approach will provide a more robust and flexible solution, enabling smoother interactions between the XAPI and the Catalog Personalization Module.
-            if (IsCatalogPersonalizationModuleInstalled())
+            if (_moduleCatalog.IsModuleInstalled("VirtoCommerce.CatalogPersonalization"))
             {
                 var userGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "__any" };
 
@@ -40,8 +38,10 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     if (member is Contact contact)
                     {
-                        await GetUserGroupsInheritedAsync(contact, userGroups);
+                        GetUserGroupsFromContact(contact, userGroups);
                     }
+
+                    await GetUserGroupsFromOrganization(parameter.OrganizationId, userGroups);
                 }
 
                 parameter?.AddTermFilter("user_groups", userGroups);
@@ -50,26 +50,19 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await next(parameter);
         }
 
-
-        /// <summary>
-        /// Checks if the Catalog Personalization Module is installed.
-        /// </summary>
-        /// <returns></returns>
-        private bool IsCatalogPersonalizationModuleInstalled()
-        {
-            return _moduleCatalog.Modules.Any(m => m.ModuleName == "VirtoCommerce.CatalogPersonalization");
-        }
-
-        private async Task GetUserGroupsInheritedAsync(Contact contact, HashSet<string> userGroups)
+        private static void GetUserGroupsFromContact(Contact contact, HashSet<string> userGroups)
         {
             if (!contact.Groups.IsNullOrEmpty())
             {
                 userGroups.AddRange(contact.Groups);
             }
+        }
 
-            if (!contact.Organizations.IsNullOrEmpty())
+        private async Task GetUserGroupsFromOrganization(string organizationId, HashSet<string> userGroups)
+        {
+            if (!organizationId.IsNullOrEmpty())
             {
-                var organizations = await _memberService.GetByIdsAsync(contact.Organizations.ToArray(), nameof(MemberResponseGroup.WithGroups));
+                var organizations = await _memberService.GetByIdsAsync([organizationId], nameof(MemberResponseGroup.WithGroups));
                 userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
             }
         }

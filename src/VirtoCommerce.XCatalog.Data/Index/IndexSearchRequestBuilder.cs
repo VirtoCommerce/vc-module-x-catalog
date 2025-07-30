@@ -17,6 +17,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public const string ScoreSortingFieldName = "score";
 
         public string UserId { get; private set; }
+        public string OrganizationId { get; set; }
         public string StoreId { get; private set; }
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
@@ -57,6 +58,12 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IndexSearchRequestBuilder WithUserId(string userId)
         {
             UserId = userId;
+            return this;
+        }
+
+        public IndexSearchRequestBuilder WithOrganizationId(string organizationId)
+        {
+            OrganizationId = organizationId;
             return this;
         }
 

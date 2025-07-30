@@ -102,6 +102,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             evalContext.StoreId = query.StoreId;
             evalContext.CatalogId = store?.Catalog;
             evalContext.CustomerId = query.UserId;
+            evalContext.OrganizationId = query.OrganizationId;
             evalContext.Language = query.CultureName;
             evalContext.CertainDate = DateTime.UtcNow;
 

@@ -130,6 +130,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             var builder = new IndexSearchRequestBuilder()
                                             .WithStoreId(request.StoreId)
                                             .WithUserId(request.UserId)
+                                            .WithOrganizationId(request.OrganizationId)
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                                             .AddCertainDateFilter(DateTime.UtcNow)
