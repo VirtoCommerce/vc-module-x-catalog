@@ -84,47 +84,58 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         public virtual string GetResponseGroup()
         {
             var result = ExpProductResponseGroup.None;
+
             if (IncludeFields.Any(x => x.Contains("price")))
             {
                 result |= ExpProductResponseGroup.LoadPrices;
             }
+
             if (IncludeFields.Any(x => x.Contains("minVariationPrice")))
             {
                 result |= ExpProductResponseGroup.LoadVariationPrices;
             }
+
             if (IncludeFields.Any(x => x.Contains("availabilityData")))
             {
                 result |= ExpProductResponseGroup.LoadInventories;
                 result |= ExpProductResponseGroup.LoadPrices;
             }
+
             if (IncludeFields.Any(x => x.Contains("vendor")))
             {
                 result |= ExpProductResponseGroup.LoadVendors;
             }
+
             if (IncludeFields.Any(x => x.Contains("rating")))
             {
                 result |= ExpProductResponseGroup.LoadRating;
             }
+
             if (IncludeFields.Any(x => x.Contains("_facets")))
             {
                 result |= ExpProductResponseGroup.LoadFacets;
             }
+
             if (IncludeFields.ContainsAny("inWishlist", "wishlistIds"))
             {
                 result |= ExpProductResponseGroup.LoadWishlists;
             }
+
             if (IncludeFields.ContainsAny("properties", "keyProperties"))
             {
                 result |= ExpProductResponseGroup.LoadPropertyMetadata;
             }
+
             if (IncludeFields.ContainsAny("isPurchased"))
             {
                 result |= ExpProductResponseGroup.LoadPurchased;
             }
+
             if (IncludeFields.ContainsAny("filters"))
             {
                 result |= ExpProductResponseGroup.ParseFilters;
             }
+
             return result.ToString();
         }
 
