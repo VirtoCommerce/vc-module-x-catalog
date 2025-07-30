@@ -88,20 +88,15 @@ public class ResolveSearchFiltersResponseMiddleware(
     {
         var cultureName = response.Query.CultureName ?? response.Store.DefaultLanguage;
 
-        var propertyTermFilters = response.Filters
+        var termFilters = response.Filters
             .Where(x => x.FilterType == _termFilterType && !IsOutlineFilter(x))
             .ToList();
 
-        if (propertyTermFilters.Count > 0)
+        if (termFilters.Count > 0)
         {
-            // Try to resolve term names via product properties
-            ResolveTermLabelsByProductProperties(propertyTermFilters, cultureName, response.Results);
-
-            // Try to resolve term names via property metadata service
-            await ResolveTermLabelsByPropertyMetadataAsync(propertyTermFilters, cultureName, response.Store.Catalog);
-
-            // Try to resolve term value labels via property values
-            await ResolveTermValueLabelsAsync(propertyTermFilters, cultureName);
+            ResolveFilterLabelsByProductProperties(termFilters, cultureName, response.Results);
+            await ResolveFilterLabelsByPropertyMetadataAsync(termFilters, cultureName, response.Store.Catalog);
+            await ResolveFilterValueLabelsByPropertyValuesAsync(termFilters, cultureName);
         }
 
         var outlineFilters = response.Filters
@@ -110,7 +105,7 @@ public class ResolveSearchFiltersResponseMiddleware(
 
         if (outlineFilters.Count > 0)
         {
-            await ResolveTermLabelsByCategoryAsync(outlineFilters, cultureName);
+            await ResolveFilterValueLabelsByCategoryAsync(outlineFilters, cultureName);
         }
     }
 
@@ -119,7 +114,7 @@ public class ResolveSearchFiltersResponseMiddleware(
         return filter.Name is "__outline" or "__outline_named";
     }
 
-    private static void ResolveTermLabelsByProductProperties(List<SearchProductFilterResult> termFilters, string cultureName, IList<ExpProduct> products)
+    private static void ResolveFilterLabelsByProductProperties(List<SearchProductFilterResult> termFilters, string cultureName, IList<ExpProduct> products)
     {
         var productProperties = products
             .Where(x => x.IndexedProduct?.Properties != null)
@@ -145,7 +140,7 @@ public class ResolveSearchFiltersResponseMiddleware(
         }
     }
 
-    private async Task ResolveTermLabelsByPropertyMetadataAsync(List<SearchProductFilterResult> termFilters, string cultureName, string catalogId)
+    private async Task ResolveFilterLabelsByPropertyMetadataAsync(List<SearchProductFilterResult> termFilters, string cultureName, string catalogId)
     {
         var filtersToLocalize = termFilters.Where(x => x.Label == null).ToList();
         if (filtersToLocalize.Count == 0)
@@ -172,7 +167,7 @@ public class ResolveSearchFiltersResponseMiddleware(
         }
     }
 
-    private async Task ResolveTermValueLabelsAsync(List<SearchProductFilterResult> termFilters, string cultureName)
+    private async Task ResolveFilterValueLabelsByPropertyValuesAsync(List<SearchProductFilterResult> termFilters, string cultureName)
     {
         var propertyIds = termFilters
             .Where(x => x.PropertyId != null)
@@ -189,16 +184,16 @@ public class ResolveSearchFiltersResponseMiddleware(
                 continue;
             }
 
-            foreach (var termFilterValue in filter.TermValues)
+            foreach (var termValue in filter.TermValues)
             {
-                var dictionaryItem = dictionaryItems.FirstOrDefault(x => x.PropertyId == filter.PropertyId && x.Alias.EqualsIgnoreCase(termFilterValue.Value));
+                var dictionaryItem = dictionaryItems.FirstOrDefault(x => x.PropertyId == filter.PropertyId && x.Alias.EqualsIgnoreCase(termValue.Value));
                 if (dictionaryItem == null)
                 {
                     continue;
                 }
 
                 var localizedValue = dictionaryItem.LocalizedValues.FirstOrDefault(x => x.LanguageCode.EqualsIgnoreCase(cultureName));
-                termFilterValue.Label = localizedValue?.Value ?? dictionaryItem.Alias;
+                termValue.Label = localizedValue?.Value ?? dictionaryItem.Alias;
             }
         }
     }
@@ -226,7 +221,7 @@ public class ResolveSearchFiltersResponseMiddleware(
         return result;
     }
 
-    private async Task ResolveTermLabelsByCategoryAsync(List<SearchProductFilterResult> outlineFilters, string cultureName)
+    private async Task ResolveFilterValueLabelsByCategoryAsync(List<SearchProductFilterResult> outlineFilters, string cultureName)
     {
         var categoryIds = outlineFilters
             .SelectMany(x => x.TermValues)
