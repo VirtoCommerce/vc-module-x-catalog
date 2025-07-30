@@ -25,6 +25,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<NonNullGraphType<ListGraphType<NonNullGraphType<CoreFacets.TermFacetResultType>>>>("term_facets")
                 .Description("Term facets")
                 .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Facets.OfType<TermFacetResult>());
+
+            Field<ListGraphType<NonNullGraphType<SearchProductFilterResultType>>>("filters")
+                .Description("Parsed filters")
+                .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Filters);
         }
     }
 
@@ -36,5 +40,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         }
 
         public IList<FacetResult> Facets { get; set; }
+
+        public IList<SearchProductFilterResult> Filters { get; set; }
     }
 }

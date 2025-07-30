@@ -34,6 +34,7 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
                 builder.AddMiddleware(typeof(EvalProductsInventoryMiddleware));
                 builder.AddMiddleware(typeof(EvalProductsVendorMiddleware));
                 builder.AddMiddleware(typeof(EnsurePropertyMetadataLoadedMiddleware));
+                builder.AddMiddleware(typeof(ResolveSearchFiltersResponseMiddleware));
             });
 
             services.AddPipeline<SearchCategoryResponse>(builder =>
