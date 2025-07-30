@@ -14,6 +14,7 @@ public class SearchProductFilterResultType : ExtendableGraphType<SearchProductFi
 
         Field(x => x.Name, nullable: false).Description("The name of the filter");
         Field(x => x.FilterType, nullable: false).Description("The type of the filter, e.g., 'term' or 'range'");
+        Field(x => x.IsGenerated, nullable: false).Description("Indicates whether the filter was generated automatically");
 
         Field<StringGraphType>("label")
             .Description("Localized name of the filter (if available)")

@@ -111,6 +111,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var result = OverridableType<SearchProductResponse>.New();
             result.Query = request;
+            result.UserFilters = builder.UserFilters;
+            result.GeneratedFilters = builder.GeneratedFilters;
             result.AllStoreCurrencies = allStoreCurrencies;
             result.Currency = currency;
             result.Store = store;
@@ -133,6 +135,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .AddCertainDateFilter(DateTime.UtcNow)
                                             .ParseFilters(_phraseParser, request.Filter)
                                             .WithSearchPhrase(request.Query)
+                                            .WithPreserveUserQuery(request.PreserveUserQuery)
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
                                             .AddSorting(request.Sort)
@@ -186,9 +189,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <param name="catalog">Name of the current catalog</param>
         protected virtual void AddDefaultTerms(IndexSearchRequestBuilder builder, string catalog)
         {
-            builder.AddTerms(new[] { "is:product" }, skipIfExists: true);
-            builder.AddTerms(new[] { "status:visible" }, skipIfExists: true);
-            builder.AddTerms(new[] { $"__outline:{catalog}" });
+            builder.AddTermFilter("is", "product", skipIfExists: true);
+            builder.AddTermFilter("status", "visible", skipIfExists: true);
+            builder.AddTermFilter("__outline", catalog);
         }
     }
 }

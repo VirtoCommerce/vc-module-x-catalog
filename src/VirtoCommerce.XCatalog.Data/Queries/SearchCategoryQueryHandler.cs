@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -137,12 +136,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IndexSearchRequestBuilder GetIndexedSearchRequestBuilder(SearchCategoryQuery request, Store store)
         {
-            //Limit search result with store catalog
-            var essentialTerms = new List<string>
-            {
-                $"__outline:{store.Catalog}",
-            };
-
             var searchRequestBuilder = new IndexSearchRequestBuilder()
                 .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                 .ParseFilters(_phraseParser, request.Filter)
@@ -150,12 +143,12 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 .WithPaging(request.Skip, request.Take)
                 .AddObjectIds(request.ObjectIds)
                 .AddSorting(request.Sort)
-                .AddTerms(essentialTerms)
+                .AddTermFilter("__outline", store.Catalog) // Limit search result by store catalog
                 .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 
             if (request.ObjectIds.IsNullOrEmpty())
             {
-                searchRequestBuilder.AddTerms(["status:visible"], skipIfExists: true);
+                searchRequestBuilder.AddTermFilter("status", "visible", skipIfExists: true);
             }
 
             return searchRequestBuilder;

@@ -21,8 +21,13 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
 
+        public string SearchKeywords => SearchRequest.SearchKeywords;
         public IFilter Filter => SearchRequest.Filter;
         public IList<AggregationRequest> Aggregations => SearchRequest.Aggregations;
+
+        public bool PreserveUserQuery { get; private set; }
+        public IList<IFilter> UserFilters { get; } = [];
+        public IList<IFilter> GeneratedFilters { get; } = [];
 
         protected SearchRequest SearchRequest { get; set; }
 
@@ -143,6 +148,50 @@ namespace VirtoCommerce.XCatalog.Data.Index
             return this;
         }
 
+        public IndexSearchRequestBuilder WithPreserveUserQuery(bool preserveUserQuery)
+        {
+            PreserveUserQuery = preserveUserQuery;
+            return this;
+        }
+
+        public IndexSearchRequestBuilder AddTermFilter(string fieldName, string value, bool skipIfExists = false, bool isGenerated = false)
+        {
+            if (!value.IsNullOrEmpty())
+            {
+                AddTermFilterInternal(fieldName, [value], skipIfExists, isGenerated);
+            }
+
+            return this;
+        }
+
+        public IndexSearchRequestBuilder AddTermFilter(string fieldName, ICollection<string> values, bool skipIfExists = false, bool isGenerated = false)
+        {
+            var nonEmptyValues = values?.Where(x => !x.IsNullOrEmpty()).ToList();
+            if (nonEmptyValues?.Count > 0)
+            {
+                AddTermFilterInternal(fieldName, nonEmptyValues, skipIfExists, isGenerated);
+            }
+
+            return this;
+        }
+
+        private void AddTermFilterInternal(string fieldName, IList<string> values, bool skipIfExists, bool isGenerated)
+        {
+            var filter = new TermFilter
+            {
+                FieldName = fieldName,
+                Values = values,
+            };
+
+            AddFiltersToSearchRequest([filter], skipIfExists);
+
+            if (isGenerated)
+            {
+                GeneratedFilters.Add(filter);
+            }
+        }
+
+        [Obsolete("Use AddTermFilter()", DiagnosticId = "VC0011", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public IndexSearchRequestBuilder AddTerms(IEnumerable<string> terms)
         {
             if (terms != null)
@@ -154,6 +203,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
             return this;
         }
 
+        [Obsolete("Use AddTermFilter()", DiagnosticId = "VC0011", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public IndexSearchRequestBuilder AddTerms(IEnumerable<string> terms, bool skipIfExists)
         {
             if (terms != null)
@@ -183,11 +233,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 FilterSyntaxMapper.MapFilterAdditionalSyntax(filter);
 
                 var convertedFilter = ConvertFilter(filter);
-
                 filters.Add(convertedFilter);
             }
 
-            AddFiltersToSearchRequest(filters.ToArray());
+            AddFiltersToSearchRequest(filters);
+            UserFilters.AddRange(filters);
 
             return this;
         }
@@ -254,7 +304,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 return this;
             }
 
-            // PT-1613: Support aliases for Facet expressions e.g price.usd[TO 200) as price_below_200
+            // PT-1613: Support aliases for Facet expressions e.g. price.usd[TO 200) as price_below_200
             // PT-1613: Need to create a new  Antlr file with g4-lexer rules and generate parser especially for facets expression
             // that will return proper AggregationRequests objects
             var parseResult = phraseParser.Parse(facetPhrase);
@@ -400,22 +450,21 @@ namespace VirtoCommerce.XCatalog.Data.Index
         protected void AddFiltersToSearchRequest(IList<IFilter> filters, bool skipIfExists = false)
         {
             var childFilters = ((AndFilter)SearchRequest.Filter).ChildFilters;
+            IEnumerable<IFilter> filtersToAdd = filters;
 
             //Skip adding duplicate filters
             if (skipIfExists)
             {
-                var existsFiltersNames = childFilters.OfType<INamedFilter>()
+                var existingFilterNames = childFilters.OfType<INamedFilter>()
                     .Select(x => x.FieldName)
                     .Distinct()
                     .ToArray();
 
-                var comparer = StringComparer.InvariantCultureIgnoreCase;
-                filters = filters
-                    .Where(x => !(x is INamedFilter filter && existsFiltersNames.Contains(filter.FieldName, comparer)))
-                    .ToArray();
+                filtersToAdd = filters
+                    .Where(x => x is not INamedFilter filter || !existingFilterNames.ContainsIgnoreCase(filter.FieldName));
             }
 
-            childFilters.AddRange(filters);
+            childFilters.AddRange(filtersToAdd);
         }
 
         private static IFilter[] GetFiltersFromTerm(IEnumerable<string> terms)
@@ -432,7 +481,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
                     FieldName = item[0],
                     Values = item[1].Split(valuesDelimiter, StringSplitOptions.RemoveEmptyEntries)
                         .Select(x => x.Replace(commaEscapeString, ","))
-                        .ToArray()
+                        .ToArray(),
                 }).ToArray<IFilter>();
         }
     }

@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             // This approach will provide a more robust and flexible solution, enabling smoother interactions between the XAPI and the Catalog Personalization Module.
             if (IsCatalogPersonalizationModuleInstalled())
             {
-                var userGroups = new List<string> { "__any" };
+                var userGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "__any" };
 
                 if (!string.IsNullOrEmpty(parameter?.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsIgnoreCase(parameter.UserId))
                 {
@@ -40,12 +40,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     if (member is Contact contact)
                     {
-                        userGroups.AddRange(await GetUserGroupsInheritedAsync(contact));
+                        await GetUserGroupsInheritedAsync(contact, userGroups);
                     }
                 }
 
-                var userGroupsValue = string.Join(',', userGroups);
-                parameter?.AddTerms(new[] { $"user_groups:{userGroupsValue}" });
+                parameter?.AddTermFilter("user_groups", userGroups);
             }
 
             await next(parameter);
@@ -61,10 +60,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return _moduleCatalog.Modules.Any(m => m.ModuleName == "VirtoCommerce.CatalogPersonalization");
         }
 
-        private async Task<IList<string>> GetUserGroupsInheritedAsync(Contact contact)
+        private async Task GetUserGroupsInheritedAsync(Contact contact, HashSet<string> userGroups)
         {
-            var userGroups = new List<string>();
-
             if (!contact.Groups.IsNullOrEmpty())
             {
                 userGroups.AddRange(contact.Groups);
@@ -72,11 +69,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (!contact.Organizations.IsNullOrEmpty())
             {
-                var organizations = await _memberService.GetByIdsAsync(contact.Organizations.ToArray(), MemberResponseGroup.WithGroups.ToString());
+                var organizations = await _memberService.GetByIdsAsync(contact.Organizations.ToArray(), nameof(MemberResponseGroup.WithGroups));
                 userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
             }
-
-            return userGroups;
         }
     }
 }

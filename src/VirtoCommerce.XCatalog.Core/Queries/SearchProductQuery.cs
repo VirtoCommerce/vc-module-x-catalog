@@ -19,6 +19,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         public bool Fuzzy { get; set; }
         public int? FuzzyLevel { get; set; }
         public string Filter { get; set; }
+        public bool PreserveUserQuery { get; set; }
         public string Facet { get; set; }
         public string Sort { get; set; }
         public int Skip { get; set; }
@@ -37,6 +38,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
 
             yield return Argument<StringGraphType>(nameof(Query), "The query parameter performs the full-text search");
             yield return Argument<StringGraphType>(nameof(Filter), "This parameter applies a filter to the query results");
+            yield return Argument<BooleanGraphType>(nameof(PreserveUserQuery), "When true, the search query and filters will not be modified by the application");
             yield return Argument<StringGraphType>(nameof(Facet), "Facets calculate statistical counts to aid in faceted navigation.");
             yield return Argument<BooleanGraphType>(nameof(Fuzzy), "When the fuzzy query parameter is set to true the search endpoint will also return products that contain slight differences to the search text.");
             yield return Argument<IntGraphType>(nameof(FuzzyLevel), "The fuzziness level is quantified in terms of the Damerau-Levenshtein distance, this distance being the number of operations needed to transform one word into another.");
@@ -63,6 +65,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             {
                 Query = context.GetArgument<string>(nameof(Query));
                 Filter = context.GetArgument<string>(nameof(Filter));
+                PreserveUserQuery = context.GetArgument<bool>(nameof(PreserveUserQuery));
                 Facet = context.GetArgument<string>(nameof(Facet));
                 Fuzzy = context.GetArgument<bool>(nameof(Fuzzy));
                 FuzzyLevel = context.GetArgument<int?>(nameof(FuzzyLevel));
