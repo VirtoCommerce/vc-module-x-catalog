@@ -54,6 +54,12 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                 if (result != null)
                 {
                     result.Label = request.Labels?.FirstBestMatchForLanguage(x => x.Language, cultureName)?.Label ?? result.Name;
+
+                    context.Items.TryGetValue("order", out var orderObj);
+                    if (orderObj != null)
+                    {
+                        result.Order = (int)orderObj;
+                    }
                 }
 
                 return result;
