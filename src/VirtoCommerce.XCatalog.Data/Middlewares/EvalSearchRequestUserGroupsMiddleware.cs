@@ -15,9 +15,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class EvalSearchRequestUserGroupsMiddleware : IAsyncMiddleware<IndexSearchRequestBuilder>
     {
-        protected readonly IMemberResolver _memberResolver;
-        protected readonly IMemberService _memberService;
-        protected readonly IModuleCatalog _moduleCatalog;
+        private readonly IMemberResolver _memberResolver;
+        private readonly IMemberService _memberService;
+        private readonly IModuleCatalog _moduleCatalog;
 
         public EvalSearchRequestUserGroupsMiddleware(IMemberResolver memberResolver, IMemberService memberService, IModuleCatalog moduleCatalog)
         {
@@ -30,7 +30,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         {
             if (_moduleCatalog.IsModuleInstalled("VirtoCommerce.CatalogPersonalization"))
             {
-                var userGroups = new List<string> { "__any" };
+                var userGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "__any" };
 
                 if (!string.IsNullOrEmpty(parameter?.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsIgnoreCase(parameter.UserId))
                 {
@@ -38,42 +38,33 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     if (member is Contact contact)
                     {
-                        userGroups.AddRange(GetUserGroupsFromContact(contact));
+                        GetUserGroupsFromContact(contact, userGroups);
                     }
 
-                    userGroups.AddRange(await GetUserGroupsFromOrganizartion(parameter.OrganizationId));
+                    await GetUserGroupsFromOrganization(parameter.OrganizationId, userGroups);
                 }
 
-                var userGroupsValue = string.Join(',', userGroups);
-                parameter?.AddTerms([$"user_groups:{userGroupsValue}"]);
+                parameter?.AddTermFilter("user_groups", userGroups);
             }
 
             await next(parameter);
         }
 
-        private static IList<string> GetUserGroupsFromContact(Contact contact)
+        private static void GetUserGroupsFromContact(Contact contact, HashSet<string> userGroups)
         {
-            var userGroups = new List<string>();
-
             if (!contact.Groups.IsNullOrEmpty())
             {
                 userGroups.AddRange(contact.Groups);
             }
-
-            return userGroups;
         }
 
-        private async Task<IList<string>> GetUserGroupsFromOrganizartion(string organizationId)
+        private async Task GetUserGroupsFromOrganization(string organizationId, HashSet<string> userGroups)
         {
-            var userGroups = new List<string>();
-
             if (!organizationId.IsNullOrEmpty())
             {
-                var organizations = await _memberService.GetByIdsAsync([organizationId], MemberResponseGroup.WithGroups.ToString());
+                var organizations = await _memberService.GetByIdsAsync([organizationId], nameof(MemberResponseGroup.WithGroups));
                 userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
             }
-
-            return userGroups;
         }
     }
 }

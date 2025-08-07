@@ -44,6 +44,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 return new ProductsConnection<ExpProduct>(response.Results, query.Skip, query.Take, response.TotalCount)
                 {
                     Facets = response.Facets,
+                    Filters = response.Filters,
                 };
             });
 
