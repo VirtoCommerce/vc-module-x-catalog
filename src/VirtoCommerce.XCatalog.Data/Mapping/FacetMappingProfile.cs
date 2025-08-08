@@ -4,6 +4,7 @@ using System.Linq;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Models.Facets;
 using CoreFacets = VirtoCommerce.Xapi.Core.Models.Facets;
 
 namespace VirtoCommerce.XCatalog.Data.Mapping
@@ -47,6 +48,11 @@ namespace VirtoCommerce.XCatalog.Data.Mapping
                         })
                             .ToArray() ?? [],
                         Name = request.Field,
+                        Statistics = request.Statistics == null ? null : new RangeFacetStatistics
+                        {
+                            Max = request.Statistics.Max,
+                            Min = request.Statistics.Min,
+                        }
                     },
                     _ => null
                 };
