@@ -21,6 +21,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return string.IsNullOrEmpty(cultureName) ? context.Source.Alias : context.Source.LocalizedValues.FirstOrDefault(x => x.LanguageCode == cultureName)?.Value ?? context.Source.Alias;
                 })
                 .Description("Value alias.");
+            Field(x => x.ColorCode, nullable: false).Description("Color code in CSS format.");
             Field(x => x.SortOrder, nullable: false).Description("Value order.");
         }
     }

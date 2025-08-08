@@ -76,6 +76,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
 
+            Field<StringGraphType>("colorCode")
+                .Description("Color code in CSS format.")
+                .Resolve(context => context.Source.Values.Select(x => x.ColorCode).FirstOrDefault());
+
             var group = new FieldType
             {
                 Name = "group",
