@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -15,6 +17,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
 {
     public class SearchProductQuery : CatalogQueryBase<SearchProductResponse>, ISearchQuery
     {
+        public static readonly string OutlineRegex = @"(?:^|\s)(category\.subtree|__outline|category\.path):(?<outline>\S+)";
+
         public string Keyword { get => Query; set => Query = value; }
         public string Query { get; set; }
         public bool Fuzzy { get; set; }
@@ -79,6 +83,15 @@ namespace VirtoCommerce.XCatalog.Core.Queries
                 {
                     Skip = int.TryParse(connectionContext.After, out var skip) ? skip : 0;
                     Take = connectionContext.First ?? connectionContext.PageSize ?? Connections.DefaultPageSize;
+                }
+
+                if (string.IsNullOrEmpty(PreviousOutline))
+                {
+                    PreviousOutline = GetPreviousOutlineFromFilter(context);
+                    if (!string.IsNullOrEmpty(PreviousOutline))
+                    {
+                        context.UserContext.Add("previousOutline", PreviousOutline);
+                    }
                 }
             }
         }
@@ -184,6 +197,20 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             }
 
             return result.ToString();
+        }
+
+        protected string GetPreviousOutlineFromFilter(IResolveFieldContext context)
+        {
+            if (!string.IsNullOrEmpty(Filter))
+            {
+                var match = Regex.Match(Filter, OutlineRegex, RegexOptions.Compiled);
+                if (match.Success)
+                {
+                    var outline = match.Groups["outline"].Value;
+                    return OutlineString.GetLastItem(outline);
+                }
+            }
+            return string.Empty;
         }
     }
 }
