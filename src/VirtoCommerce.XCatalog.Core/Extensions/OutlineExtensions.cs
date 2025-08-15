@@ -190,6 +190,11 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 }
             }
 
+            if (bestOutline != null && previousIds.Length == 1)
+            {
+                bestOutline = outlines.FirstOrDefault(x => x.Items.ContainsCategory(previousIds.First()));
+            }
+
             return bestOutline ?? outlines.First();
         }
 
