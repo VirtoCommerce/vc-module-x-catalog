@@ -54,6 +54,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             yield return Argument<StringGraphType>(nameof(SelectedAddressId), "Id of selected shipping address");
             yield return Argument<StringGraphType>(nameof(SelectedAddress), "The shipping address to which the products are to be delivered");
 
+            yield return Argument<StringGraphType>(nameof(PreviousOutline), description: "Previous outline");
+
             yield return Argument<StringGraphType>("custom", "Can be used for custom query parameters");
         }
 
