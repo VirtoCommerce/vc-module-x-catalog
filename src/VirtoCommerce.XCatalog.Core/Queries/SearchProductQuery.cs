@@ -87,7 +87,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
 
                 if (string.IsNullOrEmpty(PreviousOutline))
                 {
-                    PreviousOutline = GetPreviousOutlineFromFilter(context);
+                    PreviousOutline = GetPreviousOutlineFromFilter();
                     if (!string.IsNullOrEmpty(PreviousOutline))
                     {
                         context.UserContext.Add("previousOutline", PreviousOutline);
@@ -199,7 +199,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             return result.ToString();
         }
 
-        protected string GetPreviousOutlineFromFilter(IResolveFieldContext context)
+        protected string GetPreviousOutlineFromFilter()
         {
             if (!string.IsNullOrEmpty(Filter))
             {
