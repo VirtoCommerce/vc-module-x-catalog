@@ -90,7 +90,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
                     PreviousOutline = GetPreviousOutlineFromFilter();
                     if (!string.IsNullOrEmpty(PreviousOutline))
                     {
-                        context.UserContext.Add("previousOutline", PreviousOutline);
+                        context.UserContext["previousOutline"] = PreviousOutline;
                     }
                 }
             }
