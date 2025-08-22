@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using GraphQL;
 using GraphQL.Builders;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Outlines;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -14,6 +17,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
 {
     public class SearchProductQuery : CatalogQueryBase<SearchProductResponse>, ISearchQuery
     {
+        public static readonly string OutlineRegex = @"(?:^|\s)(category\.subtree|__outline|category\.path):(?<outline>\S+)";
+
         public string Keyword { get => Query; set => Query = value; }
         public string Query { get; set; }
         public bool Fuzzy { get; set; }
@@ -37,6 +42,7 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             yield return Argument<StringGraphType>(nameof(CultureName), "The culture name for cart context product");
 
             yield return Argument<StringGraphType>(nameof(Query), "The query parameter performs the full-text search");
+            yield return Argument<StringGraphType>(nameof(PreviousOutline), "Previous outline");
             yield return Argument<StringGraphType>(nameof(Filter), "This parameter applies a filter to the query results");
             yield return Argument<BooleanGraphType>(nameof(PreserveUserQuery), "When true, the search query and filters will not be modified by the application");
             yield return Argument<StringGraphType>(nameof(Facet), "Facets calculate statistical counts to aid in faceted navigation.");
@@ -77,6 +83,15 @@ namespace VirtoCommerce.XCatalog.Core.Queries
                 {
                     Skip = int.TryParse(connectionContext.After, out var skip) ? skip : 0;
                     Take = connectionContext.First ?? connectionContext.PageSize ?? Connections.DefaultPageSize;
+                }
+
+                if (string.IsNullOrEmpty(PreviousOutline))
+                {
+                    PreviousOutline = GetPreviousOutlineFromFilter();
+                    if (!string.IsNullOrEmpty(PreviousOutline))
+                    {
+                        context.UserContext["previousOutline"] = PreviousOutline;
+                    }
                 }
             }
         }
@@ -182,6 +197,20 @@ namespace VirtoCommerce.XCatalog.Core.Queries
             }
 
             return result.ToString();
+        }
+
+        protected string GetPreviousOutlineFromFilter()
+        {
+            if (!string.IsNullOrEmpty(Filter))
+            {
+                var match = Regex.Match(Filter, OutlineRegex, RegexOptions.Compiled);
+                if (match.Success)
+                {
+                    var outline = match.Groups["outline"].Value;
+                    return OutlineString.GetLastItem(outline);
+                }
+            }
+            return string.Empty;
         }
     }
 }
