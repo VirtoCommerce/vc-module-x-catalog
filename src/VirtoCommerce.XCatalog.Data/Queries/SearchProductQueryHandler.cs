@@ -174,10 +174,12 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode)
         {
-            return resultAggregations.ApplyLanguageSpecificFacetResult(languageCode)
+            return resultAggregations
+                .ApplyLanguageSpecificFacetResult(languageCode)
                 .Select(x => _mapper.Map<FacetResult>(x, options =>
                 {
                     options.Items["cultureName"] = languageCode;
+                    options.Items["order"] = Array.IndexOf(resultAggregations, x);
                 }))
                 .ToList();
         }
