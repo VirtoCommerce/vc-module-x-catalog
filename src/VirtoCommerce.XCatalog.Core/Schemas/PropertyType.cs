@@ -73,6 +73,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<PropertyValueGraphType>("value")
                 .ResolveAsync(context => ResolveValue(context.Source, context.GetCultureName()));
 
+            Field<IntGraphType>("valueDisplayOrder")
+                .Resolve(context => context.Source.Values.FirstOrDefault()?.DisplayOrder)
+                .Description("The display order of the value.");
+
             Field<StringGraphType>("valueId")
                 .Resolve(context => context.Source.Values.Select(x => x.ValueId).FirstOrDefault());
 
@@ -94,10 +98,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Connection<PropertyDictionaryItemType>("propertyDictionaryItems")
                 .PageSize(Connections.DefaultPageSize)
-                .ResolveAsync(async context =>
-                {
-                    return await ResolveConnectionAsync(mediator, context);
-                });
+                .ResolveAsync(context => ResolveConnectionAsync(mediator, context));
         }
 
         protected virtual async Task<object> ResolveValue(Property source, string languageCode)
@@ -138,7 +139,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             {
                 Skip = skip,
                 Take = first ?? context.PageSize ?? Connections.DefaultPageSize,
-                PropertyIds = new[] { context.Source.Id }
+                PropertyIds = [context.Source.Id],
             };
 
             var response = await mediator.Send(query);
