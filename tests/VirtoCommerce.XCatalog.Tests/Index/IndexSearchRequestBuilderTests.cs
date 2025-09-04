@@ -207,22 +207,8 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             // Assert
             var filters = result.Filter.As<AndFilter>().ChildFilters;
 
-            filters.Should().ContainEquivalentOf(new OrFilter
-            {
-                ChildFilters = new List<IFilter>
-                {
-                    new WildCardTermFilter
-                    {
-                        FieldName = termFilter.FieldName,
-                        Value = wildcard
-                    },
-                    new TermFilter
-                    {
-                        Values = termFilter.Values.Where(x => !x.Contains(wildcard)).ToList(),
-                        FieldName = termFilter.FieldName
-                    }
-                }
-            });
+            Assert.Equal(filters, searchPhraseParseResult.Filters);
+
         }
 
         #endregion ParseFilters
