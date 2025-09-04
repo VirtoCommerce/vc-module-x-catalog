@@ -32,8 +32,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         protected SearchRequest SearchRequest { get; set; }
 
-        private static readonly string[] _wildcards = ["?", "*"];
-
         public IndexSearchRequestBuilder()
         {
             SearchRequest = OverridableType<SearchRequest>.New();
