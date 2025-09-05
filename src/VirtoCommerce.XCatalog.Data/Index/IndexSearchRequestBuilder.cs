@@ -32,8 +32,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         protected SearchRequest SearchRequest { get; set; }
 
-        private static readonly string[] _wildcards = ["?", "*"];
-
         public IndexSearchRequestBuilder()
         {
             SearchRequest = OverridableType<SearchRequest>.New();
@@ -255,38 +253,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
             switch (filter)
             {
-                case TermFilter termFilter:
-                    {
-                        var wildcardValues = termFilter.Values.Where(x => _wildcards.Any(x.Contains)).ToArray();
-
-                        if (wildcardValues.Length != 0)
-                        {
-                            var orFilter = new OrFilter
-                            {
-                                ChildFilters = new List<IFilter>()
-                            };
-
-                            var wildcardTermFilters = wildcardValues.Select(x => new WildCardTermFilter
-                            {
-                                FieldName = termFilter.FieldName,
-                                Value = x
-                            }).ToList();
-
-                            orFilter.ChildFilters.AddRange(wildcardTermFilters);
-
-                            termFilter.Values = termFilter.Values.Except(wildcardValues).ToList();
-
-                            if (termFilter.Values.Any())
-                            {
-                                orFilter.ChildFilters.Add(termFilter);
-                            }
-
-                            // return OrFilter with added termFilters instead
-                            result = orFilter;
-                        }
-                        break;
-                    }
-
                 case RangeFilter rangeFilter:
                     if (rangeFilter.FieldName.EqualsIgnoreCase("price"))
                     {
