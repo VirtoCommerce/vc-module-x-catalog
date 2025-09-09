@@ -389,6 +389,11 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.IsPurchased, nullable: false).Description("Product was purchased");
 
+            ExtendableField<ProductPickupLocationType>(
+                "pickupLocation",
+                "Pickup location availability",
+                resolve: context => new ProductPickupLocation() { Address = "test address", Name = "test name", ShipmentType = "test shipment type", ShipmentHours = 24, AvailableQuantity = 999 });
+
             Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
