@@ -75,7 +75,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("The unique ID of the catalog")
                 .Resolve(context => context.Source.IndexedProduct.CatalogId);
             Field(d => d.IndexedProduct.ProductType, nullable: true).Description("The type of product");
-            Field(d => d.IndexedProduct.MinQuantity, nullable: true).Description("Min. quantity");
+            Field(d => d.IndexedProduct.MinQuantity, nullable: true)
+                .Description("Min. quantity")
+                .Resolve(context => context.Source.IndexedProduct.MinQuantity.GetValueOrDefault() <= 0 ? 1 : context.Source.IndexedProduct.MinQuantity);
             Field(d => d.IndexedProduct.MaxQuantity, nullable: true).Description("Max. quantity");
             Field(d => d.IndexedProduct.PackSize, nullable: false).Description("Defines the number of items in a package. Quantity step for your product's.");
             Field(d => d.RelevanceScore, nullable: true).Description("Product relevance score");
