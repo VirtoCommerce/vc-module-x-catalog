@@ -8,12 +8,14 @@ using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Schemas;
+using static VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.SEO;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
@@ -21,6 +23,7 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
 {
     private const int _batchSize = 100;
     private readonly ICategoryService _categoryService;
+    private readonly ICatalogService _catalogService;
 
     protected override string Name => "ChildCategories";
 
@@ -29,10 +32,12 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
         IAuthorizationService authorizationService,
         IStoreService storeService,
         ICurrencyService currencyService,
-        ICategoryService categoryService)
+        ICategoryService categoryService,
+        ICatalogService catalogService)
         : base(mediator, authorizationService, storeService, currencyService)
     {
         _categoryService = categoryService;
+        _catalogService = catalogService;
     }
 
     protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, ChildCategoriesQuery request)
@@ -58,10 +63,20 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
         {
             var responseGroup = GetCategoryResponseGroup(context, request, response);
             var categoriesByIds = new Dictionary<string, Category>();
+            var store = request.Store;
+
+            var storeCatalog = await _catalogService.GetByIdAsync(store.Catalog);
+            var isCollapsed = store.GetSeoLinksType() == SeoCollapsed && storeCatalog.IsVirtual;
 
             foreach (var idsBatch in categoryIds.Paginate(_batchSize))
             {
-                var categories = await _categoryService.GetAsync(idsBatch, responseGroup);
+                IEnumerable<Category> categories = await _categoryService.GetAsync(idsBatch, responseGroup);
+
+                if (isCollapsed)
+                {
+                    categories = categories.Where(x => x.Links.All(link => link.CatalogId != store.Catalog));
+                }
+
                 categoriesByIds.AddRange(categories.ToDictionary(x => x.Id));
             }
 
@@ -69,6 +84,14 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
             {
                 category.Category ??= categoriesByIds.GetValueSafe(category.Key);
             }
+        }
+
+        // Cannot reassign the root.ChildCategories because it is referenced in the response.
+        var itemsToRemove = root.ChildCategories.Where(x => x.Category == null).ToList();
+
+        foreach (var category in itemsToRemove)
+        {
+            root.ChildCategories.Remove(category);
         }
     }
 
