@@ -24,7 +24,7 @@ public class GetBrandQuery : Query<BrandAggregate>
     {
         yield return Argument<NonNullGraphType<StringGraphType>>(nameof(Id), description: "Brand Id");
         yield return Argument<NonNullGraphType<StringGraphType>>(nameof(StoreId), description: "Store Id");
-        yield return Argument<StringGraphType>(nameof(CultureName), description: "Currency code (\"USD\")");
+        yield return Argument<StringGraphType>(nameof(CultureName), description: "Culture name (\"en-US\")");
     }
 
     public override void Map(IResolveFieldContext context)

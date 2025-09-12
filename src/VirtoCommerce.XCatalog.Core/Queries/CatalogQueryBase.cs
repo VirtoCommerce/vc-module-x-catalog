@@ -25,8 +25,8 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         {
             yield return Argument<NonNullGraphType<StringGraphType>>(nameof(StoreId), description: "Store Id");
             yield return Argument<StringGraphType>(nameof(UserId), description: "User Id");
-            yield return Argument<StringGraphType>(nameof(CultureName), description: "Currency code (\"USD\")");
-            yield return Argument<StringGraphType>(nameof(CurrencyCode), description: "Culture name (\"en-US\")");
+            yield return Argument<StringGraphType>(nameof(CultureName), description: "Culture name (\"en-US\")");
+            yield return Argument<StringGraphType>(nameof(CurrencyCode), description: "Currency code (\"USD\")");
             yield return Argument<StringGraphType>(nameof(PreviousOutline), description: "Previous outline");
         }
 
