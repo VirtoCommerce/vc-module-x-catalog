@@ -4,5 +4,25 @@
     "XCatalog:read": "查看与 xCatalog 相关的数据",
     "XCatalog:update": "更新与 xCatalog 相关的数据",
     "XCatalog:delete": "删除与 xCatalog 相关的数据"
+  },
+  "settings": {
+    "Catalog": {
+      "TodayAvailabilityNote": {
+        "title": "今日产品可用性文本",
+        "description": "今日产品可用性文本（例如：'今天'）。每种语言请仅输入一个值。"
+      },
+      "TransferAvailabilityNote": {
+        "title": "产品转移可用性文本",
+        "description": "产品转移可用性文本（例如：'2-3天'）。每种语言请仅输入一个值。"
+      },
+      "GlobalTransferAvailabilityNote": {
+        "title": "全球转移产品可用性文本",
+        "description": "全球转移产品可用性文本（例如：'1周'）。每种语言请仅输入一个值。"
+      },
+      "GlobalTransferEnabled": {
+        "title": "启用全球产品转移",
+        "description": "启用全球产品转移"
+      }
+    }
   }
 }

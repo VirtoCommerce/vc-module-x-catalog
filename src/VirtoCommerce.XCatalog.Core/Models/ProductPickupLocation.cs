@@ -4,7 +4,7 @@ public class ProductPickupLocation
 {
     public string Name { get; set; }
     public string Address { get; set; }
-    public string ShipmentType { get; set; }
-    public int? ShipmentHours { get; set; }
-    public int? AvailableQuantity { get; set; }
+    public string AvailabilityType { get; set; }
+    public string Note { get; set; }
+    public long? AvailableQuantity { get; set; }
 }

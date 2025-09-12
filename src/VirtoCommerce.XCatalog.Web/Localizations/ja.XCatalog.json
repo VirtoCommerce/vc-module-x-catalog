@@ -4,5 +4,25 @@
     "XCatalog:read": "xCatalog 関連データを表示",
     "XCatalog:update": "xCatalog 関連データを更新",
     "XCatalog:delete": "xCatalog 関連データを削除"
+  },
+  "settings": {
+    "Catalog": {
+      "TodayAvailabilityNote": {
+        "title": "今日の製品の在庫テキスト",
+        "description": "今日の製品の在庫テキスト（例：'今日'）。各言語につき1つの値のみ入力してください。"
+      },
+      "TransferAvailabilityNote": {
+        "title": "製品転送の在庫テキスト",
+        "description": "製品転送の在庫テキスト（例：'2-3日'）。各言語につき1つの値のみ入力してください。"
+      },
+      "GlobalTransferAvailabilityNote": {
+        "title": "グローバル製品転送の在庫テキスト",
+        "description": "グローバル製品転送の在庫テキスト（例：'1週間'）。各言語につき1つの値のみ入力してください。"
+      },
+      "GlobalTransferEnabled": {
+        "title": "グローバル製品転送有効",
+        "description": "グローバル製品転送有効"
+      }
+    }
   }
 }

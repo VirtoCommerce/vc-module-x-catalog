@@ -4,5 +4,26 @@
     "XCatalog:read": "Ver datos relacionados con xCatalog",
     "XCatalog:update": "Actualizar datos relacionados con xCatalog",
     "XCatalog:delete": "Eliminar datos relacionados con xCatalog"
+  },
+  "settings": {
+    "Catalog": {
+      "TodayAvailabilityNote": {
+        "title": "Texto de disponibilidad de producto hoy",
+        "description": "Texto de disponibilidad de producto hoy (ej.: 'hoy'). Por favor, ingresa solo un valor por idioma."
+      },
+      "TransferAvailabilityNote": {
+        "title": "Texto de disponibilidad de transferencia de producto",
+        "description": "Texto de disponibilidad de transferencia de producto (ej.: '2-3 días'). Por favor, ingresa solo un valor por idioma."
+      },
+      "GlobalTransferAvailabilityNote": {
+        "title": "Texto de disponibilidad de transferencia global de producto",
+        "description": "Texto de disponibilidad de transferencia global de producto (ej.: '1 semana'). Por favor, ingresa solo un valor por idioma."
+      },
+      "GlobalTransferEnabled": {
+        "title": "Transferencia global de producto habilitada",
+        "description": "Transferencia global de producto habilitada"
+      }
+    }
   }
+
 }

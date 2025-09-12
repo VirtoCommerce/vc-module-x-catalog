@@ -389,14 +389,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Field(x => x.IsPurchased, nullable: false).Description("Product was purchased");
 
-            ExtendableField<ListGraphType<NonNullGraphType<ProductPickupLocationType>>>(
-                "pickupLocations",
-                "Pickup location availability",
-                resolve: context => new List<ProductPickupLocation>() {
-                    new ProductPickupLocation() { Address = "test address 1", Name = "test name 1", ShipmentType = "test shipment type 1", ShipmentHours = 24, AvailableQuantity = 998 },
-                    new ProductPickupLocation() { Address = "test address 2", Name = "test name 2", ShipmentType = "test shipment type 2", ShipmentHours = 25, AvailableQuantity = 999 }
-                    });
-
             Connection<ProductAssociationType>("associations")
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
