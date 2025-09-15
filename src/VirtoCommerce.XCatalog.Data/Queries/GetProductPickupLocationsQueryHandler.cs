@@ -153,6 +153,7 @@ public class GetProductPickupLocationsQueryHandler(
         {
             return (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.GlobalTransferAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
         }
+
         return null;
     }
 
