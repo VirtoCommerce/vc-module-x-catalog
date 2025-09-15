@@ -82,7 +82,7 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
         RemoveUnsuitableCategories(root);
     }
 
-    private void RemoveUnsuitableCategories(ExpCategory root)
+    private static void RemoveUnsuitableCategories(ExpCategory root)
     {
         if (root.ChildCategories == null)
         {
