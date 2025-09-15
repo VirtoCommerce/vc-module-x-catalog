@@ -69,6 +69,7 @@ public class GetProductPickupLocationsQueryHandler(
     {
         var productInventorySearchCriteria = AbstractTypeFactory<ProductInventorySearchCriteria>.TryCreateInstance();
         productInventorySearchCriteria.ProductId = request.ProductId;
+        productInventorySearchCriteria.Keyword = request.Keyword;
         productInventorySearchCriteria.Sort = request.Sort;
 
         return await productInventorySearchService.SearchAllAsync(productInventorySearchCriteria, false);
@@ -76,19 +77,16 @@ public class GetProductPickupLocationsQueryHandler(
 
     protected virtual async Task<ProductPickupLocation> GetPickupLocationAsync(Store store, CatalogProduct product, InventoryInfo productInventory, string cultureName)
     {
+        //TODO: #Q what if product doesn't have any fulfillment center assigned?
         if (productInventory.FulfillmentCenterId == store.MainFulfillmentCenterId)
         {
-            if (!product.TrackInventory.GetValueOrDefault())
-            {
-                return await CreateDefaultPickupLocationAsync(cultureName);
-            }
-            else if (productInventory.InStockQuantity > 0)
+            if (!product.TrackInventory.GetValueOrDefault() || productInventory.InStockQuantity > 0)
             {
                 return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.Today, cultureName);
             }
             else if (store.Settings.GetValue<bool>(ModuleConstants.Settings.GlobalTransferEnabled))
             {
-                return await CreateGlobalTransferPickupLocationAsync(cultureName);
+                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.GlobalTransfer, cultureName);
             }
         }
         else if (store.AdditionalFulfillmentCenterIds.Contains(productInventory.FulfillmentCenterId))
@@ -99,21 +97,11 @@ public class GetProductPickupLocationsQueryHandler(
             }
             else if (store.Settings.GetValue<bool>(ModuleConstants.Settings.GlobalTransferEnabled))
             {
-                return await CreateGlobalTransferPickupLocationAsync(cultureName);
+                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.GlobalTransfer, cultureName);
             }
         }
 
         return null;
-    }
-
-    protected virtual async Task<ProductPickupLocation> CreateDefaultPickupLocationAsync(string cultureName)
-    {
-        var result = AbstractTypeFactory<ProductPickupLocation>.TryCreateInstance();
-
-        result.AvailabilityType = ProductPickupAvailability.Today;
-        result.Note = await GetProductPickupLocationNoteAsync(ProductPickupAvailability.Today, cultureName);
-
-        return result;
     }
 
     protected virtual async Task<ProductPickupLocation> CreatePickupLocationFromProductInventoryAsync(InventoryInfo productInventoryInfo, string productPickupAvailability, string cultureName)
@@ -125,16 +113,6 @@ public class GetProductPickupLocationsQueryHandler(
         result.Name = productInventoryInfo.FulfillmentCenter.Name;
         result.Address = productInventoryInfo.FulfillmentCenter.Address.ToString();
         result.AvailableQuantity = productInventoryInfo.InStockQuantity;
-
-        return result;
-    }
-
-    protected virtual async Task<ProductPickupLocation> CreateGlobalTransferPickupLocationAsync(string cultureName)
-    {
-        var result = AbstractTypeFactory<ProductPickupLocation>.TryCreateInstance();
-
-        result.AvailabilityType = ProductPickupAvailability.GlobalTransfer;
-        result.Note = await GetProductPickupLocationNoteAsync(ProductPickupAvailability.GlobalTransfer, cultureName);
 
         return result;
     }
