@@ -121,15 +121,30 @@ public class GetProductPickupLocationsQueryHandler(
     {
         if (productPickupAvailability == ProductPickupAvailability.Today)
         {
-            return (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.TodayAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            var result = (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.TodayAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            if (string.IsNullOrEmpty(result))
+            {
+                result = "Today";
+            }
+            return result;
         }
         else if (productPickupAvailability == ProductPickupAvailability.Transfer)
         {
-            return (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.TransferAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            var result = (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.TransferAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            if (string.IsNullOrEmpty(result))
+            {
+                result = "Via transfer";
+            }
+            return result;
         }
         else if (productPickupAvailability == ProductPickupAvailability.GlobalTransfer)
         {
-            return (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.GlobalTransferAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            var result = (await localizableSettingService.GetValuesAsync(ModuleConstants.Settings.GlobalTransferAvailabilityNote.Name, cultureName)).FirstOrDefault()?.Value;
+            if (string.IsNullOrEmpty(result))
+            {
+                result = "Via transfer";
+            }
+            return result;
         }
 
         return null;
