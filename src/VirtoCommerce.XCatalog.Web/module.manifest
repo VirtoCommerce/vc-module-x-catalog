@@ -10,6 +10,7 @@
     <dependency id="VirtoCommerce.Inventory" version="3.805.0" optional="true" />
     <dependency id="VirtoCommerce.Marketing" version="3.820.0" optional="true" />
     <dependency id="VirtoCommerce.Pricing" version="3.809.0" optional="true" />
+    <dependency id="VirtoCommerce.Shipping" version="3.811.0" optional="true" />
     <dependency id="VirtoCommerce.Xapi" version="3.923.0" />
   </dependencies>
 

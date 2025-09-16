@@ -10,6 +10,9 @@ using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Settings;
+using VirtoCommerce.ShippingModule.Core.Model;
+using VirtoCommerce.ShippingModule.Core.Model.Search;
+using VirtoCommerce.ShippingModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -17,12 +20,15 @@ using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Services;
+using ShippingConstants = VirtoCommerce.ShippingModule.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
 public class GetProductPickupLocationsQueryHandler(
     IItemService itemService,
     IProductInventorySearchService productInventorySearchService,
+    IShippingMethodsSearchService shippingMethodsSearchService,
+    IPickupLocationSearchService pickupLocationSearchService,
     IStoreService storeService,
     ILocalizableSettingService localizableSettingService)
     : IQueryHandler<SearchProductPickupLocationsQuery, ProductPickupLocationSearchResult>
@@ -43,76 +49,113 @@ public class GetProductPickupLocationsQueryHandler(
             throw new InvalidOperationException($"Product with id {request.ProductId} not found");
         }
 
-        var productInventories = await SearchProductInventoriesAsync(request);
-
-        var resultItems = new List<ProductPickupLocation>();
-
-        foreach (var productInventory in productInventories)
-        {
-            var pickupLocation = await GetPickupLocationAsync(store, product, productInventory, request.CultureName);
-
-            if (pickupLocation != null)
-            {
-                resultItems.Add(pickupLocation);
-            }
-        }
-
         var result = AbstractTypeFactory<ProductPickupLocationSearchResult>.TryCreateInstance();
 
-        result.TotalCount = resultItems.Count;
-        result.Results = ApplySort(resultItems, request).Skip(request.Skip).Take(request.Take).ToList();
+        if (await IsPickupInStoreEnabled(request))
+        {
+            var pickupLocations = await SearchProductPickupLocations(request);
+
+            var productInventories = await SearchProductInventoriesAsync(request);
+
+            var resultItems = new List<ProductPickupLocation>();
+
+            foreach (var pickupLocation in pickupLocations)
+            {
+                var pickupLocationProductInventories = productInventories?
+                    .Where(x => x.FulfillmentCenterId == pickupLocation.FulfillmentCenterId || pickupLocation.TransferFulfillmentCenterIds.Contains(x.FulfillmentCenterId))
+                    .ToList();
+
+                var productPickupLocation = await GetProductPickupLocationAsync(store, product, pickupLocation, pickupLocationProductInventories, request.CultureName);
+                if (productPickupLocation != null)
+                {
+                    resultItems.Add(productPickupLocation);
+                }
+            }
+
+            result.TotalCount = resultItems.Count;
+            result.Results = ApplySort(resultItems, request).Skip(request.Skip).Take(request.Take).ToList();
+        }
 
         return result;
+    }
+
+    protected virtual async Task<bool> IsPickupInStoreEnabled(SearchProductPickupLocationsQuery request)
+    {
+        var shippingMethodsSearchCriteria = AbstractTypeFactory<ShippingMethodsSearchCriteria>.TryCreateInstance();
+        shippingMethodsSearchCriteria.StoreId = request.StoreId;
+        shippingMethodsSearchCriteria.IsActive = true;
+        shippingMethodsSearchCriteria.Codes = [ShippingConstants.BuyOnlinePickupInStoreShipmentCode];
+        shippingMethodsSearchCriteria.Skip = 0;
+        shippingMethodsSearchCriteria.Take = 1;
+
+        return (await shippingMethodsSearchService.SearchNoCloneAsync(shippingMethodsSearchCriteria)).TotalCount > 0;
+    }
+
+    protected virtual async Task<IList<PickupLocation>> SearchProductPickupLocations(SearchProductPickupLocationsQuery request)
+    {
+        var pickupLocationSearchCriteria = AbstractTypeFactory<PickupLocationSearchCriteria>.TryCreateInstance();
+        pickupLocationSearchCriteria.StoreId = request.StoreId;
+        pickupLocationSearchCriteria.IsActive = true;
+        pickupLocationSearchCriteria.Keyword = request.Keyword;
+        pickupLocationSearchCriteria.Sort = request.Sort;
+
+        return await pickupLocationSearchService.SearchAllNoCloneAsync(pickupLocationSearchCriteria);
     }
 
     protected virtual async Task<IList<InventoryInfo>> SearchProductInventoriesAsync(SearchProductPickupLocationsQuery request)
     {
         var productInventorySearchCriteria = AbstractTypeFactory<ProductInventorySearchCriteria>.TryCreateInstance();
         productInventorySearchCriteria.ProductId = request.ProductId;
-        productInventorySearchCriteria.Keyword = request.Keyword;
-        productInventorySearchCriteria.Sort = request.Sort;
 
         return await productInventorySearchService.SearchAllAsync(productInventorySearchCriteria, false);
     }
 
-    protected virtual async Task<ProductPickupLocation> GetPickupLocationAsync(Store store, CatalogProduct product, InventoryInfo productInventory, string cultureName)
+    protected virtual async Task<ProductPickupLocation> GetProductPickupLocationAsync(Store store, CatalogProduct product, PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, string cultureName)
     {
-        //TODO: #Q what if product doesn't have any fulfillment center assigned?
-        if (productInventory.FulfillmentCenterId == store.MainFulfillmentCenterId)
+        if (!product.TrackInventory.GetValueOrDefault())
         {
-            if (!product.TrackInventory.GetValueOrDefault() || productInventory.InStockQuantity > 0)
-            {
-                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.Today, cultureName);
-            }
-            else if (store.Settings.GetValue<bool>(ModuleConstants.Settings.GlobalTransferEnabled))
-            {
-                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.GlobalTransfer, cultureName);
-            }
+            return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, null, ProductPickupAvailability.Today, cultureName);
         }
-        else if (store.AdditionalFulfillmentCenterIds.Contains(productInventory.FulfillmentCenterId))
+
+        var mainPickupLocationProductInventory = pickupLocationProductInventories?
+            .Where(x => x.FulfillmentCenterId == pickupLocation.FulfillmentCenterId)
+            .Where(x => x.InStockQuantity > 0)
+            .OrderByDescending(x => x.InStockQuantity)
+            .FirstOrDefault();
+
+        if (mainPickupLocationProductInventory != null)
         {
-            if (product.TrackInventory.GetValueOrDefault() && productInventory.InStockQuantity > 0)
-            {
-                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.Transfer, cultureName);
-            }
-            else if (store.Settings.GetValue<bool>(ModuleConstants.Settings.GlobalTransferEnabled))
-            {
-                return await CreatePickupLocationFromProductInventoryAsync(productInventory, ProductPickupAvailability.GlobalTransfer, cultureName);
-            }
+            return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, mainPickupLocationProductInventory, ProductPickupAvailability.Today, cultureName);
+        }
+
+        var transferPickupLocationProductInventory = pickupLocationProductInventories?
+            .Where(x => pickupLocation.TransferFulfillmentCenterIds.Contains(x.FulfillmentCenterId))
+            .Where(x => x.InStockQuantity > 0)
+            .OrderByDescending(x => x.InStockQuantity)
+            .FirstOrDefault();
+
+        if (transferPickupLocationProductInventory != null)
+        {
+            return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, transferPickupLocationProductInventory, ProductPickupAvailability.Transfer, cultureName);
+        }
+
+        if (store.Settings.GetValue<bool>(ModuleConstants.Settings.GlobalTransferEnabled))
+        {
+            return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, null, ProductPickupAvailability.GlobalTransfer, cultureName);
         }
 
         return null;
     }
 
-    protected virtual async Task<ProductPickupLocation> CreatePickupLocationFromProductInventoryAsync(InventoryInfo productInventoryInfo, string productPickupAvailability, string cultureName)
+    protected virtual async Task<ProductPickupLocation> CreatePickupLocationFromProductInventoryAsync(PickupLocation pickupLocation, InventoryInfo productInventoryInfo, string productPickupAvailability, string cultureName)
     {
         var result = AbstractTypeFactory<ProductPickupLocation>.TryCreateInstance();
 
         result.AvailabilityType = productPickupAvailability;
         result.Note = await GetProductPickupLocationNoteAsync(productPickupAvailability, cultureName);
-        result.Name = productInventoryInfo.FulfillmentCenter.Name;
-        result.Address = productInventoryInfo.FulfillmentCenter.Address.ToString();
-        result.AvailableQuantity = productInventoryInfo.InStockQuantity;
+        result.Name = pickupLocation.Name;
+        result.Address = pickupLocation.Address.ToString();
+        result.AvailableQuantity = productInventoryInfo?.InStockQuantity;
 
         return result;
     }
