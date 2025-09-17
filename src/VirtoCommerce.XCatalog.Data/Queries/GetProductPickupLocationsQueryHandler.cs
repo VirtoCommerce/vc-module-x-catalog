@@ -170,7 +170,7 @@ public class GetProductPickupLocationsQueryHandler(
         result.AvailabilityType = productPickupAvailability;
         result.Note = await GetProductPickupLocationNoteAsync(productPickupAvailability, cultureName);
         result.Name = pickupLocation.Name;
-        result.Address = pickupLocation.Address.ToString();
+        result.Address = pickupLocation.Address?.ToString();
         result.AvailableQuantity = productInventoryInfo?.InStockQuantity;
 
         return result;
