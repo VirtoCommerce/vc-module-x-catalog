@@ -9,6 +9,7 @@ using VirtoCommerce.InventoryModule.Core.Model;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.ShippingModule.Core.Model;
 using VirtoCommerce.ShippingModule.Core.Model.Search;
@@ -26,9 +27,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries;
 
 public class GetProductPickupLocationsQueryHandler(
     IItemService itemService,
-    IProductInventorySearchService productInventorySearchService,
-    IShippingMethodsSearchService shippingMethodsSearchService,
-    IPickupLocationSearchService pickupLocationSearchService,
+    IOptionalDependency<IProductInventorySearchService> productInventorySearchService,
+    IOptionalDependency<IShippingMethodsSearchService> shippingMethodsSearchService,
+    IOptionalDependency<IPickupLocationSearchService> pickupLocationSearchService,
     IStoreService storeService,
     ILocalizableSettingService localizableSettingService)
     : IQueryHandler<SearchProductPickupLocationsQuery, ProductPickupLocationSearchResult>
@@ -61,7 +62,7 @@ public class GetProductPickupLocationsQueryHandler(
 
             foreach (var pickupLocation in pickupLocations)
             {
-                var pickupLocationProductInventories = productInventories?
+                var pickupLocationProductInventories = productInventories
                     .Where(x => x.FulfillmentCenterId == pickupLocation.FulfillmentCenterId || pickupLocation.TransferFulfillmentCenterIds.Contains(x.FulfillmentCenterId))
                     .ToList();
 
@@ -81,6 +82,11 @@ public class GetProductPickupLocationsQueryHandler(
 
     protected virtual async Task<bool> IsPickupInStoreEnabled(SearchProductPickupLocationsQuery request)
     {
+        if (shippingMethodsSearchService.Value == null)
+        {
+            return false;
+        }
+
         var shippingMethodsSearchCriteria = AbstractTypeFactory<ShippingMethodsSearchCriteria>.TryCreateInstance();
         shippingMethodsSearchCriteria.StoreId = request.StoreId;
         shippingMethodsSearchCriteria.IsActive = true;
@@ -88,26 +94,36 @@ public class GetProductPickupLocationsQueryHandler(
         shippingMethodsSearchCriteria.Skip = 0;
         shippingMethodsSearchCriteria.Take = 1;
 
-        return (await shippingMethodsSearchService.SearchNoCloneAsync(shippingMethodsSearchCriteria)).TotalCount > 0;
+        return (await shippingMethodsSearchService.Value.SearchNoCloneAsync(shippingMethodsSearchCriteria)).TotalCount > 0;
     }
 
     protected virtual async Task<IList<PickupLocation>> SearchProductPickupLocations(SearchProductPickupLocationsQuery request)
     {
+        if (pickupLocationSearchService.Value == null)
+        {
+            return new List<PickupLocation>();
+        }
+
         var pickupLocationSearchCriteria = AbstractTypeFactory<PickupLocationSearchCriteria>.TryCreateInstance();
         pickupLocationSearchCriteria.StoreId = request.StoreId;
         pickupLocationSearchCriteria.IsActive = true;
         pickupLocationSearchCriteria.Keyword = request.Keyword;
         pickupLocationSearchCriteria.Sort = request.Sort;
 
-        return await pickupLocationSearchService.SearchAllNoCloneAsync(pickupLocationSearchCriteria);
+        return await pickupLocationSearchService.Value.SearchAllNoCloneAsync(pickupLocationSearchCriteria);
     }
 
     protected virtual async Task<IList<InventoryInfo>> SearchProductInventoriesAsync(SearchProductPickupLocationsQuery request)
     {
+        if (productInventorySearchService.Value == null)
+        {
+            return new List<InventoryInfo>();
+        }
+
         var productInventorySearchCriteria = AbstractTypeFactory<ProductInventorySearchCriteria>.TryCreateInstance();
         productInventorySearchCriteria.ProductId = request.ProductId;
 
-        return await productInventorySearchService.SearchAllAsync(productInventorySearchCriteria, false);
+        return await productInventorySearchService.Value.SearchAllAsync(productInventorySearchCriteria, false);
     }
 
     protected virtual async Task<ProductPickupLocation> GetProductPickupLocationAsync(Store store, CatalogProduct product, PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, string cultureName)
@@ -117,7 +133,7 @@ public class GetProductPickupLocationsQueryHandler(
             return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, null, ProductPickupAvailability.Today, cultureName);
         }
 
-        var mainPickupLocationProductInventory = pickupLocationProductInventories?
+        var mainPickupLocationProductInventory = pickupLocationProductInventories
             .Where(x => x.FulfillmentCenterId == pickupLocation.FulfillmentCenterId)
             .Where(x => x.InStockQuantity > 0)
             .OrderByDescending(x => x.InStockQuantity)
@@ -128,7 +144,7 @@ public class GetProductPickupLocationsQueryHandler(
             return await CreatePickupLocationFromProductInventoryAsync(pickupLocation, mainPickupLocationProductInventory, ProductPickupAvailability.Today, cultureName);
         }
 
-        var transferPickupLocationProductInventory = pickupLocationProductInventories?
+        var transferPickupLocationProductInventory = pickupLocationProductInventories
             .Where(x => pickupLocation.TransferFulfillmentCenterIds.Contains(x.FulfillmentCenterId))
             .Where(x => x.InStockQuantity > 0)
             .OrderByDescending(x => x.InStockQuantity)
