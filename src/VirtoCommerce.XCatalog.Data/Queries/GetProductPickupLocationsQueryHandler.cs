@@ -36,15 +36,13 @@ public class GetProductPickupLocationsQueryHandler(
 {
     public async Task<ProductPickupLocationSearchResult> Handle(SearchProductPickupLocationsQuery request, CancellationToken cancellationToken)
     {
-        var store = await storeService.GetByIdAsync(request.StoreId);
-
+        var store = await storeService.GetNoCloneAsync(request.StoreId);
         if (store == null)
         {
             throw new InvalidOperationException($"Store with id {request.StoreId} not found");
         }
 
-        var product = await itemService.GetByIdAsync(request.ProductId);
-
+        var product = await itemService.GetNoCloneAsync(request.ProductId);
         if (product == null)
         {
             throw new InvalidOperationException($"Product with id {request.ProductId} not found");
@@ -123,7 +121,7 @@ public class GetProductPickupLocationsQueryHandler(
         var productInventorySearchCriteria = AbstractTypeFactory<ProductInventorySearchCriteria>.TryCreateInstance();
         productInventorySearchCriteria.ProductId = request.ProductId;
 
-        return await productInventorySearchService.Value.SearchAllAsync(productInventorySearchCriteria, false);
+        return await productInventorySearchService.Value.SearchAllAsync(productInventorySearchCriteria, clone: false);
     }
 
     protected virtual async Task<ProductPickupLocation> GetProductPickupLocationAsync(Store store, CatalogProduct product, PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, string cultureName)
