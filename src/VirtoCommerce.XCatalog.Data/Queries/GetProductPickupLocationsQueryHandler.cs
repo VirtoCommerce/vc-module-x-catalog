@@ -167,11 +167,13 @@ public class GetProductPickupLocationsQueryHandler(
     {
         var result = AbstractTypeFactory<ProductPickupLocation>.TryCreateInstance();
 
-        result.AvailabilityType = productPickupAvailability;
-        result.Note = await GetProductPickupLocationNoteAsync(productPickupAvailability, cultureName);
+        result.Id = pickupLocation.Id;
         result.Name = pickupLocation.Name;
         result.Address = pickupLocation.Address?.ToString();
+        result.GeoLocation = pickupLocation.GeoLocation;
+        result.AvailabilityType = productPickupAvailability;
         result.AvailableQuantity = productInventoryInfo?.InStockQuantity;
+        result.Note = await GetProductPickupLocationNoteAsync(productPickupAvailability, cultureName);
 
         return result;
     }
