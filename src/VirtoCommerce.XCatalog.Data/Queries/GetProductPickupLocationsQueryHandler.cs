@@ -42,16 +42,16 @@ public class GetProductPickupLocationsQueryHandler(
             throw new InvalidOperationException($"Store with id {request.StoreId} not found");
         }
 
-        var product = await itemService.GetNoCloneAsync(request.ProductId);
-        if (product == null)
-        {
-            throw new InvalidOperationException($"Product with id {request.ProductId} not found");
-        }
-
         var result = AbstractTypeFactory<ProductPickupLocationSearchResult>.TryCreateInstance();
 
         if (await IsPickupInStoreEnabled(request))
         {
+            var product = await itemService.GetNoCloneAsync(request.ProductId);
+            if (product == null)
+            {
+                throw new InvalidOperationException($"Product with id {request.ProductId} not found");
+            }
+
             var pickupLocations = await SearchProductPickupLocations(request);
 
             var productInventories = await SearchProductInventoriesAsync(request);
