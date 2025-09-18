@@ -9,8 +9,10 @@ using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Middlewares;
+using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Extensions
 {
@@ -21,6 +23,8 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();
 
             services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
+
+            services.AddTransient<ICatalogPickupLocationService, CatalogPickupLocationService>();
 
             // The generic pipeline that is used for on-the-fly additional data evaluation (prices, inventories, discounts and taxes) for resulting products
             services.AddPipeline<SearchProductResponse>(builder =>
