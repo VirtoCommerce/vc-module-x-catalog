@@ -6,7 +6,7 @@ using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.InventoryModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 
-namespace VirtoCommerce.XCatalog.Data.Services;
+namespace VirtoCommerce.XCatalog.Core.Services;
 
 public static class ProductInventorySearchServiceExtensions
 {
