@@ -72,16 +72,16 @@ public class GetProductPickupLocationsQueryHandler(
     {
         if (!product.TrackInventory.GetValueOrDefault())
         {
-            return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, null, ProductPickupAvailability.Today, cultureName);
+            return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, productInventoryInfo: null, ProductPickupAvailability.Today, cultureName);
         }
 
-        var mainPickupLocationProductInventory = catalogPickupLocationService.GetMainPickupLocationProductInventory(pickupLocation, pickupLocationProductInventories, order: true);
+        var mainPickupLocationProductInventory = catalogPickupLocationService.GetMainPickupLocationProductInventory(pickupLocation, pickupLocationProductInventories, minQuantity: 1, order: true);
         if (mainPickupLocationProductInventory != null)
         {
             return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, mainPickupLocationProductInventory, ProductPickupAvailability.Today, cultureName);
         }
 
-        var transferPickupLocationProductInventory = catalogPickupLocationService.GetTransferPickupLocationProductInventory(pickupLocation, pickupLocationProductInventories, order: true);
+        var transferPickupLocationProductInventory = catalogPickupLocationService.GetTransferPickupLocationProductInventory(pickupLocation, pickupLocationProductInventories, minQuantity: 1, order: true);
         if (transferPickupLocationProductInventory != null)
         {
             return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, transferPickupLocationProductInventory, ProductPickupAvailability.Transfer, cultureName);
@@ -89,7 +89,7 @@ public class GetProductPickupLocationsQueryHandler(
 
         if (globalTransferEnabled)
         {
-            return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, null, ProductPickupAvailability.GlobalTransfer, cultureName);
+            return await catalogPickupLocationService.CreatePickupLocationFromProductInventoryAsync(pickupLocation, productInventoryInfo: null, ProductPickupAvailability.GlobalTransfer, cultureName);
         }
 
         return null;

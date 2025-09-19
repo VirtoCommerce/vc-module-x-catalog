@@ -70,11 +70,11 @@ public class CatalogPickupLocationService(
         return await productInventorySearchService.Value.SearchAllAsync(productInventorySearchCriteria, clone: false);
     }
 
-    public virtual InventoryInfo GetMainPickupLocationProductInventory(PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, bool order)
+    public virtual InventoryInfo GetMainPickupLocationProductInventory(PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, long minQuantity, bool order)
     {
         var query = pickupLocationProductInventories
             .Where(x => x.FulfillmentCenterId == pickupLocation.FulfillmentCenterId)
-            .Where(x => x.InStockQuantity > 0);
+            .Where(x => x.InStockQuantity >= minQuantity);
 
         if (order)
         {
@@ -84,11 +84,11 @@ public class CatalogPickupLocationService(
         return query.FirstOrDefault();
     }
 
-    public virtual InventoryInfo GetTransferPickupLocationProductInventory(PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, bool order)
+    public virtual InventoryInfo GetTransferPickupLocationProductInventory(PickupLocation pickupLocation, IList<InventoryInfo> pickupLocationProductInventories, long minQuantity, bool order)
     {
         var query = pickupLocationProductInventories
             .Where(x => pickupLocation.TransferFulfillmentCenterIds.Contains(x.FulfillmentCenterId))
-            .Where(x => x.InStockQuantity > 0);
+            .Where(x => x.InStockQuantity >= minQuantity);
 
         if (order)
         {
