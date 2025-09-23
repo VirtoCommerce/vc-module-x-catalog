@@ -7,12 +7,8 @@ using VirtoCommerce.XPickup.Core.Schemas;
 
 namespace VirtoCommerce.XCatalog.Data.Queries;
 
-public class GetProductPickupLocationsQueryBuilder : SearchQueryBuilder<SearchProductPickupLocationsQuery, ProductPickupLocationSearchResult, ProductPickupLocation, ProductPickupLocationType>
+public class GetProductPickupLocationsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
+    : SearchQueryBuilder<SearchProductPickupLocationsQuery, ProductPickupLocationSearchResult, ProductPickupLocation, ProductPickupLocationType>(mediator, authorizationService)
 {
     protected override string Name => "productPickupLocations";
-
-    public GetProductPickupLocationsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService)
-        : base(mediator, authorizationService)
-    {
-    }
 }
