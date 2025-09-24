@@ -188,9 +188,9 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 Values = values,
             };
 
-            AddFiltersToSearchRequest([filter], skipIfExists);
+            var added = AddFiltersToSearchRequest([filter], skipIfExists);
 
-            if (isGenerated)
+            if (added && isGenerated)
             {
                 GeneratedFilters.Add(filter);
             }
@@ -420,10 +420,10 @@ namespace VirtoCommerce.XCatalog.Data.Index
             return SearchRequest;
         }
 
-        protected void AddFiltersToSearchRequest(IList<IFilter> filters, bool skipIfExists = false)
+        protected bool AddFiltersToSearchRequest(IList<IFilter> filters, bool skipIfExists = false)
         {
             var childFilters = ((AndFilter)SearchRequest.Filter).ChildFilters;
-            IEnumerable<IFilter> filtersToAdd = filters;
+            var filtersToAdd = filters;
 
             //Skip adding duplicate filters
             if (skipIfExists)
@@ -434,10 +434,13 @@ namespace VirtoCommerce.XCatalog.Data.Index
                     .ToArray();
 
                 filtersToAdd = filters
-                    .Where(x => x is not INamedFilter filter || !existingFilterNames.ContainsIgnoreCase(filter.FieldName));
+                    .Where(x => x is not INamedFilter filter || !existingFilterNames.ContainsIgnoreCase(filter.FieldName))
+                    .ToList();
             }
 
             childFilters.AddRange(filtersToAdd);
+
+            return filtersToAdd.Count > 0;
         }
 
         private static IFilter[] GetFiltersFromTerm(IEnumerable<string> terms)
