@@ -81,19 +81,24 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
             .Resolve(context =>
             {
                 var source = context.Source;
+                var store = source.Store;
                 var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
 
-                SeoInfo seoInfo = null;
-
+                SeoInfo categorySeoInfo = null;
                 if (!source.SeoInfos.IsNullOrEmpty())
                 {
-                    var store = source.Store;
-                    seoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+                    categorySeoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
                 }
 
-                var result = seoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
+                SeoInfo catalogSeoInfo = null;
+                if (!source.Catalog.SeoInfos.IsNullOrEmpty())
+                {
+                    catalogSeoInfo = source.Catalog.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+                }
 
-                return $"{source.Catalog.Name}/{result.SemanticUrl}";
+                var brandSeoInfo = categorySeoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
+                var catalogSemanticUrl = catalogSeoInfo?.SemanticUrl ?? source.Catalog.Name;
+                return $"{catalogSemanticUrl}/{brandSeoInfo.SemanticUrl}";
             });
 
         Field<StringGraphType>("bannerUrl")
