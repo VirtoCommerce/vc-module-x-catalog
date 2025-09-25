@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "XCatalog:create": "Luo xCatalogiin liittyviä tietoja",
+    "XCatalog:read": "Näytä xCatalogiin liittyviä tietoja",
+    "XCatalog:update": "Päivitä xCatalogiin liittyviä tietoja",
+    "XCatalog:delete": "Poista xCatalogiin liittyviä tietoja"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "XCatalog:create": "Opprett xCatalog-relaterte data",
+    "XCatalog:read": "Vis xCatalog-relaterte data",
+    "XCatalog:update": "Oppdater xCatalog-relaterte data",
+    "XCatalog:delete": "Slett xCatalog-relaterte data"
+  }
+}
