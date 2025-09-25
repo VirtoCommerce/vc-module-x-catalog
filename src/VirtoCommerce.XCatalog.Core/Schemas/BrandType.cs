@@ -1,4 +1,5 @@
 using System.Linq;
+using GraphQL;
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
@@ -77,29 +78,7 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
                 return result?.Content;
             });
 
-        Field<NonNullGraphType<StringGraphType>>("permalink")
-            .Resolve(context =>
-            {
-                var source = context.Source;
-                var store = source.Store;
-                var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
-
-                SeoInfo categorySeoInfo = null;
-                if (!source.SeoInfos.IsNullOrEmpty())
-                {
-                    categorySeoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
-                }
-
-                SeoInfo catalogSeoInfo = null;
-                if (!source.Catalog.SeoInfos.IsNullOrEmpty())
-                {
-                    catalogSeoInfo = source.Catalog.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
-                }
-
-                var brandSeoInfo = categorySeoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
-                var catalogSemanticUrl = catalogSeoInfo?.SemanticUrl ?? source.Catalog.Name;
-                return $"{catalogSemanticUrl}/{brandSeoInfo.SemanticUrl}";
-            });
+        Field<NonNullGraphType<StringGraphType>>("permalink").Resolve(GetBrandPermalink);
 
         Field<StringGraphType>("bannerUrl")
             .Resolve(context =>
@@ -114,5 +93,28 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
                 var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Logo"))?.Url;
                 return result;
             });
+    }
+
+    private static object GetBrandPermalink(IResolveFieldContext<BrandAggregate> context)
+    {
+        var source = context.Source;
+        var store = source.Store;
+        var cultureName = context.GetArgumentOrValue<string>("cultureName") ?? context.Source.Store?.DefaultLanguage;
+
+        SeoInfo categorySeoInfo = null;
+        if (!source.SeoInfos.IsNullOrEmpty())
+        {
+            categorySeoInfo = source.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+        }
+
+        SeoInfo catalogSeoInfo = null;
+        if (!source.Catalog.SeoInfos.IsNullOrEmpty())
+        {
+            catalogSeoInfo = source.Catalog.SeoInfos.GetBestMatchingSeoInfo(store, cultureName);
+        }
+
+        var brandSeoInfo = categorySeoInfo ?? SeoExtensions.GetFallbackSeoInfo(source.Id, source.Name, cultureName);
+        var catalogSemanticUrl = catalogSeoInfo?.SemanticUrl ?? source.Catalog.Name;
+        return $"{catalogSemanticUrl}/{brandSeoInfo.SemanticUrl}";
     }
 }
