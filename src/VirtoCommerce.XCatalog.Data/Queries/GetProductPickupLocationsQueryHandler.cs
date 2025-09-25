@@ -14,6 +14,11 @@ public class GetProductPickupLocationsQueryHandler(IOptionalDependency<IProductP
 {
     public async Task<ProductPickupLocationSearchResult> Handle(SearchProductPickupLocationsQuery request, CancellationToken cancellationToken)
     {
+        if (productPickupLocationService.Value == null)
+        {
+            return AbstractTypeFactory<ProductPickupLocationSearchResult>.TryCreateInstance();
+        }
+
         var searchCriteria = AbstractTypeFactory<SingleProductPickupLocationSearchCriteria>.TryCreateInstance();
 
         searchCriteria.StoreId = request.StoreId;
@@ -25,6 +30,6 @@ public class GetProductPickupLocationsQueryHandler(IOptionalDependency<IProductP
         searchCriteria.Skip = request.Skip;
         searchCriteria.Take = request.Take;
 
-        return await productPickupLocationService.SearchPickupLocationsAsync(searchCriteria);
+        return await productPickupLocationService.Value.SearchPickupLocationsAsync(searchCriteria);
     }
 }
