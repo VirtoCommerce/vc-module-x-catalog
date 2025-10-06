@@ -8,6 +8,7 @@ using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Extensions;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core;
 using VirtoCommerce.XCatalog.Data.Index;
 
@@ -45,6 +46,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 }
 
                 parameter?.AddTermFilter("user_groups", userGroups);
+                UpdateAggregations(parameter, userGroups);
             }
 
             await next(parameter);
@@ -64,6 +66,27 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             {
                 var organizations = await _memberService.GetByIdsAsync([organizationId], nameof(MemberResponseGroup.WithGroups));
                 userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
+            }
+        }
+
+        private static void UpdateAggregations(IndexSearchRequestBuilder parameter, HashSet<string> userGroups)
+        {
+            foreach (var aggregation in parameter.Aggregations)
+            {
+                if (aggregation.Filter is not AndFilter aggregationFilter)
+                {
+                    continue;
+                }
+
+                var userGroupsFilter = aggregationFilter.ChildFilters.OfType<TermFilter>().FirstOrDefault(x => x.FieldName.EqualsIgnoreCase("user_groups"));
+                if (userGroupsFilter != null)
+                {
+                    userGroupsFilter.Values = userGroups.ToList();
+                }
+                else
+                {
+                    aggregationFilter.ChildFilters.Add(new TermFilter { FieldName = "user_groups", Values = userGroups.ToList() });
+                }
             }
         }
     }
