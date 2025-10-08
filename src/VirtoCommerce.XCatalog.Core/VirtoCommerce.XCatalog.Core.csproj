@@ -14,6 +14,6 @@
     <PackageReference Include="VirtoCommerce.MarketingModule.Core" Version="3.820.0" />
     <PackageReference Include="VirtoCommerce.PricingModule.Core" Version="3.809.0" />
     <PackageReference Include="VirtoCommerce.Xapi.Core" Version="3.924.0" />
-    <PackageReference Include="VirtoCommerce.XPickup.Core" Version="3.800.0-alpha.19-vcst-3983-pickup-locations" />
+    <PackageReference Include="VirtoCommerce.XPickup.Core" Version="3.800.0-alpha.20-vcst-3983-pickup-locations" />
   </ItemGroup>
 </Project>
