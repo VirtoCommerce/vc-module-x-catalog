@@ -8,6 +8,7 @@ using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Extensions;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core;
 using VirtoCommerce.XCatalog.Data.Index;
 
@@ -28,11 +29,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         public virtual async Task Run(IndexSearchRequestBuilder parameter, Func<IndexSearchRequestBuilder, Task> next)
         {
-            if (_moduleCatalog.IsModuleInstalled("VirtoCommerce.CatalogPersonalization"))
+            if (parameter != null && _moduleCatalog.IsModuleInstalled("VirtoCommerce.CatalogPersonalization"))
             {
                 var userGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "__any" };
 
-                if (!string.IsNullOrEmpty(parameter?.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsIgnoreCase(parameter.UserId))
+                if (!string.IsNullOrEmpty(parameter.UserId) && !ModuleConstants.AnonymousUser.UserName.EqualsIgnoreCase(parameter.UserId))
                 {
                     var member = await _memberResolver.ResolveMemberByIdAsync(parameter.UserId);
 
@@ -44,7 +45,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                     await GetUserGroupsFromOrganization(parameter.OrganizationId, userGroups);
                 }
 
-                parameter?.AddTermFilter("user_groups", userGroups);
+                parameter.AddTermFilter("user_groups", userGroups);
+                UpdateAggregations(parameter, userGroups);
             }
 
             await next(parameter);
@@ -52,18 +54,48 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         private static void GetUserGroupsFromContact(Contact contact, HashSet<string> userGroups)
         {
-            if (!contact.Groups.IsNullOrEmpty())
+            if (contact.Groups.IsNullOrEmpty())
             {
-                userGroups.AddRange(contact.Groups);
+                return;
             }
+
+            userGroups.AddRange(contact.Groups);
         }
 
         private async Task GetUserGroupsFromOrganization(string organizationId, HashSet<string> userGroups)
         {
-            if (!organizationId.IsNullOrEmpty())
+            if (organizationId.IsNullOrEmpty())
             {
-                var organizations = await _memberService.GetByIdsAsync([organizationId], nameof(MemberResponseGroup.WithGroups));
-                userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
+                return;
+            }
+
+            var organizations = await _memberService.GetByIdsAsync([organizationId], nameof(MemberResponseGroup.WithGroups));
+            userGroups.AddRange(organizations.OfType<Organization>().SelectMany(x => x.Groups));
+        }
+
+        private static void UpdateAggregations(IndexSearchRequestBuilder parameter, HashSet<string> userGroups)
+        {
+            if (parameter == null)
+            {
+                return;
+            }
+
+            foreach (var aggregation in parameter.Aggregations)
+            {
+                if (aggregation.Filter is not AndFilter aggregationFilter)
+                {
+                    continue;
+                }
+
+                var userGroupsFilter = aggregationFilter.ChildFilters.OfType<TermFilter>().FirstOrDefault(x => x.FieldName.EqualsIgnoreCase("user_groups"));
+                if (userGroupsFilter != null)
+                {
+                    userGroupsFilter.Values = userGroups.ToList();
+                }
+                else
+                {
+                    aggregationFilter.ChildFilters.Add(new TermFilter { FieldName = "user_groups", Values = userGroups.ToList() });
+                }
             }
         }
     }
