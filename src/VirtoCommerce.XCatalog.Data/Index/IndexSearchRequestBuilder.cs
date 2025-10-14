@@ -362,8 +362,16 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 {
                     case "name":
                     case "title":
-                        sortFields.Add(new SortingField("name", sortingField.IsDescending));
-                        break;
+                        {
+                            if (!string.IsNullOrEmpty(CultureName))
+                            {
+                                sortFields.Add(new SortingField($"name_{CultureName}".ToLowerInvariant(), sortingField.IsDescending));
+                                break;
+                            }
+
+                            sortFields.Add(new SortingField("name", sortingField.IsDescending));
+                            break;
+                        }
                     case "price" when !string.IsNullOrEmpty(CurrencyCode):
                         sortFields.Add(new SortingField($"price_{CurrencyCode}".ToLowerInvariant(), sortingField.IsDescending));
                         break;
