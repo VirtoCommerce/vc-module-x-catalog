@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "XCatalog:create": "Skapa xCatalog-relaterade data",
+    "XCatalog:read": "Visa xCatalog-relaterade data",
+    "XCatalog:update": "Uppdatera xCatalog-relaterade data",
+    "XCatalog:delete": "Radera xCatalog-relaterade data"
+  }
+}
