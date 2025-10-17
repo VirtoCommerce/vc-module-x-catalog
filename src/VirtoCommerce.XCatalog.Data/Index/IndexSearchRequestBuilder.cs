@@ -366,7 +366,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
                             if (!string.IsNullOrEmpty(CultureName))
                             {
                                 sortFields.Add(new SortingField($"name_{CultureName}".ToLowerInvariant(), sortingField.IsDescending));
-                                break;
                             }
 
                             sortFields.Add(new SortingField("name", sortingField.IsDescending));
