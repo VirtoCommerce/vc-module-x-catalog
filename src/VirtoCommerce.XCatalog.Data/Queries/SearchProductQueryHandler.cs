@@ -84,8 +84,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 CatalogId = store.Catalog,
             };
 
-            builder.WithCultureName(criteria.LanguageCode);
-
             //Use predefined  facets for store  if the facet filter expression is not set
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadFacets))
             {
@@ -139,6 +137,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithPreserveUserQuery(request.PreserveUserQuery)
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
+                                            .WithCultureName(request.CultureName)
                                             .AddSorting(request.Sort)
                                             .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 
