@@ -19,6 +19,7 @@ using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
+using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
 {
