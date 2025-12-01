@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
+using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
+using AggregationItem = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationItem;
 
 namespace VirtoCommerce.XCatalog.Core.Extensions
 {

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions.Search;
 using VirtoCommerce.MarketingModule.Core.Search;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Models;
@@ -26,14 +27,14 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 return new LoadPromotionsResponse();
             }
 
-            var promotions = await _promotionSearchService.SearchPromotionsAsync(new PromotionSearchCriteria
-            {
-                ObjectIds = request.Ids.ToArray(),
-            });
+            var searchCriteria = AbstractTypeFactory<PromotionSearchCriteria>.TryCreateInstance();
+            searchCriteria.ObjectIds = request.Ids.ToArray();
+
+            var searchResult = await _promotionSearchService.SearchAsync(searchCriteria);
 
             return new LoadPromotionsResponse
             {
-                Promotions = promotions.Results.ToDictionary(x => x.Id)
+                Promotions = searchResult.Results.ToDictionary(x => x.Id)
             };
         }
     }

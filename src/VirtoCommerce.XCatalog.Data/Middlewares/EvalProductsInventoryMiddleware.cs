@@ -60,7 +60,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                     searchCriteria.Take = take;
                     searchCriteria.Skip = skip;
 
-                    searchResult = await _inventorySearchService.SearchInventoriesAsync(searchCriteria);
+                    searchResult = await _inventorySearchService.SearchAsync(searchCriteria);
 
                     inventories.AddRange(searchResult.Results);
                     skip += take;
