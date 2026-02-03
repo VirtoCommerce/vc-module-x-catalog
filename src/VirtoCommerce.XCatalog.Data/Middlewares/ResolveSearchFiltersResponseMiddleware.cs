@@ -22,6 +22,7 @@ public class ResolveSearchFiltersResponseMiddleware(
     : IAsyncMiddleware<SearchProductResponse>
 {
     private const string _termFilterType = "term";
+    private const string _excludeTermFilterType = "excludeTerm";
     private const string _rangeFilterType = "range";
 
     public virtual async Task Run(SearchProductResponse parameter, Func<SearchProductResponse, Task> next)
@@ -54,10 +55,12 @@ public class ResolveSearchFiltersResponseMiddleware(
     {
         foreach (var filter in filters)
         {
+            bool isNegation = false;
             // Unwrap NotFilter to get the actual filter
             var actualFilter = filter;
             while (actualFilter is NotFilter notFilter)
             {
+                isNegation = true;
                 actualFilter = notFilter.ChildFilter;
             }
 
@@ -76,7 +79,7 @@ public class ResolveSearchFiltersResponseMiddleware(
             switch (actualFilter)
             {
                 case TermFilter termFilter:
-                    result.FilterType = _termFilterType;
+                    result.FilterType = isNegation ? _excludeTermFilterType : _termFilterType;
                     result.TermValues = termFilter.Values.Select(x => new SearchProductFilterTermValue { Value = x }).ToList();
                     break;
                 case RangeFilter rangeFilter:
