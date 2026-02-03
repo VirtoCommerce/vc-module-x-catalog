@@ -54,13 +54,26 @@ public class ResolveSearchFiltersResponseMiddleware(
     {
         foreach (var filter in filters)
         {
+            // Unwrap NotFilter to get the actual filter
+            var actualFilter = filter;
+            while (actualFilter is NotFilter notFilter)
+            {
+                actualFilter = notFilter.ChildFilter;
+            }
+
+            // Skip if we couldn't unwrap to a supported filter type
+            if (actualFilter is not (TermFilter or RangeFilter))
+            {
+                continue;
+            }
+
             var result = new SearchProductFilterResult
             {
-                Name = filter.GetFieldName(),
+                Name = actualFilter.GetFieldName(),
                 IsGenerated = isGenerated,
             };
 
-            switch (filter)
+            switch (actualFilter)
             {
                 case TermFilter termFilter:
                     result.FilterType = _termFilterType;
