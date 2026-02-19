@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup>
@@ -14,7 +14,7 @@
 
   <!-- [Obsolete("Added temporarily to avoid runtime errors until all dependent modules have been updated", DiagnosticId = "VC0010")] -->
   <ItemGroup>
-    <PackageReference Include="VirtoCommerce.Tools" Version="3.824.0" />
+    <PackageReference Include="VirtoCommerce.Tools" Version="3.1000.0" />
   </ItemGroup>
 
 </Project>
