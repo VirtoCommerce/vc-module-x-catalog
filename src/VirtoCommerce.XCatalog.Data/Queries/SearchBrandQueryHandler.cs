@@ -22,6 +22,7 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
     private readonly IBrandSettingService _brandSettingService;
     private readonly ICategoryService _categoryService;
     private readonly ICategoryTreeService _categoryTreeService;
+    private readonly ICatalogService _catalogService;
     private readonly IStoreService _storeService;
     private readonly IMediator _mediator;
 
@@ -37,13 +38,15 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         ICategoryService categoryService,
         ICategoryTreeService categoryTreeService,
         IMediator mediator,
-        IStoreService storeService)
+        IStoreService storeService,
+        ICatalogService catalogService)
     {
         _brandSettingService = brandSettingService;
         _categoryService = categoryService;
         _categoryTreeService = categoryTreeService;
         _mediator = mediator;
         _storeService = storeService;
+        _catalogService = catalogService;
     }
 
     public virtual async Task<SearchBrandResponse> Handle(SearchBrandQuery request, CancellationToken cancellationToken)
@@ -67,7 +70,8 @@ public class SearchBrandQueryHandler : IRequestHandler<SearchBrandQuery, SearchB
         // get categories 
         var brandCategories = await GetBrandCategories(brandStoreSettings.BrandCatalogId);
 
-        var brandsCatalog = brandCategories.FirstOrDefault()?.Catalog;
+        var brandsCatalog = brandCategories.FirstOrDefault()?.Catalog
+            ?? await _catalogService.GetNoCloneAsync(brandStoreSettings.BrandCatalogId);
 
         // compare the two
         var brands = CreateBrandsByCategories(brandNames, brandCategories, brandsCatalog, store, brandPropertyName, request.CultureName);
