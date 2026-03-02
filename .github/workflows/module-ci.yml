@@ -330,6 +330,7 @@ jobs:
       installCustomModule: 'true'
       customModuleId:  ${{ needs.ci.outputs.moduleId }}
       customModuleUrl:  ${{ needs.ci.outputs.artifactUrl }}
+      requiredModulesListUrl: ${{ needs.ci.outputs.requiredModulesListUrl }}
       runTests: ${{ needs.ci.outputs.run-ui-tests }}
       vctestingRepoBranch: 'dev'
       frontendZipUrl: 'latest'
