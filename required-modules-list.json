@@ -1,10 +1,10 @@
 [
   {
     "Id": "VirtoCommerce.Platform",
-    "Version": "3.1006.0"
+    "Version": "3.1005.0"
   },
   {
-    "Id": "VirtoCommerce.PageBuilderModule",
-    "Version": "3.835.0"
+    "Id": "VirtoCommerce.SqlQueries",
+    "Version": "3.1001.0"
   }
 ]
