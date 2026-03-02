@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "VirtoCommerce.Platform",
+    "Version": "3.1004.0"
+  },
+  {
+    "Id": "VirtoCommerce.PageBuilderModule",
+    "Version": "3.835.0"
+  }
+]
