@@ -330,7 +330,7 @@ jobs:
       installCustomModule: 'true'
       customModuleId:  ${{ needs.ci.outputs.moduleId }}
       customModuleUrl:  ${{ needs.ci.outputs.artifactUrl }}
-      requiredModulesListUrl: 'https://raw.githubusercontent.com/VirtoCommerce/vc-module-x-catalog/refs/heads/test-VCST-4391/required-modules-list.json'
+      # requiredModulesListUrl: 'https://raw.githubusercontent.com/VirtoCommerce/vc-module-x-catalog/refs/heads/test-VCST-4391/required-modules-list.json'
       runTests: ${{ needs.ci.outputs.run-ui-tests }}
       vctestingRepoBranch: 'dev'
       frontendZipUrl: 'latest'
