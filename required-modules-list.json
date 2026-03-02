@@ -1,0 +1,10 @@
+[
+  {
+    "Id": "VirtoCommerce.Platform",
+    "Version": "3.1001.0"
+  },
+  {
+    "Id": "VirtoCommerce.SqlQueries",
+    "Version": "3.1000.0"
+  }
+]

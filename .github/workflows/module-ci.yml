@@ -324,12 +324,13 @@ jobs:
     if: ${{ ((github.ref == 'refs/heads/dev') && (github.event_name == 'push')) ||
         (github.event_name == 'workflow_dispatch') || ((github.base_ref == 'dev') && (github.event_name == 'pull_request')) }}
     needs: 'ci'
-    uses: VirtoCommerce/.github/.github/workflows/ui-autotests.yml@v3.800.24
+    uses: VirtoCommerce/.github/.github/workflows/ui-autotests.yml@VCST-4391 #v3.800.24
     with:
       installModules: 'false'
       installCustomModule: 'true'
       customModuleId:  ${{ needs.ci.outputs.moduleId }}
       customModuleUrl:  ${{ needs.ci.outputs.artifactUrl }}
+      requiredModulesListUrl: ${{ needs.ci.outputs.requiredModulesListUrl }}
       runTests: ${{ needs.ci.outputs.run-ui-tests }}
       vctestingRepoBranch: 'dev'
       frontendZipUrl: 'latest'
