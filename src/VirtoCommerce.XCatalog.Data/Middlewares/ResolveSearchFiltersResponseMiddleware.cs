@@ -191,6 +191,11 @@ public class ResolveSearchFiltersResponseMiddleware(
             .Distinct()
             .ToArray();
 
+        if (propertyIds.Length == 0)
+        {
+            return;
+        }
+
         var dictionaryItems = await GetPropertyDictionaryItemsAsync(propertyIds);
 
         foreach (var filter in termFilters)
@@ -222,17 +227,8 @@ public class ResolveSearchFiltersResponseMiddleware(
             PropertyIds = propertyIds,
         };
 
-        int totalCount;
-
-        do
-        {
-            var dictionaryItemsSearchResult = await propertyDictionaryItemSearchService.SearchNoCloneAsync(criteria);
-            result.AddRange(dictionaryItemsSearchResult.Results);
-
-            totalCount = dictionaryItemsSearchResult.TotalCount;
-            criteria.Skip += criteria.Take;
-        }
-        while (criteria.Skip < totalCount);
+        var propertyDictionaryItems = await propertyDictionaryItemSearchService.SearchAllAsync(criteria);
+        result.AddRange(propertyDictionaryItems);
 
         return result;
     }
