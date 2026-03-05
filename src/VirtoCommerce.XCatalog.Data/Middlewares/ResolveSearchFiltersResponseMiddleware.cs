@@ -227,7 +227,7 @@ public class ResolveSearchFiltersResponseMiddleware(
             PropertyIds = propertyIds,
         };
 
-        var propertyDictionaryItems = await propertyDictionaryItemSearchService.SearchAllAsync(criteria);
+        var propertyDictionaryItems = await propertyDictionaryItemSearchService.SearchAllNoCloneAsync(criteria);
         result.AddRange(propertyDictionaryItems);
 
         return result;
