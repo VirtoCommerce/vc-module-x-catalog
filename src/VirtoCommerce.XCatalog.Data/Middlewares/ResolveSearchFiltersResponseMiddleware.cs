@@ -219,18 +219,14 @@ public class ResolveSearchFiltersResponseMiddleware(
         }
     }
 
-    private async Task<List<PropertyDictionaryItem>> GetPropertyDictionaryItemsAsync(string[] propertyIds)
+    private Task<IList<PropertyDictionaryItem>> GetPropertyDictionaryItemsAsync(string[] propertyIds)
     {
-        var result = new List<PropertyDictionaryItem>();
         var criteria = new PropertyDictionaryItemSearchCriteria
         {
             PropertyIds = propertyIds,
         };
 
-        var propertyDictionaryItems = await propertyDictionaryItemSearchService.SearchAllNoCloneAsync(criteria);
-        result.AddRange(propertyDictionaryItems);
-
-        return result;
+        return propertyDictionaryItemSearchService.SearchAllNoCloneAsync(criteria);
     }
 
     private async Task ResolveFilterValueLabelsByCategoryAsync(List<SearchProductFilterResult> outlineFilters, string cultureName)
