@@ -191,6 +191,11 @@ public class ResolveSearchFiltersResponseMiddleware(
             .Distinct()
             .ToArray();
 
+        if (propertyIds.Length == 0)
+        {
+            return;
+        }
+
         var dictionaryItems = await GetPropertyDictionaryItemsAsync(propertyIds);
 
         foreach (var filter in termFilters)
@@ -214,27 +219,14 @@ public class ResolveSearchFiltersResponseMiddleware(
         }
     }
 
-    private async Task<List<PropertyDictionaryItem>> GetPropertyDictionaryItemsAsync(string[] propertyIds)
+    private Task<IList<PropertyDictionaryItem>> GetPropertyDictionaryItemsAsync(string[] propertyIds)
     {
-        var result = new List<PropertyDictionaryItem>();
         var criteria = new PropertyDictionaryItemSearchCriteria
         {
             PropertyIds = propertyIds,
         };
 
-        int totalCount;
-
-        do
-        {
-            var dictionaryItemsSearchResult = await propertyDictionaryItemSearchService.SearchNoCloneAsync(criteria);
-            result.AddRange(dictionaryItemsSearchResult.Results);
-
-            totalCount = dictionaryItemsSearchResult.TotalCount;
-            criteria.Skip += criteria.Take;
-        }
-        while (criteria.Skip < totalCount);
-
-        return result;
+        return propertyDictionaryItemSearchService.SearchAllNoCloneAsync(criteria);
     }
 
     private async Task ResolveFilterValueLabelsByCategoryAsync(List<SearchProductFilterResult> outlineFilters, string cultureName)
