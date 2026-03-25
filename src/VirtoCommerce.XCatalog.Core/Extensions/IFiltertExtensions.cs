@@ -49,7 +49,15 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
             if (filter is RangeFilter)
             {
-                return fieldName.Split('_')[0];
+                // Strip currency suffixes from price fields (e.g. price_USD → price, price_usd → price).
+                // Only "price" is treated as a special keyword here; property names that happen
+                // to contain underscores (Volume_ml, weight_kg, …) are returned unchanged.
+                if (fieldName.StartsWith("price", StringComparison.OrdinalIgnoreCase))
+                {
+                    return fieldName.Split('_')[0];
+                }
+
+                return fieldName;
             }
 
             return fieldName;
