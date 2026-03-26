@@ -78,7 +78,12 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
         [Theory]
         [InlineData("any Name", "any Name", "TermFilter")]
         [InlineData("price_USD", "price", "RangeFilter")]
+        [InlineData("price_usd", "price", "RangeFilter")]
+        [InlineData("price_EUR", "price", "RangeFilter")]
+        [InlineData("Volume_ml", "Volume_ml", "RangeFilter")]
+        [InlineData("weight_kg", "weight_kg", "RangeFilter")]
         [InlineData("anyName_2384765_236745236", "anyName_2384765_236745236", "TermFilter")]
+        [InlineData("anyName_2384765_236745236", "anyName_2384765_236745236", "RangeFilter")]
         [InlineData("__outline", "__outline", "TermFilter")]
         public void GetFieldName_NamedFilter_ParsedCorrectly(string fieldName, string expectedName, string filterType)
         {
