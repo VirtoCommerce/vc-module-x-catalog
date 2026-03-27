@@ -20,9 +20,14 @@ namespace VirtoCommerce.XCatalog.Core.Queries
         {
             var result = CategoryResponseGroup.None;
 
-            if (IncludeFields.ContainsAny("assets", "images", "imgSrc"))
+            if (IncludeFields.ContainsAny("images", "imgSrc"))
             {
                 result |= CategoryResponseGroup.WithImages;
+            }
+
+            if (IncludeFields.ContainsAny("assets"))
+            {
+                result |= CategoryResponseGroup.WithAssets;
             }
 
             if (IncludeFields.ContainsAny("properties"))

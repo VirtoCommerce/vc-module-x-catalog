@@ -159,6 +159,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "Images",
                 resolve: context => context.Source.Category.Images ?? Array.Empty<Image>());
 
+            ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<AssetType>>>>("assets",
+                "Assets",
+                resolve: context =>
+                {
+                    var assets = context.Source.Category.Assets ?? Array.Empty<Asset>();
+                    var cultureName = context.GetValue<string>("cultureName");
+                    if (!string.IsNullOrEmpty(cultureName))
+                    {
+                        return assets.Where(asset => string.IsNullOrEmpty(asset.LanguageCode) || asset.LanguageCode.EqualsIgnoreCase(cultureName)).ToList();
+                    }
+                    return assets;
+                });
+
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<BreadcrumbType>>>>(
                 "breadcrumbs",
                 "Breadcrumbs",
