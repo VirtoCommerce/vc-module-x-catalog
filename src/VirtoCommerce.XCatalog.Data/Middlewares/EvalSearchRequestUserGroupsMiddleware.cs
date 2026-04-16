@@ -6,7 +6,6 @@ using PipelineNet.Middleware;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Platform.Core.Extensions;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core;
@@ -18,18 +17,18 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
     {
         private readonly IMemberResolver _memberResolver;
         private readonly IMemberService _memberService;
-        private readonly IModuleCatalog _moduleCatalog;
+        private readonly IModuleService _moduleService;
 
-        public EvalSearchRequestUserGroupsMiddleware(IMemberResolver memberResolver, IMemberService memberService, IModuleCatalog moduleCatalog)
+        public EvalSearchRequestUserGroupsMiddleware(IMemberResolver memberResolver, IMemberService memberService, IModuleService moduleService)
         {
             _memberResolver = memberResolver;
             _memberService = memberService;
-            _moduleCatalog = moduleCatalog;
+            _moduleService = moduleService;
         }
 
         public virtual async Task Run(IndexSearchRequestBuilder parameter, Func<IndexSearchRequestBuilder, Task> next)
         {
-            if (parameter != null && _moduleCatalog.IsModuleInstalled("VirtoCommerce.CatalogPersonalization"))
+            if (parameter != null && _moduleService.IsInstalled("VirtoCommerce.CatalogPersonalization"))
             {
                 var userGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "__any" };
 
