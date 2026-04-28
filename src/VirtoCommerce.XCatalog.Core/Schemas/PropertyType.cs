@@ -1,3 +1,5 @@
+using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using GraphQL;
@@ -121,7 +123,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var symbol = string.Empty;
             var valueUnit = measure.Units.FirstOrDefault(x => x.Id == propertyValue.UnitOfMeasureId);
-            var decimalValue = (decimal)propertyValue.Value;
+            var decimalValue = Convert.ToDecimal(propertyValue.Value, CultureInfo.InvariantCulture);
 
             if (valueUnit != null)
             {
