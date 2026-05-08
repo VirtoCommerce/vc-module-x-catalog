@@ -230,6 +230,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(d => d.IndexedProduct.Height, nullable: true).Description("Height");
             Field(d => d.IndexedProduct.Width, nullable: true).Description("Width");
             Field(d => d.IndexedProduct.Length, nullable: true).Description("Length");
+            Field(d => d.IndexedProduct.CategoryId, nullable: false).Description("CategoryId");
 
             Field<StringGraphType>("brandName")
                 .Description("Get brandName for product.")
