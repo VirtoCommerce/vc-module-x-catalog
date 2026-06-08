@@ -38,7 +38,7 @@
   </groups>
 
   <projectUrl>https://github.com/VirtoCommerce/vc-module-x-catalog</projectUrl>
-  <iconUrl>Modules/$(VirtoCommerce.XCatalog)/Content/logo.png</iconUrl>
+  <iconUrl>Modules/$(VirtoCommerce.XCatalog)/Content/logo.svg</iconUrl>
   <requireLicenseAcceptance>false</requireLicenseAcceptance>
 
   <assemblyFile>VirtoCommerce.XCatalog.Web.dll</assemblyFile>
