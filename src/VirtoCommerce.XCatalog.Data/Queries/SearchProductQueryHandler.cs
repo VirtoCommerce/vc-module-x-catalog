@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
+using VirtoCommerce.CatalogModule.Core.Search.Sorting;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -34,6 +35,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly IGenericPipelineLauncher _pipeline;
         private readonly IAggregationConverter _aggregationConverter;
         private readonly ISearchPhraseParser _phraseParser;
+        private readonly IProductSearchOrderService _productSearchOrderService;
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -42,7 +44,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
             IAggregationConverter aggregationConverter,
-            ISearchPhraseParser phraseParser)
+            ISearchPhraseParser phraseParser,
+            IProductSearchOrderService productSearchOrderService)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -51,6 +54,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _pipeline = pipeline;
             _aggregationConverter = aggregationConverter;
             _phraseParser = phraseParser;
+            _productSearchOrderService = productSearchOrderService;
         }
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
@@ -74,6 +78,29 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             var currency = await _storeCurrencyResolver.GetStoreCurrencyAsync(request.CurrencyCode, request.StoreId, request.CultureName);
             var store = await _storeService.GetByIdAsync(request.StoreId);
             var responseGroup = EnumUtility.SafeParse(request.GetResponseGroup(), ExpProductResponseGroup.None);
+
+            var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
+
+            // Resolve store-level sort orderings: expand a sort code to its expression (empty -> store default;
+            // a raw expression passes through). Skipped for the load-by-ids path so it keeps the requested order.
+            IList<ProductSearchOrdering> sortOrderings = null;
+            ProductSearchOrdering selectedOrdering = null;
+            if (request.ObjectIds.IsNullOrEmpty())
+            {
+                sortOrderings = await _productSearchOrderService.GetOrderingsAsync(new ProductSearchOrderContext
+                {
+                    StoreId = request.StoreId,
+                    CatalogId = store.Catalog,
+                    CurrencyCode = currency.Code,
+                    CultureName = languageCode,
+                    Sort = request.Sort,
+                    Keyword = request.Query,
+                    Filter = request.Filter,
+                    Facet = request.Facet,
+                });
+                selectedOrdering = sortOrderings.FindSelected(request.Sort);
+                request.Sort = selectedOrdering?.SortExpression ?? request.Sort;
+            }
 
             var builder = GetIndexedSearchRequestBuilder(request, store, currency);
 
@@ -118,6 +145,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             result.Results = ConvertProducts(searchResult);
             result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
             result.TotalCount = (int)searchResult.TotalCount;
+            result.SortDefinitions = BuildSortDefinitions(sortOrderings, selectedOrdering, languageCode);
 
             await _pipeline.Execute(result);
 
@@ -182,6 +210,38 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     options.Items["order"] = Array.IndexOf(resultAggregations, x);
                 }))
                 .ToList();
+        }
+
+        protected virtual IList<ProductSortDefinition> BuildSortDefinitions(IList<ProductSearchOrdering> orderings, ProductSearchOrdering selected, string languageCode)
+        {
+            if (orderings == null)
+            {
+                return new List<ProductSortDefinition>();
+            }
+
+            return orderings
+                .Where(x => x.IsVisible)
+                .Select(x => new ProductSortDefinition
+                {
+                    Id = x.Code,
+                    Name = ResolveOrderingName(x, languageCode),
+                    IsDefault = x.IsDefault,
+                    IsSelected = selected != null && x.Code.EqualsIgnoreCase(selected.Code),
+                })
+                .ToList();
+        }
+
+        private static string ResolveOrderingName(ProductSearchOrdering ordering, string languageCode)
+        {
+            if (!string.IsNullOrEmpty(languageCode) &&
+                ordering.LocalizedNames != null &&
+                ordering.LocalizedNames.TryGetValue(languageCode, out var localizedName) &&
+                !string.IsNullOrEmpty(localizedName))
+            {
+                return localizedName;
+            }
+
+            return ordering.Name;
         }
 
         /// <summary>

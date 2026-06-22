@@ -9,7 +9,10 @@
   </PropertyGroup>
   <ItemGroup>
     
-    <PackageReference Include="VirtoCommerce.CatalogModule.Core" Version="3.1017.0" />
+    <!-- LOCAL DEV SHIM (VCST-5177): project reference to local catalog source so x-catalog compiles against the new
+         product-search-ordering API (IProductSearchOrderService, etc.). Before shipping, revert this to a
+         PackageReference and bump to the catalog package version that ships the new API. -->
+    <ProjectReference Include="..\..\..\vc-module-catalog\src\VirtoCommerce.CatalogModule.Core\VirtoCommerce.CatalogModule.Core.csproj" />
     <PackageReference Include="VirtoCommerce.InventoryModule.Core" Version="3.1000.0" />
     <PackageReference Include="VirtoCommerce.MarketingModule.Core" Version="3.1000.0" />
     <PackageReference Include="VirtoCommerce.PricingModule.Core" Version="3.1000.0" />
