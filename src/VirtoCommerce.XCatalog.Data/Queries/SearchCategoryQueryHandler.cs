@@ -89,6 +89,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     UserId = request.UserId,
                     CultureName = request.CultureName,
                     CurrencyCode = request.CurrencyCode,
+                    Sort = request.Sort, // Propagate sorting to child categories (applies to all nested levels via recursion)
                 };
 
                 var regex = new Regex("^childCategories\\.");
