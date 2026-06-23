@@ -109,7 +109,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             {
                 StoreId = request.StoreId,
                 Currency = request.CurrencyCode ?? store.DefaultCurrency,
-                LanguageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage,
+                LanguageCode = languageCode,
                 CatalogId = store.Catalog,
             };
 
@@ -215,12 +215,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<ProductSortDefinition> BuildSortDefinitions(IList<ProductSearchOrdering> orderings, ProductSearchOrdering selected, string languageCode)
         {
-            if (orderings == null)
-            {
-                return new List<ProductSortDefinition>();
-            }
-
-            return orderings
+            return (orderings ?? [])
                 .Where(x => x.IsVisible)
                 .Select(x => new ProductSortDefinition
                 {

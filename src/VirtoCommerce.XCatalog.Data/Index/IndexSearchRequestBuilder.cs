@@ -375,7 +375,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
                         sortFields.Add(new SortingField($"price_{CurrencyCode}".ToLowerInvariant(), sortingField.IsDescending));
                         break;
 
-                    case "score":
                     case "__score":
                         sortFields.Add(new SortingField(ScoreSortingFieldName, sortingField.IsDescending));
                         break;
