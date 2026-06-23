@@ -365,6 +365,71 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             actual.Should().BeEquivalentTo(_expectedSearchRequest);
         }
 
+        [Theory]
+        [InlineData("__score:desc", true)]
+        [InlineData("__score:asc", false)]
+        public void AddSorting_ScoreToken_MapsToScoreField(string sort, bool descending)
+        {
+            // Act
+            var actual = _indexSearchRequestBuilder.AddSorting(sort).Build();
+
+            // Assert
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("score", descending) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_RawScoreToken_FallsThroughToScoreField()
+        {
+            // "score" (no underscores) hits the default branch and still resolves to the score field.
+            var actual = _indexSearchRequestBuilder.AddSorting("score:asc").Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("score", false) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_NameToken_MapsToCultureFieldThenName()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCultureName("en-US")
+                .AddSorting("name:asc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("name_en-us", false),
+                    new SortingField("name", false),
+                },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_PriceToken_MapsToCurrencyField()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCurrency("USD")
+                .AddSorting("price:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("price_usd", true) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_UnknownField_PassesThrough()
+        {
+            var actual = _indexSearchRequestBuilder.AddSorting("rating:desc").Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("rating", true) },
+                options => options.WithStrictOrdering());
+        }
+
         #endregion
 
         //[Fact]
