@@ -81,8 +81,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
 
-            // Resolve store-level sort orderings: expand a sort code to its expression (empty -> store default;
-            // a raw expression passes through). Skipped for the load-by-ids path so it keeps the requested order.
+            // Resolve the store-level sort orderings and expand the chosen sort code into its sort expression.
+            // An empty sort falls back to the store default and a raw expression is passed through unchanged.
+            // Skipped on the load-by-ids path so it preserves the requested order.
             IList<ProductSearchOrdering> sortOrderings = null;
             ProductSearchOrdering selectedOrdering = null;
             if (request.ObjectIds.IsNullOrEmpty())
