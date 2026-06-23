@@ -81,17 +81,33 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
 
-            // Resolve the store-level sort orderings and expand the chosen sort code into its sort expression.
-            // An empty sort falls back to the store default and a raw expression is passed through unchanged.
-            // Skipped on the load-by-ids path so it preserves the requested order.
+            // Sort orderings are resolved further down (after the filter is parsed into the request builder), so a
+            // resolver can read the current category (id / outline) rather than scraping the raw filter string.
             IList<ProductSearchOrdering> sortOrderings = null;
             ProductSearchOrdering selectedOrdering = null;
+
+            var builder = GetIndexedSearchRequestBuilder(request, store, currency);
+
+            var criteria = new ProductIndexedSearchCriteria
+            {
+                StoreId = request.StoreId,
+                Currency = request.CurrencyCode ?? store.DefaultCurrency,
+                LanguageCode = languageCode,
+                CatalogId = store.Catalog,
+            };
+
+            // The filter is now parsed into the builder, so the browsed category (outline) is available. Resolve the
+            // chosen ordering (empty sort -> store default; raw expression -> passthrough) and then apply sorting.
+            // Skipped on the load-by-ids path so it preserves the requested order.
             if (request.ObjectIds.IsNullOrEmpty())
             {
+                var categoryOutline = GetOutlines(builder.Build()).MaxBy(x => x.Length);
                 sortOrderings = await _productSearchOrderService.GetOrderingsAsync(new ProductSearchOrderContext
                 {
                     StoreId = request.StoreId,
                     CatalogId = store.Catalog,
+                    Outline = categoryOutline,
+                    CategoryId = GetCurrentCategoryId(categoryOutline),
                     CurrencyCode = currency.Code,
                     CultureName = languageCode,
                     Sort = request.Sort,
@@ -103,15 +119,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 request.Sort = selectedOrdering?.SortExpression ?? request.Sort;
             }
 
-            var builder = GetIndexedSearchRequestBuilder(request, store, currency);
-
-            var criteria = new ProductIndexedSearchCriteria
-            {
-                StoreId = request.StoreId,
-                Currency = request.CurrencyCode ?? store.DefaultCurrency,
-                LanguageCode = languageCode,
-                CatalogId = store.Catalog,
-            };
+            builder.AddSorting(request.Sort);
 
             //Use predefined  facets for store  if the facet filter expression is not set
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadFacets))
@@ -168,7 +176,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
                                             .WithCultureName(request.CultureName)
-                                            .AddSorting(request.Sort)
                                             .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 
             if (request.ObjectIds.IsNullOrEmpty())
@@ -181,13 +188,25 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual void ApplyOutlineCriteria(ProductIndexedSearchCriteria criteria, SearchRequest searchRequest)
         {
-            criteria.Outlines = searchRequest.GetChildFilters()
+            criteria.Outlines = GetOutlines(searchRequest);
+            criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
+        }
+
+        private static string[] GetOutlines(SearchRequest searchRequest)
+        {
+            return searchRequest.GetChildFilters()
                 .Where(f => f is TermFilter && f.GetFieldName() == "__outline")
                 .SelectMany(f => ((TermFilter)f).Values)
                 .Where(o => !string.IsNullOrEmpty(o))
                 .ToArray();
+        }
 
-            criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
+        private static string GetCurrentCategoryId(string outline)
+        {
+            // outline = "catalogId/.../currentCategoryId"; the leaf segment is the category being browsed
+            // (null when browsing the catalog root, where the outline is just the catalog id or absent).
+            var segments = outline?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            return segments?.Length > 1 ? segments[^1] : null;
         }
 
         protected virtual Task<Aggregation[]> ConvertAggregations(SearchResponse searchResponse, SearchRequest searchRequest, ProductIndexedSearchCriteria criteria)
