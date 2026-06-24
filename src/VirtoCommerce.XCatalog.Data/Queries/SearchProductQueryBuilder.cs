@@ -45,7 +45,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 {
                     Facets = response.Facets,
                     Filters = response.Filters,
-                    SortDefinitions = response.SortDefinitions,
+                    Sortings = response.Sortings,
                 };
             });
 

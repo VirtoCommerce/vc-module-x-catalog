@@ -3,9 +3,9 @@ using VirtoCommerce.XCatalog.Core.Models;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
-    public class SortDefinitionType : ObjectGraphType<ProductSortDefinition>
+    public class ProductSortingType : ObjectGraphType<ProductSorting>
     {
-        public SortDefinitionType()
+        public ProductSortingType()
         {
             Field<NonNullGraphType<StringGraphType>>("id")
                 .Description("Stable sort code, used as the ?sort=<id> value.")

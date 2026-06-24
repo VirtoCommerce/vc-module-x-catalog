@@ -22,7 +22,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
         public Currency Currency { get; set; }
         public Store Store { get; set; }
 
-        public IList<ProductSortDefinition> SortDefinitions { get; set; } = [];
+        public IList<ProductSorting> Sortings { get; set; } = [];
     }
 
     public class SearchProductFilterResult
