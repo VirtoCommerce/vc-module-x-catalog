@@ -83,7 +83,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
 
-            // Sort sortings are resolved further down (after the filter is parsed into the request builder), so a
+            // Sortings are resolved further down (after the filter is parsed into the request builder), so a
             // resolver can read the current category (id / outline) rather than scraping the raw filter string.
             IList<CatalogProductSorting> sortings = null;
             CatalogProductSorting selectedSorting = null;
