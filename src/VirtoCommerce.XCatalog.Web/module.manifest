@@ -6,7 +6,7 @@
 
   <platformVersion>3.1039.0</platformVersion>
   <dependencies>
-    <dependency id="VirtoCommerce.Catalog" version="3.1032.0-alpha.2550-vcst-5177-configurable-products-sorting" />
+    <dependency id="VirtoCommerce.Catalog" version="3.1032.0-alpha.2551-vcst-5177-configurable-products-sorting" />
     <dependency id="VirtoCommerce.Inventory" version="3.1003.0" optional="true" />
     <dependency id="VirtoCommerce.Marketing" version="3.1005.0" optional="true" />
     <dependency id="VirtoCommerce.Pricing" version="3.1003.0" optional="true" />
