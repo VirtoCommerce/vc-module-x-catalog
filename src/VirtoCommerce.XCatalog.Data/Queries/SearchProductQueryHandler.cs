@@ -85,6 +85,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // resolver can read the current category (id / outline) rather than scraping the raw filter string.
             IList<ProductSearchOrdering> sortOrderings = null;
             ProductSearchOrdering selectedOrdering = null;
+            string[] categoryOutlines = null;
 
             var builder = GetIndexedSearchRequestBuilder(request, store, currency);
 
@@ -99,9 +100,14 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // The filter is now parsed into the builder, so the browsed category (outline) is available. Resolve the
             // chosen ordering (empty sort -> store default; raw expression -> passthrough) and then apply sorting.
             // Skipped on the load-by-ids path so it preserves the requested order.
+            var sortToApply = request.Sort;
+
             if (request.ObjectIds.IsNullOrEmpty())
             {
-                var categoryOutline = GetOutlines(builder.Build()).MaxBy(x => x.Length);
+                // Parse the browsed category outline once; reused by ApplyOutlineCriteria below (the request
+                // pipeline does not modify __outline filters), so outlines are not parsed twice per search.
+                categoryOutlines = GetOutlines(builder.Build());
+                var categoryOutline = categoryOutlines.MaxBy(x => x.Length);
                 sortOrderings = await _productSearchOrderService.GetOrderingsAsync(new ProductSearchOrderContext
                 {
                     StoreId = request.StoreId,
@@ -116,10 +122,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     Facet = request.Facet,
                 });
                 selectedOrdering = sortOrderings.FindSelected(request.Sort);
-                request.Sort = selectedOrdering?.SortExpression ?? request.Sort;
+                sortToApply = selectedOrdering?.SortExpression ?? request.Sort;
             }
 
-            builder.AddSorting(request.Sort);
+            builder.AddSorting(sortToApply);
 
             //Use predefined  facets for store  if the facet filter expression is not set
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadFacets))
@@ -134,7 +140,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var searchRequest = builder.Build();
 
-            // Enrich criteria with outlines to filter outline aggregation items and return only child elements
+            // Enrich criteria with outlines to filter outline aggregation items and return only child elements.
+            // Reuse the outlines already parsed during sort resolution when available (load-by-ids parses on demand).
+            if (categoryOutlines != null)
+            {
+                criteria.Outlines = categoryOutlines;
+            }
+
             ApplyOutlineCriteria(criteria, searchRequest);
 
             var searchResult = await _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
@@ -188,7 +200,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual void ApplyOutlineCriteria(ProductIndexedSearchCriteria criteria, SearchRequest searchRequest)
         {
-            criteria.Outlines = GetOutlines(searchRequest);
+            criteria.Outlines ??= GetOutlines(searchRequest);
             criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
         }
 
