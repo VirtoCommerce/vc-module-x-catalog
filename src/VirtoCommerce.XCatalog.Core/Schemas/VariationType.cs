@@ -1,15 +1,20 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using GraphQL;
+using GraphQL.Builders;
 using GraphQL.Types;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -105,6 +110,33 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "rating",
                 "Product rating",
                 resolve: context => context.Source.Rating);
+
+            Connection<ProductAssociationType>("associations")
+              .Argument<StringGraphType>("query", "the search phrase")
+              .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
+              .PageSize(Connections.DefaultPageSize)
+              .ResolveAsync(async context => await ResolveAssociationConnectionAsync(mediator, context));
+        }
+
+        private static async Task<object> ResolveAssociationConnectionAsync(IMediator mediator, IResolveConnectionContext<ExpVariation> context)
+        {
+            var first = context.First;
+
+            int.TryParse(context.After, out var skip);
+
+            var query = new SearchProductAssociationsQuery
+            {
+                Skip = skip,
+                Take = first ?? context.PageSize ?? 10,
+
+                Keyword = context.GetArgument<string>("query"),
+                Group = context.GetArgument<string>("group"),
+                ObjectIds = [context.Source.IndexedProduct.Id]
+            };
+
+            var response = await mediator.Send(query);
+
+            return new PagedConnection<ProductAssociation>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }
     }
 }
