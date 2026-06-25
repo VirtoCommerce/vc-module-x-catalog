@@ -110,12 +110,17 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 // pipeline does not modify __outline filters), so outlines are not parsed twice per search.
                 categoryOutlines = GetOutlines(builder.Build());
                 var categoryOutline = categoryOutlines.MaxBy(x => x.Length);
+                var currentCategoryId = GetCurrentCategoryId(categoryOutline);
+
+                // Bind the logical "priority" sort to the browsed category's merchandising field (Featured ordering).
+                builder.WithCategory(currentCategoryId);
+
                 sortings = await _productSortingService.GetSortingsAsync(new ProductSortingContext
                 {
                     StoreId = request.StoreId,
                     CatalogId = store.Catalog,
                     Outline = categoryOutline,
-                    CategoryId = GetCurrentCategoryId(categoryOutline),
+                    CategoryId = currentCategoryId,
                     CurrencyCode = currency.Code,
                     CultureName = languageCode,
                     Sort = request.Sort,
@@ -181,6 +186,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithStoreId(request.StoreId)
                                             .WithUserId(request.UserId)
                                             .WithOrganizationId(request.OrganizationId)
+                                            .WithCatalog(store.Catalog)
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                                             .AddCertainDateFilter(DateTime.UtcNow)

@@ -21,6 +21,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string StoreId { get; private set; }
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
+        public string CatalogId { get; private set; }
+        public string CategoryId { get; private set; }
 
         public string SearchKeywords => SearchRequest.SearchKeywords;
         public IFilter Filter => SearchRequest.Filter;
@@ -95,6 +97,19 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 SearchRequest.SearchFields.Add($"__content_{cultureName}".ToLowerInvariant());
             }
 
+            return this;
+        }
+
+        public IndexSearchRequestBuilder WithCatalog(string catalogId)
+        {
+            CatalogId = catalogId;
+            return this;
+        }
+
+        // The browsed category, used to bind the logical "priority" sort to the per-category merchandising field.
+        public IndexSearchRequestBuilder WithCategory(string categoryId)
+        {
+            CategoryId = categoryId;
             return this;
         }
 
@@ -379,6 +394,13 @@ namespace VirtoCommerce.XCatalog.Data.Index
                         sortFields.Add(new SortingField(ScoreSortingFieldName, sortingField.IsDescending));
                         break;
 
+                    case "priority":
+                        foreach (var priorityField in GetPriorityFields())
+                        {
+                            sortFields.Add(new SortingField(priorityField, sortingField.IsDescending));
+                        }
+                        break;
+
                     default:
                         sortFields.Add(sortingField);
                         break;
@@ -391,6 +413,23 @@ namespace VirtoCommerce.XCatalog.Data.Index
             }
 
             return this;
+        }
+
+        // Logical "priority" binds to the per-category merchandising field for the browsed category, then the flat
+        // catalog-wide priority as a fallback (products outside that category, keyword search, or catalog-root
+        // browse where no category is being browsed). Mirrors the catalog module's ProductSearchRequestBuilder.
+        private IList<string> GetPriorityFields()
+        {
+            var priorityFields = new List<string>();
+
+            if (!string.IsNullOrEmpty(CatalogId) && !string.IsNullOrEmpty(CategoryId))
+            {
+                priorityFields.Add($"priority_{CatalogId}_{CategoryId}".ToLowerInvariant());
+            }
+
+            priorityFields.Add("priority");
+
+            return priorityFields;
         }
 
         public IndexSearchRequestBuilder ApplyMultiSelectFacetSearch()

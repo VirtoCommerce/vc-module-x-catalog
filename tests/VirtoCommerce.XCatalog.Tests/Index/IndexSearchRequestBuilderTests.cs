@@ -430,6 +430,59 @@ namespace VirtoCommerce.XCatalog.Tests.Index
                 options => options.WithStrictOrdering());
         }
 
+        [Fact]
+        public void AddSorting_PriorityToken_BrowsingCategory_MapsToPerCategoryFieldThenFlat()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .WithCategory("Category1")
+                .AddSorting("priority:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("priority_catalog1_category1", true),
+                    new SortingField("priority", true),
+                },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_PriorityToken_NoCategory_MapsToFlatFieldOnly()
+        {
+            // Catalog-root browse / keyword search (no category) → only the flat priority field.
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .AddSorting("priority:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("priority", true) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_FeaturedExpression_BrowsingCategory_ExpandsScoreAndPerCategoryPriority()
+        {
+            // The Featured default: "__score:desc;priority:desc;id:asc".
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .WithCategory("Category1")
+                .AddSorting("__score:desc;priority:desc;id:asc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("score", true),
+                    new SortingField("priority_catalog1_category1", true),
+                    new SortingField("priority", true),
+                    new SortingField("id", false),
+                },
+                options => options.WithStrictOrdering());
+        }
+
         #endregion
 
         //[Fact]
