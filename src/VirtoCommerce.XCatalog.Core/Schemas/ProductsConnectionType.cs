@@ -29,6 +29,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<ListGraphType<NonNullGraphType<SearchProductFilterResultType>>>("filters")
                 .Description("Parsed filters")
                 .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Filters);
+
+            Field<NonNullGraphType<ListGraphType<NonNullGraphType<ProductSortingType>>>>("sortings")
+                .Description("Available product sortings (\"sort by\" options) for the store")
+                .Resolve(context => ((ProductsConnection<ExpProduct>)context.Source).Sortings);
         }
     }
 
@@ -42,5 +46,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         public IList<FacetResult> Facets { get; set; }
 
         public IList<SearchProductFilterResult> Filters { get; set; }
+
+        public IList<ProductSorting> Sortings { get; set; }
     }
 }

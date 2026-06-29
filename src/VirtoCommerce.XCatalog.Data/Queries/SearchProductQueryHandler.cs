@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
+using VirtoCommerce.CatalogModule.Core.Search.Sorting;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -17,6 +18,8 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
+using XapiProductSorting = VirtoCommerce.XCatalog.Core.Models.ProductSorting;
 using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
@@ -34,6 +37,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly IGenericPipelineLauncher _pipeline;
         private readonly IAggregationConverter _aggregationConverter;
         private readonly ISearchPhraseParser _phraseParser;
+        private readonly IProductSortingService _productSortingService;
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -42,7 +46,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
             IAggregationConverter aggregationConverter,
-            ISearchPhraseParser phraseParser)
+            ISearchPhraseParser phraseParser,
+            IProductSortingService productSortingService)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -51,6 +56,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _pipeline = pipeline;
             _aggregationConverter = aggregationConverter;
             _phraseParser = phraseParser;
+            _productSortingService = productSortingService;
         }
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
@@ -75,15 +81,58 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             var store = await _storeService.GetByIdAsync(request.StoreId);
             var responseGroup = EnumUtility.SafeParse(request.GetResponseGroup(), ExpProductResponseGroup.None);
 
+            var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
+
+            // Sortings are resolved further down (after the filter is parsed into the request builder), so a
+            // resolver can read the current category (id / outline) rather than scraping the raw filter string.
+            IList<CatalogProductSorting> sortings = null;
+            CatalogProductSorting selectedSorting = null;
+            string[] categoryOutlines = null;
+
             var builder = GetIndexedSearchRequestBuilder(request, store, currency);
 
             var criteria = new ProductIndexedSearchCriteria
             {
                 StoreId = request.StoreId,
                 Currency = request.CurrencyCode ?? store.DefaultCurrency,
-                LanguageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage,
+                LanguageCode = languageCode,
                 CatalogId = store.Catalog,
             };
+
+            // The filter is now parsed into the builder, so the browsed category (outline) is available. Resolve the
+            // chosen sorting (empty sort -> store default; raw expression -> passthrough) and then apply sorting.
+            // Skipped on the load-by-ids path so it preserves the requested order.
+            var sortToApply = request.Sort;
+
+            if (request.ObjectIds.IsNullOrEmpty())
+            {
+                // Parse the browsed category outline once; reused by ApplyOutlineCriteria below (the request
+                // pipeline does not modify __outline filters), so outlines are not parsed twice per search.
+                categoryOutlines = GetOutlines(builder.Build());
+                var categoryOutline = categoryOutlines.MaxBy(x => x.Length);
+                var currentCategoryId = GetCurrentCategoryId(categoryOutline);
+
+                // Bind the logical "priority" sort to the browsed category's merchandising field (Featured ordering).
+                builder.WithCategory(currentCategoryId);
+
+                sortings = await _productSortingService.GetSortingsAsync(new ProductSortingContext
+                {
+                    StoreId = request.StoreId,
+                    CatalogId = store.Catalog,
+                    Outline = categoryOutline,
+                    CategoryId = currentCategoryId,
+                    CurrencyCode = currency.Code,
+                    CultureName = languageCode,
+                    Sort = request.Sort,
+                    Keyword = request.Query,
+                    Filter = request.Filter,
+                    Facet = request.Facet,
+                });
+                selectedSorting = sortings.FindSelected(request.Sort);
+                sortToApply = selectedSorting?.SortExpression ?? request.Sort;
+            }
+
+            builder.AddSorting(sortToApply);
 
             //Use predefined  facets for store  if the facet filter expression is not set
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadFacets))
@@ -98,7 +147,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var searchRequest = builder.Build();
 
-            // Enrich criteria with outlines to filter outline aggregation items and return only child elements
+            // Enrich criteria with outlines to filter outline aggregation items and return only child elements.
+            // Reuse the outlines already parsed during sort resolution when available (load-by-ids parses on demand).
+            if (categoryOutlines != null)
+            {
+                criteria.Outlines = categoryOutlines;
+            }
+
             ApplyOutlineCriteria(criteria, searchRequest);
 
             var searchResult = await _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
@@ -118,6 +173,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             result.Results = ConvertProducts(searchResult);
             result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
             result.TotalCount = (int)searchResult.TotalCount;
+            result.Sortings = BuildSortings(sortings, selectedSorting, languageCode);
 
             await _pipeline.Execute(result);
 
@@ -130,6 +186,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithStoreId(request.StoreId)
                                             .WithUserId(request.UserId)
                                             .WithOrganizationId(request.OrganizationId)
+                                            .WithCatalog(store.Catalog)
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                                             .AddCertainDateFilter(DateTime.UtcNow)
@@ -139,7 +196,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
                                             .WithCultureName(request.CultureName)
-                                            .AddSorting(request.Sort)
                                             .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 
             if (request.ObjectIds.IsNullOrEmpty())
@@ -152,13 +208,25 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual void ApplyOutlineCriteria(ProductIndexedSearchCriteria criteria, SearchRequest searchRequest)
         {
-            criteria.Outlines = searchRequest.GetChildFilters()
+            criteria.Outlines ??= GetOutlines(searchRequest);
+            criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
+        }
+
+        private static string[] GetOutlines(SearchRequest searchRequest)
+        {
+            return searchRequest.GetChildFilters()
                 .Where(f => f is TermFilter && f.GetFieldName() == "__outline")
                 .SelectMany(f => ((TermFilter)f).Values)
                 .Where(o => !string.IsNullOrEmpty(o))
                 .ToArray();
+        }
 
-            criteria.Outline = criteria.Outlines.MaxBy(x => x.Length);
+        private static string GetCurrentCategoryId(string outline)
+        {
+            // outline = "catalogId/.../currentCategoryId"; the leaf segment is the category being browsed
+            // (null when browsing the catalog root, where the outline is just the catalog id or absent).
+            var segments = outline?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            return segments?.Length > 1 ? segments[^1] : null;
         }
 
         protected virtual Task<Aggregation[]> ConvertAggregations(SearchResponse searchResponse, SearchRequest searchRequest, ProductIndexedSearchCriteria criteria)
@@ -182,6 +250,33 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     options.Items["order"] = Array.IndexOf(resultAggregations, x);
                 }))
                 .ToList();
+        }
+
+        protected virtual IList<XapiProductSorting> BuildSortings(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode)
+        {
+            return (sortings ?? [])
+                .Where(x => x.IsVisible)
+                .Select(x => new XapiProductSorting
+                {
+                    Id = x.Code,
+                    Name = ResolveSortingName(x, languageCode),
+                    IsDefault = x.IsDefault,
+                    IsSelected = selected != null && x.Code.EqualsIgnoreCase(selected.Code),
+                })
+                .ToList();
+        }
+
+        private static string ResolveSortingName(CatalogProductSorting sorting, string languageCode)
+        {
+            if (!string.IsNullOrEmpty(languageCode) &&
+                sorting.LocalizedNames != null &&
+                sorting.LocalizedNames.TryGetValue(languageCode, out var localizedName) &&
+                !string.IsNullOrEmpty(localizedName))
+            {
+                return localizedName;
+            }
+
+            return sorting.Name;
         }
 
         /// <summary>
