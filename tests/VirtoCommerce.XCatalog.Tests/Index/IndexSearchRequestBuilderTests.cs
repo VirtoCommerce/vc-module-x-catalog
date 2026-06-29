@@ -365,6 +365,124 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             actual.Should().BeEquivalentTo(_expectedSearchRequest);
         }
 
+        [Theory]
+        [InlineData("__score:desc", true)]
+        [InlineData("__score:asc", false)]
+        public void AddSorting_ScoreToken_MapsToScoreField(string sort, bool descending)
+        {
+            // Act
+            var actual = _indexSearchRequestBuilder.AddSorting(sort).Build();
+
+            // Assert
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("score", descending) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_RawScoreToken_FallsThroughToScoreField()
+        {
+            // "score" (no underscores) hits the default branch and still resolves to the score field.
+            var actual = _indexSearchRequestBuilder.AddSorting("score:asc").Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("score", false) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_NameToken_MapsToCultureFieldThenName()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCultureName("en-US")
+                .AddSorting("name:asc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("name_en-us", false),
+                    new SortingField("name", false),
+                },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_PriceToken_MapsToCurrencyField()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCurrency("USD")
+                .AddSorting("price:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("price_usd", true) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_UnknownField_PassesThrough()
+        {
+            var actual = _indexSearchRequestBuilder.AddSorting("rating:desc").Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("rating", true) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_PriorityToken_BrowsingCategory_MapsToPerCategoryFieldThenFlat()
+        {
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .WithCategory("Category1")
+                .AddSorting("priority:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("priority_catalog1_category1", true),
+                    new SortingField("priority", true),
+                },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_PriorityToken_NoCategory_MapsToFlatFieldOnly()
+        {
+            // Catalog-root browse / keyword search (no category) → only the flat priority field.
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .AddSorting("priority:desc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[] { new SortingField("priority", true) },
+                options => options.WithStrictOrdering());
+        }
+
+        [Fact]
+        public void AddSorting_FeaturedExpression_BrowsingCategory_ExpandsScoreAndPerCategoryPriority()
+        {
+            // The Featured default: "__score:desc;priority:desc;id:asc".
+            var actual = _indexSearchRequestBuilder
+                .WithCatalog("Catalog1")
+                .WithCategory("Category1")
+                .AddSorting("__score:desc;priority:desc;id:asc")
+                .Build();
+
+            actual.Sorting.Should().BeEquivalentTo(
+                new[]
+                {
+                    new SortingField("score", true),
+                    new SortingField("priority_catalog1_category1", true),
+                    new SortingField("priority", true),
+                    new SortingField("id", false),
+                },
+                options => options.WithStrictOrdering());
+        }
+
         #endregion
 
         //[Fact]

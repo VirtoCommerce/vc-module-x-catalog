@@ -21,6 +21,8 @@ namespace VirtoCommerce.XCatalog.Core.Models
         public IEnumerable<Currency> AllStoreCurrencies { get; set; }
         public Currency Currency { get; set; }
         public Store Store { get; set; }
+
+        public IList<ProductSorting> Sortings { get; set; } = [];
     }
 
     public class SearchProductFilterResult

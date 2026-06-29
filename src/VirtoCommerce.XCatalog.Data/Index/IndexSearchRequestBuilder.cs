@@ -21,6 +21,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public string StoreId { get; private set; }
         public string CultureName { get; private set; }
         public string CurrencyCode { get; private set; }
+        public string CatalogId { get; private set; }
+        public string CategoryId { get; private set; }
 
         public string SearchKeywords => SearchRequest.SearchKeywords;
         public IFilter Filter => SearchRequest.Filter;
@@ -95,6 +97,19 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 SearchRequest.SearchFields.Add($"__content_{cultureName}".ToLowerInvariant());
             }
 
+            return this;
+        }
+
+        public IndexSearchRequestBuilder WithCatalog(string catalogId)
+        {
+            CatalogId = catalogId;
+            return this;
+        }
+
+        // The browsed category, used to bind the logical "priority" sort to the per-category merchandising field.
+        public IndexSearchRequestBuilder WithCategory(string categoryId)
+        {
+            CategoryId = categoryId;
             return this;
         }
 
@@ -347,38 +362,13 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
             foreach (var sortInfo in SortInfo.Parse(sort))
             {
-                var sortingField = new SortingField();
-                if (sortInfo is GeoSortInfo geoSortInfo)
-                {
-                    sortingField = new GeoDistanceSortingField
-                    {
-                        Location = geoSortInfo.GeoPoint
-                    };
-                }
+                var sortingField = sortInfo is GeoSortInfo geoSortInfo
+                    ? new GeoDistanceSortingField { Location = geoSortInfo.GeoPoint }
+                    : new SortingField();
                 sortingField.FieldName = sortInfo.SortColumn.ToLowerInvariant();
                 sortingField.IsDescending = sortInfo.SortDirection == SortDirection.Descending;
 
-                switch (sortingField.FieldName)
-                {
-                    case "name":
-                    case "title":
-                        {
-                            if (!string.IsNullOrEmpty(CultureName))
-                            {
-                                sortFields.Add(new SortingField($"name_{CultureName}".ToLowerInvariant(), sortingField.IsDescending));
-                            }
-
-                            sortFields.Add(new SortingField("name", sortingField.IsDescending));
-                            break;
-                        }
-                    case "price" when !string.IsNullOrEmpty(CurrencyCode):
-                        sortFields.Add(new SortingField($"price_{CurrencyCode}".ToLowerInvariant(), sortingField.IsDescending));
-                        break;
-
-                    default:
-                        sortFields.Add(sortingField);
-                        break;
-                }
+                sortFields.AddRange(MapSortingField(sortingField));
             }
 
             if (sortFields.Count != 0)
@@ -387,6 +377,60 @@ namespace VirtoCommerce.XCatalog.Data.Index
             }
 
             return this;
+        }
+
+        // Binds a logical sort clause to the physical index field(s): name -> name_{culture}, price -> price_{currency},
+        // priority -> per-category merchandising field(s), __score -> the relevance field. Unknown fields pass through.
+        private IEnumerable<SortingField> MapSortingField(SortingField sortingField)
+        {
+            switch (sortingField.FieldName)
+            {
+                case "name":
+                case "title":
+                    if (!string.IsNullOrEmpty(CultureName))
+                    {
+                        yield return new SortingField($"name_{CultureName}".ToLowerInvariant(), sortingField.IsDescending);
+                    }
+
+                    yield return new SortingField("name", sortingField.IsDescending);
+                    break;
+
+                case "price" when !string.IsNullOrEmpty(CurrencyCode):
+                    yield return new SortingField($"price_{CurrencyCode}".ToLowerInvariant(), sortingField.IsDescending);
+                    break;
+
+                case "__score":
+                    yield return new SortingField(ScoreSortingFieldName, sortingField.IsDescending);
+                    break;
+
+                case "priority":
+                    foreach (var priorityField in GetPriorityFields())
+                    {
+                        yield return new SortingField(priorityField, sortingField.IsDescending);
+                    }
+                    break;
+
+                default:
+                    yield return sortingField;
+                    break;
+            }
+        }
+
+        // Logical "priority" binds to the per-category merchandising field for the browsed category, then the flat
+        // catalog-wide priority as a fallback (products outside that category, keyword search, or catalog-root
+        // browse where no category is being browsed). Mirrors the catalog module's ProductSearchRequestBuilder.
+        private List<string> GetPriorityFields()
+        {
+            var priorityFields = new List<string>();
+
+            if (!string.IsNullOrEmpty(CatalogId) && !string.IsNullOrEmpty(CategoryId))
+            {
+                priorityFields.Add($"priority_{CatalogId}_{CategoryId}".ToLowerInvariant());
+            }
+
+            priorityFields.Add("priority");
+
+            return priorityFields;
         }
 
         public IndexSearchRequestBuilder ApplyMultiSelectFacetSearch()
