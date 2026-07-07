@@ -325,6 +325,7 @@ namespace VirtoCommerce.XCatalog.Tests.Index
                 Filter = null
             });
 
+
             actual.Aggregations.Count.Should().Be(
                 searchPhraseParseResult.Filters.OfType<RangeFilter>().Count()
                 + searchPhraseParseResult.Filters.OfType<TermFilter>().Count());
