@@ -32,6 +32,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IList<IFilter> UserFilters { get; } = [];
         public IList<IFilter> GeneratedFilters { get; } = [];
 
+        private readonly HashSet<string> _multilanguagePropertyNames = new(StringComparer.OrdinalIgnoreCase);
+
         protected SearchRequest SearchRequest { get; set; }
 
         public IndexSearchRequestBuilder()
@@ -95,6 +97,16 @@ namespace VirtoCommerce.XCatalog.Data.Index
             if (!string.IsNullOrEmpty(CultureName))
             {
                 SearchRequest.SearchFields.Add($"__content_{cultureName}".ToLowerInvariant());
+            }
+
+            return this;
+        }
+
+        public IndexSearchRequestBuilder WithMultilanguageProperties(IEnumerable<string> propertyNames)
+        {
+            if (propertyNames != null)
+            {
+                _multilanguagePropertyNames.UnionWith(propertyNames);
             }
 
             return this;
@@ -275,10 +287,11 @@ namespace VirtoCommerce.XCatalog.Data.Index
                     }
                     break;
 
-                // Mirrors AddLanguageSpecificFacets(): also match the "{field}_{culture}" field, since
-                // multilanguage ShortText/Color properties are indexed under it (property metadata isn't available here).
+                // Multilanguage properties are also indexed under "{field}_{culture}" (see CatalogDocumentBuilder);
+                // match it too, scoped to WithMultilanguageProperties() so structural/internal filter fields
+                // (category.subtree, productfamilyid, is, inStock, ...) are never mistaken for catalog properties.
                 case TermFilter termFilter:
-                    if (!string.IsNullOrEmpty(CultureName) && !termFilter.FieldName.StartsWith("__"))
+                    if (!string.IsNullOrEmpty(CultureName) && _multilanguagePropertyNames.Contains(termFilter.FieldName))
                     {
                         var localizedFilter = new TermFilter
                         {

@@ -228,6 +228,7 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             // Act
             var result = _indexSearchRequestBuilder
                 .WithCultureName("nl-NL")
+                .WithMultilanguageProperties(["mlfilter_test"])
                 .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
                 .Build();
 
@@ -243,10 +244,10 @@ namespace VirtoCommerce.XCatalog.Tests.Index
         }
 
         [Fact]
-        public void ParseFilters_TermFilterInternalField_NotConvertedEvenWithCulture()
+        public void ParseFilters_TermFilterMatchesMultilanguagePropertyCaseInsensitively_ConvertsToOrFilter()
         {
             // Arrange
-            var termFilter = new TermFilter { FieldName = "__outline", Values = ["cat1"] };
+            var termFilter = new TermFilter { FieldName = "MLFILTER_TEST", Values = ["AlphaDutch"] };
             var searchPhraseParseResult = new SearchPhraseParseResult
             {
                 Filters = [termFilter],
@@ -259,6 +260,43 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             // Act
             var result = _indexSearchRequestBuilder
                 .WithCultureName("nl-NL")
+                .WithMultilanguageProperties(["mlfilter_test"])
+                .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
+                .Build();
+
+            // Assert
+            var filters = result.Filter.As<AndFilter>().ChildFilters;
+            filters.Should().ContainSingle().Which.Should().BeOfType<OrFilter>();
+        }
+
+        [Theory]
+        [InlineData("brand", "Acme")]
+        [InlineData("category.subtree", "catalog1/category1")]
+        [InlineData("productfamilyid", "product-1")]
+        [InlineData("is", "product")]
+        [InlineData("inStock", "true")]
+        [InlineData("__outline", "cat1")]
+        public void ParseFilters_TermFilterNotRegisteredAsMultilanguage_NotConvertedEvenWithCulture(string fieldName, string value)
+        {
+            // Regression (VP-9213 follow-up): category.subtree/productfamilyid/is/inStock are internal/structural
+            // fields the storefront always sends (category scoping, product-family variation lookup, stock flag) -
+            // never catalog properties. Wrapping one in an OR against a nonexistent "{field}_{culture}" field
+            // previously caused the product-variations lookup to return 1 result instead of all matching variations.
+            var termFilter = new TermFilter { FieldName = fieldName, Values = [value] };
+            var searchPhraseParseResult = new SearchPhraseParseResult
+            {
+                Filters = [termFilter],
+            };
+
+            _phraseParserMock
+                .Setup(x => x.Parse(It.IsAny<string>()))
+                .Returns(searchPhraseParseResult);
+
+            // Act: CultureName is set, but fieldName was never registered via WithMultilanguageProperties
+            // (a different, unrelated property is - to prove there's no fuzzy/partial matching).
+            var result = _indexSearchRequestBuilder
+                .WithCultureName("nl-NL")
+                .WithMultilanguageProperties(["mlfilter_test"])
                 .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
                 .Build();
 
@@ -411,6 +449,7 @@ namespace VirtoCommerce.XCatalog.Tests.Index
             // Act
             var result = _indexSearchRequestBuilder
                 .WithCultureName("nl-NL")
+                .WithMultilanguageProperties(["mlfilter_test"])
                 .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
                 .ParseFacets(_phraseParserMock.Object, null, [aggregation])
                 .ApplyMultiSelectFacetSearch()
