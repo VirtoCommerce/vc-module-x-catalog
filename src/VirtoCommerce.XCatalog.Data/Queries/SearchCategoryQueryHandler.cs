@@ -139,10 +139,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         {
             var searchRequestBuilder = new IndexSearchRequestBuilder()
                 .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
+                .WithCultureName(request.CultureName)
                 .ParseFilters(_phraseParser, request.Filter)
                 .WithSearchPhrase(request.Query)
                 .WithPaging(request.Skip, request.Take)
-                .WithCultureName(request.CultureName)
                 .AddObjectIds(request.ObjectIds)
                 .AddSorting(request.Sort)
                 .AddTermFilter("__outline", store.Catalog) // Limit search result by store catalog

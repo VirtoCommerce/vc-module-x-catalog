@@ -274,6 +274,20 @@ namespace VirtoCommerce.XCatalog.Data.Index
                         rangeFilter.FieldName = $"price_{CurrencyCode}".ToLowerInvariant();
                     }
                     break;
+
+                // Mirrors AddLanguageSpecificFacets(): also match the "{field}_{culture}" field, since
+                // multilanguage ShortText/Color properties are indexed under it (property metadata isn't available here).
+                case TermFilter termFilter:
+                    if (!string.IsNullOrEmpty(CultureName) && !termFilter.FieldName.StartsWith("__"))
+                    {
+                        var localizedFilter = new TermFilter
+                        {
+                            FieldName = $"{termFilter.FieldName}_{CultureName}".ToLowerInvariant(),
+                            Values = termFilter.Values,
+                        };
+                        result = termFilter.Or(localizedFilter);
+                    }
+                    break;
             }
 
             return result;
@@ -446,23 +460,20 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 // names such as aggregation filter
                 clonedFilter.ChildFilters = clonedFilter
                     .ChildFilters
-                    .Where(x =>
-                    {
-                        var result = true;
-
-                        if (x is INamedFilter namedFilter)
-                        {
-                            result = !(aggregationFilterFieldName?.StartsWith(namedFilter.FieldName, true, CultureInfo.InvariantCulture) ?? false);
-                        }
-
-                        return result;
-                    })
+                    .Where(x => !FilterMatchesFieldName(x, aggregationFilterFieldName))
                     .ToList();
 
                 aggr.Filter = aggr.Filter == null ? clonedFilter : aggr.Filter.And(clonedFilter);
             }
 
             return this;
+        }
+
+        private static bool FilterMatchesFieldName(IFilter filter, string aggregationFieldName)
+        {
+            return filter.Flatten()
+                .OfType<INamedFilter>()
+                .Any(namedFilter => aggregationFieldName?.StartsWith(namedFilter.FieldName, true, CultureInfo.InvariantCulture) ?? false);
         }
 
         public virtual SearchRequest Build()

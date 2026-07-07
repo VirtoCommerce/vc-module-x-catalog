@@ -211,6 +211,63 @@ namespace VirtoCommerce.XCatalog.Tests.Index
 
         }
 
+        [Fact]
+        public void ParseFilters_TermFilterWithCulture_ConvertsToOrFilterWithLocalizedField()
+        {
+            // Arrange
+            var termFilter = new TermFilter { FieldName = "mlfilter_test", Values = ["AlphaDutch"] };
+            var searchPhraseParseResult = new SearchPhraseParseResult
+            {
+                Filters = [termFilter],
+            };
+
+            _phraseParserMock
+                .Setup(x => x.Parse(It.IsAny<string>()))
+                .Returns(searchPhraseParseResult);
+
+            // Act
+            var result = _indexSearchRequestBuilder
+                .WithCultureName("nl-NL")
+                .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
+                .Build();
+
+            // Assert
+            var filters = result.Filter.As<AndFilter>().ChildFilters;
+            var orFilter = filters.Should().ContainSingle().Which.Should().BeOfType<OrFilter>().Subject;
+
+            orFilter.ChildFilters.Cast<TermFilter>().Should().BeEquivalentTo(
+            [
+                new TermFilter { FieldName = "mlfilter_test", Values = ["AlphaDutch"] },
+                new TermFilter { FieldName = "mlfilter_test_nl-nl", Values = ["AlphaDutch"] },
+            ]);
+        }
+
+        [Fact]
+        public void ParseFilters_TermFilterInternalField_NotConvertedEvenWithCulture()
+        {
+            // Arrange
+            var termFilter = new TermFilter { FieldName = "__outline", Values = ["cat1"] };
+            var searchPhraseParseResult = new SearchPhraseParseResult
+            {
+                Filters = [termFilter],
+            };
+
+            _phraseParserMock
+                .Setup(x => x.Parse(It.IsAny<string>()))
+                .Returns(searchPhraseParseResult);
+
+            // Act
+            var result = _indexSearchRequestBuilder
+                .WithCultureName("nl-NL")
+                .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
+                .Build();
+
+            // Assert
+            var filters = result.Filter.As<AndFilter>().ChildFilters;
+
+            filters.Should().ContainEquivalentOf(termFilter);
+        }
+
         #endregion ParseFilters
 
         #region ParseFacets
@@ -331,6 +388,40 @@ namespace VirtoCommerce.XCatalog.Tests.Index
         }
 
         #endregion ParseFacets
+
+        #region ApplyMultiSelectFacetSearch
+
+        [Fact]
+        public void ApplyMultiSelectFacetSearch_CultureAwareTermFilter_ExcludedFromOwnAggregationFilter()
+        {
+            // Arrange: selecting a multilanguage property's localized value must not suppress
+            // the sibling values' counts for that same facet (multi-select facet behavior).
+            var termFilter = new TermFilter { FieldName = "mlfilter_test", Values = ["AlphaDutch"] };
+            var searchPhraseParseResult = new SearchPhraseParseResult
+            {
+                Filters = [termFilter],
+            };
+
+            _phraseParserMock
+                .Setup(x => x.Parse(It.IsAny<string>()))
+                .Returns(searchPhraseParseResult);
+
+            var aggregation = new TermAggregationRequest { FieldName = "mlfilter_test", Id = "mlfilter_test" };
+
+            // Act
+            var result = _indexSearchRequestBuilder
+                .WithCultureName("nl-NL")
+                .ParseFilters(_phraseParserMock.Object, _fixture.Create<string>())
+                .ParseFacets(_phraseParserMock.Object, null, [aggregation])
+                .ApplyMultiSelectFacetSearch()
+                .Build();
+
+            // Assert
+            var aggregationFilter = (AndFilter)result.Aggregations.Single().Filter;
+            aggregationFilter.ChildFilters.Should().BeEmpty();
+        }
+
+        #endregion ApplyMultiSelectFacetSearch
 
         #region Build
 
