@@ -400,7 +400,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await ResolveAssociationConnectionAsync(mediator, context));
+              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(mediator));
 
 
             Connection<VideoType>("videos")
@@ -439,27 +439,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             var response = await mediator.Send(query);
 
             return response.Products.Where(x => x.IndexedProduct?.IsActive == true).Select(expProduct => new ExpVariation(expProduct));
-        }
-
-        private static async Task<object> ResolveAssociationConnectionAsync(IMediator mediator, IResolveConnectionContext<ExpProduct> context)
-        {
-            var first = context.First;
-
-            int.TryParse(context.After, out var skip);
-
-            var query = new SearchProductAssociationsQuery
-            {
-                Skip = skip,
-                Take = first ?? context.PageSize ?? 10,
-
-                Keyword = context.GetArgument<string>("query"),
-                Group = context.GetArgument<string>("group"),
-                ObjectIds = [context.Source.IndexedProduct.Id]
-            };
-
-            var response = await mediator.Send(query);
-
-            return new PagedConnection<ProductAssociation>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IMediator mediator, IResolveConnectionContext<ExpProduct> context)

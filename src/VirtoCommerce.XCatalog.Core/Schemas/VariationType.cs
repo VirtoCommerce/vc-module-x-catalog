@@ -10,6 +10,7 @@ using VirtoCommerce.Xapi.Core.Schemas;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using static VirtoCommerce.Xapi.Core.ModuleConstants;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -105,6 +106,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 "rating",
                 "Product rating",
                 resolve: context => context.Source.Rating);
+
+            Connection<ProductAssociationType>("associations")
+              .Argument<StringGraphType>("query", "the search phrase")
+              .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
+              .PageSize(Connections.DefaultPageSize)
+              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(mediator));
         }
     }
 }
