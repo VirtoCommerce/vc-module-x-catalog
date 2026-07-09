@@ -336,7 +336,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             {
                 var names = context.GetArgument<string[]>("names");
                 var cultureName = context.GetValue<string>("cultureName");
-                var result = context.Source.IndexedProduct.Properties.ExpandOrderedByValues(cultureName);
+                var result = context.Source.GetExpandedProperties(cultureName);
                 if (!names.IsNullOrEmpty())
                 {
                     result = result.Where(x => names.Contains(x.Name, StringComparer.InvariantCultureIgnoreCase)).ToList();
