@@ -32,6 +32,8 @@ namespace VirtoCommerce.XCatalog.Data.Index
         public IList<IFilter> UserFilters { get; } = [];
         public IList<IFilter> GeneratedFilters { get; } = [];
 
+        private readonly HashSet<string> _multilanguagePropertyNames = new(StringComparer.OrdinalIgnoreCase);
+
         protected SearchRequest SearchRequest { get; set; }
 
         public IndexSearchRequestBuilder()
@@ -95,6 +97,16 @@ namespace VirtoCommerce.XCatalog.Data.Index
             if (!string.IsNullOrEmpty(CultureName))
             {
                 SearchRequest.SearchFields.Add($"__content_{cultureName}".ToLowerInvariant());
+            }
+
+            return this;
+        }
+
+        public IndexSearchRequestBuilder WithMultilanguageProperties(IEnumerable<string> propertyNames)
+        {
+            if (propertyNames != null)
+            {
+                _multilanguagePropertyNames.UnionWith(propertyNames);
             }
 
             return this;
@@ -274,6 +286,21 @@ namespace VirtoCommerce.XCatalog.Data.Index
                         rangeFilter.FieldName = $"price_{CurrencyCode}".ToLowerInvariant();
                     }
                     break;
+
+                // Multilanguage properties are also indexed under "{field}_{culture}" (see CatalogDocumentBuilder);
+                // match it too, scoped to WithMultilanguageProperties() so structural/internal filter fields
+                // (category.subtree, productfamilyid, is, inStock, ...) are never mistaken for catalog properties.
+                case TermFilter termFilter:
+                    if (!string.IsNullOrEmpty(CultureName) && _multilanguagePropertyNames.Contains(termFilter.FieldName))
+                    {
+                        var localizedFilter = new TermFilter
+                        {
+                            FieldName = $"{termFilter.FieldName}_{CultureName}".ToLowerInvariant(),
+                            Values = termFilter.Values,
+                        };
+                        result = termFilter.Or(localizedFilter);
+                    }
+                    break;
             }
 
             return result;
@@ -446,23 +473,20 @@ namespace VirtoCommerce.XCatalog.Data.Index
                 // names such as aggregation filter
                 clonedFilter.ChildFilters = clonedFilter
                     .ChildFilters
-                    .Where(x =>
-                    {
-                        var result = true;
-
-                        if (x is INamedFilter namedFilter)
-                        {
-                            result = !(aggregationFilterFieldName?.StartsWith(namedFilter.FieldName, true, CultureInfo.InvariantCulture) ?? false);
-                        }
-
-                        return result;
-                    })
+                    .Where(x => !FilterMatchesFieldName(x, aggregationFilterFieldName))
                     .ToList();
 
                 aggr.Filter = aggr.Filter == null ? clonedFilter : aggr.Filter.And(clonedFilter);
             }
 
             return this;
+        }
+
+        private static bool FilterMatchesFieldName(IFilter filter, string aggregationFieldName)
+        {
+            return filter.Flatten()
+                .OfType<INamedFilter>()
+                .Any(namedFilter => aggregationFieldName?.StartsWith(namedFilter.FieldName, true, CultureInfo.InvariantCulture) ?? false);
         }
 
         public virtual SearchRequest Build()
