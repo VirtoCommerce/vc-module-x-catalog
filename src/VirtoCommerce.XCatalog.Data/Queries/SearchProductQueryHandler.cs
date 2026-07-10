@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
+using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -34,6 +35,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly IGenericPipelineLauncher _pipeline;
         private readonly IAggregationConverter _aggregationConverter;
         private readonly ISearchPhraseParser _phraseParser;
+        private readonly IPropertyService _propertyService;
+
+        // Set in Handle() before GetIndexedSearchRequestBuilder() is called; read by that method's own
+        // WithMultilanguageProperties() call. Keeps the method's signature stable for existing overrides.
+        protected IEnumerable<string> MultilanguagePropertyNames { get; set; } = [];
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -42,7 +48,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
             IAggregationConverter aggregationConverter,
-            ISearchPhraseParser phraseParser)
+            ISearchPhraseParser phraseParser,
+            IPropertyService propertyService)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -51,6 +58,20 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _pipeline = pipeline;
             _aggregationConverter = aggregationConverter;
             _phraseParser = phraseParser;
+            _propertyService = propertyService;
+        }
+
+        [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public SearchProductQueryHandler(
+            ISearchProvider searchProvider,
+            IMapper mapper,
+            IStoreCurrencyResolver storeCurrencyResolver,
+            IStoreService storeService,
+            IGenericPipelineLauncher pipeline,
+            IAggregationConverter aggregationConverter,
+            ISearchPhraseParser phraseParser)
+            : this(searchProvider, mapper, storeCurrencyResolver, storeService, pipeline, aggregationConverter, phraseParser, null)
+        {
         }
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
@@ -74,6 +95,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             var currency = await _storeCurrencyResolver.GetStoreCurrencyAsync(request.CurrencyCode, request.StoreId, request.CultureName);
             var store = await _storeService.GetByIdAsync(request.StoreId);
             var responseGroup = EnumUtility.SafeParse(request.GetResponseGroup(), ExpProductResponseGroup.None);
+
+            MultilanguagePropertyNames = _propertyService != null
+                ? (await _propertyService.GetAllCatalogPropertiesAsync(store.Catalog)).GetMultilanguagePropertyNames()
+                : [];
 
             var builder = GetIndexedSearchRequestBuilder(request, store, currency);
 
@@ -133,12 +158,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                                             .AddCertainDateFilter(DateTime.UtcNow)
+                                            .WithMultilanguageProperties(MultilanguagePropertyNames)
+                                            .WithCultureName(request.CultureName)
                                             .ParseFilters(_phraseParser, request.Filter)
                                             .WithSearchPhrase(request.Query)
                                             .WithPreserveUserQuery(request.PreserveUserQuery)
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
-                                            .WithCultureName(request.CultureName)
                                             .AddSorting(request.Sort)
                                             .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 

@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
+using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -12,6 +14,7 @@ using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Pipelines;
+using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Extensions;
@@ -29,6 +32,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly IStoreService _storeService;
         private readonly IGenericPipelineLauncher _pipeline;
         private readonly IMediator _mediator;
+        private readonly IPropertyService _propertyService;
+
+        // Set in Handle() before GetIndexedSearchRequestBuilder() is called; read by that method's own
+        // WithMultilanguageProperties() call. Keeps the method's signature stable for existing overrides.
+        protected IEnumerable<string> MultilanguagePropertyNames { get; set; } = [];
 
         public SearchCategoryQueryHandler(
             ISearchProvider searchProvider,
@@ -36,7 +44,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             ISearchPhraseParser phraseParser,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
-            IMediator mediator)
+            IMediator mediator,
+            IPropertyService propertyService)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -44,11 +53,28 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _storeService = storeService;
             _pipeline = pipeline;
             _mediator = mediator;
+            _propertyService = propertyService;
+        }
+
+        [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public SearchCategoryQueryHandler(
+            ISearchProvider searchProvider,
+            IMapper mapper,
+            ISearchPhraseParser phraseParser,
+            IStoreService storeService,
+            IGenericPipelineLauncher pipeline,
+            IMediator mediator)
+            : this(searchProvider, mapper, phraseParser, storeService, pipeline, mediator, null)
+        {
         }
 
         public virtual async Task<SearchCategoryResponse> Handle(SearchCategoryQuery request, CancellationToken cancellationToken)
         {
             var store = await GetStore(request);
+
+            MultilanguagePropertyNames = _propertyService != null
+                ? (await _propertyService.GetAllCatalogPropertiesAsync(store.Catalog)).GetMultilanguagePropertyNames()
+                : [];
 
             var builder = GetIndexedSearchRequestBuilder(request, store);
 
@@ -138,10 +164,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         {
             var searchRequestBuilder = new IndexSearchRequestBuilder()
                 .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
+                .WithMultilanguageProperties(MultilanguagePropertyNames)
+                .WithCultureName(request.CultureName)
                 .ParseFilters(_phraseParser, request.Filter)
                 .WithSearchPhrase(request.Query)
                 .WithPaging(request.Skip, request.Take)
-                .WithCultureName(request.CultureName)
                 .AddObjectIds(request.ObjectIds)
                 .AddSorting(request.Sort)
                 .AddTermFilter("__outline", store.Catalog) // Limit search result by store catalog

@@ -20,7 +20,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             ArgumentNullException.ThrowIfNull(searchRequest);
             ArgumentNullException.ThrowIfNull(aggregations);
 
-            foreach (var childFilter in searchRequest.GetChildFilters())
+            foreach (var childFilter in searchRequest.GetChildFilters().SelectMany(Flatten))
             {
                 var aggregationItems = aggregations.Where(x => x.Field.EqualsIgnoreCase(childFilter.GetFieldName()))
                     .SelectMany(x => x.Items)
@@ -32,6 +32,19 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
         public static IList<IFilter> GetChildFilters(this SearchRequest searchRequest) =>
             (searchRequest?.Filter as AndFilter)?.ChildFilters ?? Array.Empty<IFilter>();
+
+        /// <summary>
+        /// Unwraps composite filters (e.g. the culture-aware OrFilter from IndexSearchRequestBuilder.ConvertFilter) into their leaves.
+        /// </summary>
+        public static IEnumerable<IFilter> Flatten(this IFilter filter)
+        {
+            return filter switch
+            {
+                OrFilter orFilter => orFilter.ChildFilters.SelectMany(Flatten),
+                AndFilter andFilter => andFilter.ChildFilters.SelectMany(Flatten),
+                _ => [filter],
+            };
+        }
 
         public static string GetFieldName(this IFilter filter)
         {
