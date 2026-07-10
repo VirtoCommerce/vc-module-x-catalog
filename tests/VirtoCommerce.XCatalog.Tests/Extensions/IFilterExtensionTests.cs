@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using VirtoCommerce.SearchModule.Core.Extensions;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using Xunit;
@@ -184,6 +185,41 @@ namespace VirtoCommerce.XCatalog.Tests.Extensions
             Assert.False(aggregations.First(x => x.Field == termfilterName).Items.First(x => x.Value.ToString() == "3").IsApplied);
             Assert.False(aggregations.First(x => x.Field == "nonExistentAggr").Items.First(x => x.Value.ToString() == "1").IsApplied);
             Assert.False(aggregations.First(x => x.Field == rangeFilterName).Items.First(x => x.RequestedUpperBound == "5" && x.RequestedLowerBound == "1").IsApplied);
+        }
+
+        [Fact]
+        public void SetAppliedAggregations_CultureAwareOrFilter_IsAppliedSetOnLocalizedAggregation()
+        {
+            // Arrange: mirrors ConvertFilter() wrapping a culture-aware term filter into an OrFilter
+            // of the base field and the "{field}_{culture}" field.
+            var orFilter = new TermFilter { FieldName = "mlfilter_test", Values = ["3"] }
+                .Or(new TermFilter { FieldName = "mlfilter_test_de-de", Values = ["3"] });
+
+            var searchRequest = new SearchRequest
+            {
+                Filter = new AndFilter { ChildFilters = [orFilter] },
+            };
+
+            var aggregations = new[]
+            {
+                new Aggregation
+                {
+                    Field = "mlfilter_test",
+                    Items = [new AggregationItem { Value = "1" }],
+                },
+                new Aggregation
+                {
+                    Field = "mlfilter_test_de-de",
+                    Items = [new AggregationItem { Value = "3" }],
+                },
+            };
+
+            // Act
+            searchRequest.SetAppliedAggregations(aggregations);
+
+            // Assert
+            Assert.True(aggregations.First(x => x.Field == "mlfilter_test_de-de").Items.First().IsApplied);
+            Assert.False(aggregations.First(x => x.Field == "mlfilter_test").Items.First().IsApplied);
         }
     }
 }
