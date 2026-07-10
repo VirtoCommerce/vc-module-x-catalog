@@ -91,6 +91,14 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             return properties.ExpandByValues(cultureName);
         }
 
+        /// <summary>
+        /// Names of properties indexed with a per-culture field variant (see CatalogDocumentBuilder.IndexCustomProperty).
+        /// </summary>
+        public static IEnumerable<string> GetMultilanguagePropertyNames(this IEnumerable<Property> properties)
+        {
+            return properties.Where(x => x.Multilanguage).Select(x => x.Name);
+        }
+
         public static Property CopyPropertyWithValue(this PropertyValue propertyValue, Property property)
         {
             return property.CopyPropertyWithoutValues().CopyWithValue(propertyValue);

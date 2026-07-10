@@ -7,6 +7,7 @@ using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
+using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -18,11 +19,11 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
-using XapiProductSorting = VirtoCommerce.XCatalog.Core.Models.ProductSorting;
 using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
+using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
+using XapiProductSorting = VirtoCommerce.XCatalog.Core.Models.ProductSorting;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
 {
@@ -38,6 +39,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly IAggregationConverter _aggregationConverter;
         private readonly ISearchPhraseParser _phraseParser;
         private readonly IProductSortingService _productSortingService;
+        private readonly IPropertyService _propertyService;
+
+        // Set in Handle() before GetIndexedSearchRequestBuilder() is called; read by that method's own
+        // WithMultilanguageProperties() call. Keeps the method's signature stable for existing overrides.
+        protected IEnumerable<string> MultilanguagePropertyNames { get; set; } = [];
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -47,7 +53,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IGenericPipelineLauncher pipeline,
             IAggregationConverter aggregationConverter,
             ISearchPhraseParser phraseParser,
-            IProductSortingService productSortingService)
+            IProductSortingService productSortingService,
+            IPropertyService propertyService)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -57,6 +64,21 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _aggregationConverter = aggregationConverter;
             _phraseParser = phraseParser;
             _productSortingService = productSortingService;
+            _propertyService = propertyService;
+        }
+
+        [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public SearchProductQueryHandler(
+            ISearchProvider searchProvider,
+            IMapper mapper,
+            IStoreCurrencyResolver storeCurrencyResolver,
+            IStoreService storeService,
+            IGenericPipelineLauncher pipeline,
+            IAggregationConverter aggregationConverter,
+            ISearchPhraseParser phraseParser,
+            IProductSortingService productSortingService)
+            : this(searchProvider, mapper, storeCurrencyResolver, storeService, pipeline, aggregationConverter, phraseParser, productSortingService, null)
+        {
         }
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
@@ -82,6 +104,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             var responseGroup = EnumUtility.SafeParse(request.GetResponseGroup(), ExpProductResponseGroup.None);
 
             var languageCode = store.Languages.Contains(request.CultureName) ? request.CultureName : store.DefaultLanguage;
+
+            MultilanguagePropertyNames = _propertyService != null
+                ? (await _propertyService.GetAllCatalogPropertiesAsync(store.Catalog)).GetMultilanguagePropertyNames()
+                : [];
 
             // Sortings are resolved further down (after the filter is parsed into the request builder), so a
             // resolver can read the current category (id / outline) rather than scraping the raw filter string.
@@ -190,12 +216,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
                                             .AddCertainDateFilter(DateTime.UtcNow)
+                                            .WithMultilanguageProperties(MultilanguagePropertyNames)
+                                            .WithCultureName(request.CultureName)
                                             .ParseFilters(_phraseParser, request.Filter)
                                             .WithSearchPhrase(request.Query)
                                             .WithPreserveUserQuery(request.PreserveUserQuery)
                                             .WithPaging(request.Skip, request.Take)
                                             .AddObjectIds(request.ObjectIds)
-                                            .WithCultureName(request.CultureName)
                                             .WithIncludeFields(IndexFieldsMapper.MapToIndexIncludes(request.IncludeFields).ToArray());
 
             if (request.ObjectIds.IsNullOrEmpty())

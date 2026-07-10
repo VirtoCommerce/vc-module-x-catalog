@@ -55,7 +55,7 @@ public class ResolveSearchFiltersResponseMiddleware(
     {
         foreach (var filter in filters)
         {
-            bool isNegation = false;
+            var isNegation = false;
             // Unwrap NotFilter to get the actual filter
             var actualFilter = filter;
             while (actualFilter is NotFilter notFilter)
@@ -63,6 +63,9 @@ public class ResolveSearchFiltersResponseMiddleware(
                 isNegation = true;
                 actualFilter = notFilter.ChildFilter;
             }
+
+            // Unwrap a culture-aware OrFilter (see ConvertFilter) to its base-field leaf, always the first
+            actualFilter = actualFilter.Flatten().FirstOrDefault();
 
             // Skip if we couldn't unwrap to a supported filter type
             if (actualFilter is not (TermFilter or RangeFilter))

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
-using VirtoCommerce.CatalogModule.Core.Search.Sorting;
-using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Queries;
 using Xunit;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -55,13 +53,24 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             new TestHandler().Build(null, selected: null, languageCode: "en-US").Should().BeEmpty();
         }
 
+        [Fact]
+        public void Constructor_ObsoleteOverloadWithoutPropertyService_DoesNotThrow()
+        {
+            // Back-compat: callers built against the pre-VC0016 constructor (no IPropertyService) must still compile and construct.
+#pragma warning disable VC0016 // Type or member is obsolete
+            var act = () => new SearchProductQueryHandler(null, null, null, null, null, null, null, null);
+#pragma warning restore VC0016
+
+            act.Should().NotThrow();
+        }
+
         private static CatalogProductSorting Ordering(string code, string name, bool isVisible, bool isDefault = false) =>
             new() { Code = code, Name = name, IsVisible = isVisible, IsDefault = isDefault };
 
         // BuildSortings does not use any injected dependency, so the base ctor is satisfied with nulls.
         private sealed class TestHandler : SearchProductQueryHandler
         {
-            public TestHandler() : base(null, null, null, null, null, null, null, null) { }
+            public TestHandler() : base(null, null, null, null, null, null, null, null, null) { }
 
             public IList<XapiProductSorting> Build(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode) =>
                 BuildSortings(sortings, selected, languageCode);
