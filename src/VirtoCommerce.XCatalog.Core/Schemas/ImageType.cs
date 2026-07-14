@@ -1,6 +1,7 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -35,7 +36,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<StringGraphType>("group")
                 .Description("The group of the image")
                 .Resolve(context => context.Source.Group);
-            Field<NonNullGraphType<StringGraphType>>("url")
+            Field<NonNullGraphType<StoreUrlType>>("url")
                 .Description("The URL of the image")
                 .Resolve(context => context.Source.Url);
             Field<StringGraphType>("relativeUrl")
