@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>True</IsPackable>
@@ -12,6 +12,6 @@
     <PackageReference Include="VirtoCommerce.InventoryModule.Core" Version="3.1003.0" />
     <PackageReference Include="VirtoCommerce.MarketingModule.Core" Version="3.1005.0" />
     <PackageReference Include="VirtoCommerce.PricingModule.Core" Version="3.1003.0" />
-    <PackageReference Include="VirtoCommerce.Xapi.Core" Version="3.1014.0-alpha.185-vcst-5089" />
+    <PackageReference Include="VirtoCommerce.Xapi.Core" Version="3.1014.0-alpha.187-vcst-5089" />
   </ItemGroup>
 </Project>
