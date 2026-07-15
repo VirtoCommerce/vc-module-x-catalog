@@ -24,15 +24,4 @@ public class GetBrandQueryBuilder : QueryBuilder<GetBrandQuery, BrandAggregate, 
         context.CopyArgumentsToUserContext();
         return base.BeforeMediatorSend(context, request);
     }
-
-    protected override Task AfterMediatorSend(IResolveFieldContext<object> context, GetBrandQuery request, BrandAggregate response)
-    {
-        // Make the store available to StoreUrlType field resolution (banner/logo URLs).
-        if (response?.Store != null)
-        {
-            context.UserContext["store"] = response.Store;
-        }
-
-        return base.AfterMediatorSend(context, request, response);
-    }
 }
