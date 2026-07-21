@@ -7,6 +7,7 @@ using VirtoCommerce.Seo.Core.Models;
 using VirtoCommerce.StoreModule.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 using VirtoCommerce.XCatalog.Core.Models;
 
 using SeoExtensions = VirtoCommerce.Seo.Core.Extensions.SeoExtensions;
@@ -80,14 +81,14 @@ public class BrandType : ExtendableGraphType<BrandAggregate>
 
         Field<NonNullGraphType<StringGraphType>>("permalink").Resolve(GetBrandPermalink);
 
-        Field<StringGraphType>("bannerUrl")
+        Field<StoreUrlType>("bannerUrl")
             .Resolve(context =>
             {
                 var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Banner"))?.Url;
                 return result;
             });
 
-        Field<StringGraphType>("logoUrl")
+        Field<StoreUrlType>("logoUrl")
             .Resolve(context =>
             {
                 var result = context.Source.Images.FirstOrDefault(x => x.Group.EqualsIgnoreCase("Logo"))?.Url;

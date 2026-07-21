@@ -16,6 +16,7 @@ using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Helpers;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -31,7 +32,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Name = "Category";
 
             Field(x => x.Id, nullable: false).Description("Id of category.");
-            Field(x => x.Category.ImgSrc, nullable: true).Description("The category image.");
+            Field<StoreUrlType>("imgSrc")
+                .Description("The category image.")
+                .Resolve(context => context.Source.Category.ImgSrc);
             Field(x => x.Category.Code, nullable: false).Description("SKU of category.");
             Field<NonNullGraphType<StringGraphType>>("name").Resolve(context =>
             {

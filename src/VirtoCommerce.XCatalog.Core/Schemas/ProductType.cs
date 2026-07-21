@@ -18,6 +18,7 @@ using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -217,7 +218,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return response.Categories.FirstOrDefault();
                 });
 
-            Field<StringGraphType>("imgSrc")
+            Field<StoreUrlType>("imgSrc")
                 .Description("The product main image URL.")
                 .Resolve(context => context.Source.IndexedProduct.ImgSrc);
 
