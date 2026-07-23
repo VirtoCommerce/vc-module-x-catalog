@@ -27,17 +27,22 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                                 // If localization not found build default value
                                 ?? aliasGroup.Select(propertyValue =>
                                 {
-                                    var clonedValue = (PropertyValue)propertyValue.Clone();
+                                    var clonedValue = propertyValue.CloneTyped();
                                     clonedValue.Value = aliasGroup.Key;
                                     return clonedValue;
                                 }).First()
                             )
                         : property.Values.Where(x => x.LanguageCode.EqualsIgnoreCase(cultureName) || x.LanguageCode.IsNullOrEmpty());
 
-                    // wrap each PropertyValue into a Property
+                    // Wrap each PropertyValue into a Property. Clone a values-free template once
+                    // per property instead of full-cloning per value: Property.Clone() deep-clones
+                    // ALL values, and the per-value copy immediately discards them — O(values²)
+                    // clone waste on the hot resolver path.
+                    var template = property.CopyPropertyWithoutValues();
+
                     return propertyValues
-                        .Select(propertyValue => propertyValue.CopyPropertyWithValue(property))
-                        .DefaultIfEmpty(property.CopyPropertyWithoutValues());
+                        .Select(propertyValue => template.CopyWithValue(propertyValue))
+                        .DefaultIfEmpty(template);
                 })
                 .ToList();
         }
@@ -96,14 +101,22 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
         public static Property CopyPropertyWithValue(this PropertyValue propertyValue, Property property)
         {
-            var clonedProperty = (Property)property.Clone();
+            return property.CopyPropertyWithoutValues().CopyWithValue(propertyValue);
+        }
+
+        // The template's Values collection is empty, so cloning it skips the PropertyValue
+        // deep-clone entirely; the original value reference is attached, matching the
+        // pre-existing aliasing semantics of CopyPropertyWithValue.
+        private static Property CopyWithValue(this Property template, PropertyValue propertyValue)
+        {
+            var clonedProperty = template.CloneTyped();
             clonedProperty.Values = new List<PropertyValue> { propertyValue };
             return clonedProperty;
         }
 
         private static Property CopyPropertyWithoutValues(this Property property)
         {
-            var clonedProperty = (Property)property.Clone();
+            var clonedProperty = property.CloneTyped();
             clonedProperty.Values = Array.Empty<PropertyValue>();
             return clonedProperty;
         }

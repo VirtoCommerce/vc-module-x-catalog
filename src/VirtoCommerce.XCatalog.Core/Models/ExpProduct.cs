@@ -14,6 +14,7 @@ using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Binding;
+using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Specifications;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
@@ -109,6 +110,30 @@ namespace VirtoCommerce.XCatalog.Core.Models
                 return result;
             }
         }
+
+        /// <summary>
+        /// Returns the expanded property list for the given culture. The result is memoized on the instance:
+        /// field resolvers run once per GraphQL node while the instance is shared across nodes via a DataLoader,
+        /// so without memoization the expansion (which deep-clones a property per value) would run per node.
+        /// Callers must treat the returned list and its items as read-only.
+        /// </summary>
+        public virtual IList<Property> GetExpandedProperties(string cultureName)
+        {
+            var cached = _expandedProperties;
+            if (cached is null || !cached.CultureName.EqualsIgnoreCase(cultureName))
+            {
+                cached = new ExpandedProperties(cultureName, IndexedProduct?.Properties.ExpandOrderedByValues(cultureName) ?? new List<Property>());
+                _expandedProperties = cached;
+            }
+
+            return cached.Properties;
+        }
+
+        // Single-entry cache: a GraphQL request carries one culture, so one slot is enough; a concurrent
+        // resolver race or another culture just recomputes the same pure projection (last writer wins).
+        private volatile ExpandedProperties _expandedProperties;
+
+        private sealed record ExpandedProperties(string CultureName, IList<Property> Properties);
 
         public virtual void ApplyStaticDiscounts()
         {
