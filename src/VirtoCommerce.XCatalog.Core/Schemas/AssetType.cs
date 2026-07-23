@@ -1,6 +1,7 @@
 using GraphQL.Types;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.Xapi.Core.Schemas.ScalarTypes;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -14,7 +15,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field(x => x.Name, nullable: true).Description("The name of the asset.");
             Field(x => x.MimeType, nullable: true).Description("The MIME type of the asset.");
             Field(x => x.Size, nullable: false).Description("The size of the asset in bytes.");
-            Field(x => x.Url, nullable: false).Description("The URL of the asset.");
+            Field<NonNullGraphType<StoreUrlType>>("url")
+                .Description("The URL of the asset.")
+                .Resolve(context => context.Source.Url);
             Field(x => x.RelativeUrl, nullable: true).Description("The relative URL of the asset.");
             Field(x => x.TypeId, nullable: false).Description("The type ID of the asset.");
             Field(x => x.Group, nullable: true).Description("The group of the asset.");

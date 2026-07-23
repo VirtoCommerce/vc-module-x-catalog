@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using GraphQL;
 using MediatR;
@@ -23,5 +24,17 @@ public class SearchBrandQueryBuilder : SearchQueryBuilder<SearchBrandQuery, Sear
     {
         context.CopyArgumentsToUserContext();
         return base.BeforeMediatorSend(context, request);
+    }
+
+    protected override Task AfterMediatorSend(IResolveFieldContext<object> context, SearchBrandQuery request, SearchBrandResponse response)
+    {
+        // Make the store available to StoreUrlType field resolution (banner/logo URLs).
+        var store = response?.Results?.FirstOrDefault()?.Store;
+        if (store != null)
+        {
+            context.UserContext["store"] = store;
+        }
+
+        return base.AfterMediatorSend(context, request, response);
     }
 }
