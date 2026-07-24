@@ -111,7 +111,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(context.GetMediator()));
+              .ResolveAsync(context => context.ResolveAssociationsConnectionAsync());
         }
 
         [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]

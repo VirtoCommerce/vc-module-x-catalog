@@ -401,7 +401,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(context.GetMediator()));
+              .ResolveAsync(context => context.ResolveAssociationsConnectionAsync());
 
 
             Connection<VideoType>("videos")
