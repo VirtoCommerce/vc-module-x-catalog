@@ -93,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     var cultureName = context.GetArgument<string>("cultureName");
                     context.SetCurrencies(allCurrencies, cultureName);
 
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(context, ids));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(ids, context));
                     return loader.LoadAsync(context.GetArgument<string>("id"));
                 })
             };
@@ -122,7 +122,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                    // Authorize access to the store
                    await AuthorizeAsync(context, store);
 
-                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(context, ids));
+                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(ids, context));
                    return loader.LoadAsync(context.GetArgument<string>("id"));
                })
             };
@@ -194,7 +194,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(context, ids));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(ids, context));
                     var result = loader.LoadAsync(context.GetArgument<string>("id"));
 
                     return await Task.FromResult(result);
@@ -203,7 +203,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             schema.Query.AddField(propertyField);
         }
 
-        private static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IResolveFieldContext context, IEnumerable<string> ids)
+        private static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadProductsQuery>();
             query.ObjectIds = ids.ToArray();
@@ -214,7 +214,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             return response.Products.ToDictionary(x => x.Id);
         }
 
-        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IResolveFieldContext context, IEnumerable<string> ids)
+        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadCategoryQuery>();
             query.ObjectIds = ids.ToArray();
@@ -225,7 +225,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             return response.Categories.ToDictionary(x => x.Id);
         }
 
-        protected virtual async Task<IDictionary<string, Property>> LoadPropertiesAsync(IResolveFieldContext context, IEnumerable<string> ids)
+        protected virtual async Task<IDictionary<string, Property>> LoadPropertiesAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var result = await context.GetMediator().Send(new LoadPropertiesQuery { Ids = ids });
 
