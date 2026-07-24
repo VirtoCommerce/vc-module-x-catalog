@@ -23,14 +23,19 @@ public abstract class CatalogQueryBuilder<TQuery, TResult, TResultGraphType>
     private readonly ICurrencyService _currencyService;
 
     protected CatalogQueryBuilder(
-        IMediator mediator,
         IAuthorizationService authorizationService,
         IStoreService storeService,
         ICurrencyService currencyService)
-        : base(mediator, authorizationService)
+        : base(authorizationService)
     {
         _storeService = storeService;
         _currencyService = currencyService;
+    }
+
+    [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+    protected CatalogQueryBuilder(IMediator mediator, IAuthorizationService authorizationService, IStoreService storeService, ICurrencyService currencyService)
+        : this(authorizationService, storeService, currencyService)
+    {
     }
 
     protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, TQuery request)

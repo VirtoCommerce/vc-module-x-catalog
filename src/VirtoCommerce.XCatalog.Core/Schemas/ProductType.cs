@@ -65,7 +65,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         ///    }
         ///}
         /// </example>
-        public ProductType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+        public ProductType(IDataLoaderContextAccessor dataLoader)
         {
             Name = "Product";
             Description = "Products are the sellable goods in an e-commerce project.";
@@ -97,7 +97,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                             ProductIds = ids.ToArray()
                         };
 
-                        return await mediator.Send(query);
+                        return await context.GetMediator().Send(query);
                     });
                     return loader.LoadAsync(context.Source.Id);
                 })
@@ -116,7 +116,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var loadRelatedCatalogOutlineQuery = context.GetCatalogQuery<LoadRelatedCatalogOutlineQuery>();
                 loadRelatedCatalogOutlineQuery.Outlines = outlines;
 
-                var response = await mediator.Send(loadRelatedCatalogOutlineQuery);
+                var response = await context.GetMediator().Send(loadRelatedCatalogOutlineQuery);
                 return response.Outline;
             }).Description(@"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
 
@@ -131,7 +131,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var loadRelatedSlugPathQuery = context.GetCatalogQuery<LoadRelatedSlugPathQuery>();
                 loadRelatedSlugPathQuery.Outlines = outlines;
 
-                var response = await mediator.Send(loadRelatedSlugPathQuery);
+                var response = await context.GetMediator().Send(loadRelatedSlugPathQuery);
                 return response.Slug;
             }).Description("Request related slug for product");
 
@@ -213,7 +213,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     loadCategoryQuery.ObjectIds = [categoryId];
                     loadCategoryQuery.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
-                    var response = await mediator.Send(loadCategoryQuery);
+                    var response = await context.GetMediator().Send(loadCategoryQuery);
 
                     return response.Categories.FirstOrDefault();
                 });
@@ -254,7 +254,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                         brandsQuery.BrandNames = brandNames.ToList();
                         brandsQuery.Take = brandsQuery.BrandNames.Count;
 
-                        var response = await mediator.Send(brandsQuery);
+                        var response = await context.GetMediator().Send(brandsQuery);
 
                         var result = response.Results.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
                         return result;
@@ -278,14 +278,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     query.ObjectIds = new[] { context.Source.IndexedProduct.MainProductId };
                     query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
-                    var response = await mediator.Send(query);
+                    var response = await context.GetMediator().Send(query);
 
                     return response.Products.Select(expProduct => new ExpVariation(expProduct)).FirstOrDefault();
                 });
 
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
                 "variations",
-                resolve: async context => await ResolveVariationsFieldAsync(mediator, context));
+                resolve: async context => await ResolveVariationsFieldAsync(context.GetMediator(), context));
 
             Field<NonNullGraphType<BooleanGraphType>, bool>("hasVariations")
                 .Resolve(context =>
@@ -401,12 +401,18 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(mediator));
+              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(context.GetMediator()));
 
 
             Connection<VideoType>("videos")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await ResolveVideosConnectionAsync(mediator, context));
+              .ResolveAsync(async context => await ResolveVideosConnectionAsync(context.GetMediator(), context));
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public ProductType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+            : this(dataLoader)
+        {
         }
 
         private static string GetBrandName(IResolveFieldContext<ExpProduct> context)

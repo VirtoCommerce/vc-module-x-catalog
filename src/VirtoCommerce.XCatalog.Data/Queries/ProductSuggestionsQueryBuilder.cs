@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GraphQL;
 using MediatR;
@@ -18,10 +19,16 @@ public class ProductSuggestionsQueryBuilder : QueryBuilder<ProductSuggestionsQue
 
     private readonly IStoreService _storeService;
 
-    public ProductSuggestionsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService, IStoreService storeService)
-        : base(mediator, authorizationService)
+    public ProductSuggestionsQueryBuilder(IAuthorizationService authorizationService, IStoreService storeService)
+        : base(authorizationService)
     {
         _storeService = storeService;
+    }
+
+    [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+    public ProductSuggestionsQueryBuilder(IMediator mediator, IAuthorizationService authorizationService, IStoreService storeService)
+        : this(authorizationService, storeService)
+    {
     }
 
     protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, ProductSuggestionsQuery request)

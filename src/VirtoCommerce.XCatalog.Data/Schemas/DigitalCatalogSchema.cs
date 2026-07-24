@@ -30,24 +30,27 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 {
     public class DigitalCatalogSchema : ISchemaBuilder
     {
-        private readonly IMediator _mediator;
         private readonly IDataLoaderContextAccessor _dataLoader;
         private readonly ICurrencyService _currencyService;
         private readonly IStoreService _storeService;
         private readonly IAuthorizationService _authorizationService;
 
         public DigitalCatalogSchema(
-            IMediator mediator,
             IDataLoaderContextAccessor dataLoader,
             ICurrencyService currencyService,
             IStoreService storeService,
             IAuthorizationService authorizationService)
         {
-            _mediator = mediator;
             _dataLoader = dataLoader;
             _currencyService = currencyService;
             _storeService = storeService;
             _authorizationService = authorizationService;
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public DigitalCatalogSchema(IMediator mediator, IDataLoaderContextAccessor dataLoader, ICurrencyService currencyService, IStoreService storeService, IAuthorizationService authorizationService)
+            : this(dataLoader, currencyService, storeService, authorizationService)
+        {
         }
 
         /// <summary>
@@ -90,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     var cultureName = context.GetArgument<string>("cultureName");
                     context.SetCurrencies(allCurrencies, cultureName);
 
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(_mediator, ids, context));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(context.GetMediator(), ids, context));
                     return loader.LoadAsync(context.GetArgument<string>("id"));
                 })
             };
@@ -119,7 +122,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                    // Authorize access to the store
                    await AuthorizeAsync(context, store);
 
-                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(_mediator, ids, context));
+                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(context.GetMediator(), ids, context));
                    return loader.LoadAsync(context.GetArgument<string>("id"));
                })
             };
@@ -151,7 +154,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 // Authorize access to the store
                 await AuthorizeAsync(context, store);
 
-                return await ResolveCategoriesConnectionAsync(_mediator, context);
+                return await ResolveCategoriesConnectionAsync(context.GetMediator(), context);
             });
 
             schema.Query.AddField(categoriesConnectionBuilder.FieldType);
@@ -174,7 +177,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 // Authorize access to the store
                 await AuthorizeAsync(context, store);
 
-                return await ResolvePropertiesConnectionAsync(_mediator, context);
+                return await ResolvePropertiesConnectionAsync(context.GetMediator(), context);
             });
 
             schema.Query.AddField(propertiesConnectionBuilder.FieldType);
@@ -191,7 +194,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(_mediator, ids));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(context.GetMediator(), ids));
                     var result = loader.LoadAsync(context.GetArgument<string>("id"));
 
                     return await Task.FromResult(result);

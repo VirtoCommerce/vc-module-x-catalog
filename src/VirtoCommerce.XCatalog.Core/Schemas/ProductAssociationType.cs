@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class ProductAssociationType : ExtendableGraphType<ProductAssociation>
     {
-        public ProductAssociationType(IDataLoaderContextAccessor dataLoader, IMediator mediator)
+        public ProductAssociationType(IDataLoaderContextAccessor dataLoader)
         {
             Name = "ProductAssociation";
             Description = "product association.";
@@ -36,11 +37,17 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
                 Resolver = new FuncFieldResolver<ProductAssociation, IDataLoaderResult<ExpProduct>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", (ids) => LoadProductsAsync(mediator, ids, context));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", ids => LoadProductsAsync(context.GetMediator(), ids, context));
                     return loader.LoadAsync(context.Source.AssociatedObjectId);
                 })
             };
             AddField(productField);
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public ProductAssociationType(IDataLoaderContextAccessor dataLoader, IMediator mediator)
+            : this(dataLoader)
+        {
         }
 
         public static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IMediator mediator, IEnumerable<string> ids, IResolveFieldContext context)

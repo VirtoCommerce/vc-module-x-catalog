@@ -19,11 +19,14 @@ namespace VirtoCommerce.XCatalog.Data.Schemas;
 
 public class InventorySchema : ISchemaBuilder
 {
-    private readonly IMediator _mediator;
-
-    public InventorySchema(IMediator mediator)
+    public InventorySchema()
     {
-        _mediator = mediator;
+    }
+
+    [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+    public InventorySchema(IMediator mediator)
+        : this()
+    {
     }
 
     public void Build(ISchema schema)
@@ -47,7 +50,7 @@ public class InventorySchema : ISchemaBuilder
                     Id = id,
                     StoreId = storeId,
                 };
-                var fulfillmentCenter = await _mediator.Send(request);
+                var fulfillmentCenter = await context.GetMediator().Send(request);
 
                 if (fulfillmentCenter is not null)
                 {
@@ -66,11 +69,11 @@ public class InventorySchema : ISchemaBuilder
             .Argument<StringGraphType>("sort", "The sort expression")
             .Argument<ListGraphType<StringGraphType>>("fulfillmentCenterIds", "Filter by FFC IDs");
 
-        fulfillmentCentersConnectionBuilder.ResolveAsync(async context => await ResolveFulfillmentCentersConnectionAsync(_mediator, context));
+        fulfillmentCentersConnectionBuilder.ResolveAsync(ResolveFulfillmentCentersConnectionAsync);
         schema.Query.AddField(fulfillmentCentersConnectionBuilder.FieldType);
     }
 
-    private static async Task<object> ResolveFulfillmentCentersConnectionAsync(IMediator mediator, IResolveConnectionContext<object> context)
+    private static async Task<object> ResolveFulfillmentCentersConnectionAsync(IResolveConnectionContext<object> context)
     {
         context.CopyArgumentsToUserContext();
 
@@ -94,7 +97,7 @@ public class InventorySchema : ISchemaBuilder
             query.Take = fulfillmentCenterIds.Count;
         }
 
-        var response = await mediator.Send(query);
+        var response = await context.GetMediator().Send(query);
 
         return new PagedConnection<FulfillmentCenter>(response.Results, query.Skip, query.Take, response.TotalCount);
     }

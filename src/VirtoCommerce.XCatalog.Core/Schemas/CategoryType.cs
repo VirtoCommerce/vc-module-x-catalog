@@ -27,7 +27,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class CategoryType : ExtendableGraphType<ExpCategory>
     {
-        public CategoryType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+        public CategoryType(IDataLoaderContextAccessor dataLoader)
         {
             Name = "Category";
 
@@ -63,7 +63,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var loadRelatedCatalogOutlineQuery = context.GetCatalogQuery<LoadRelatedCatalogOutlineQuery>();
                 loadRelatedCatalogOutlineQuery.Outlines = outlines;
 
-                var response = await mediator.Send(loadRelatedCatalogOutlineQuery);
+                var response = await context.GetMediator().Send(loadRelatedCatalogOutlineQuery);
                 return response.Outline;
             }).Description(@"All parent categories ids relative to the requested catalog and concatenated with \ . E.g. (1/21/344)");
 
@@ -78,7 +78,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var loadRelatedSlugPathQuery = context.GetCatalogQuery<LoadRelatedSlugPathQuery>();
                 loadRelatedSlugPathQuery.Outlines = outlines;
 
-                var response = await mediator.Send(loadRelatedSlugPathQuery);
+                var response = await context.GetMediator().Send(loadRelatedSlugPathQuery);
                 return response.Slug;
             }).Description("Request related slug for category");
 
@@ -141,7 +141,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(mediator, ids, context));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(context.GetMediator(), ids, context));
 
                     return TryGetCategoryParentId(context, out var parentCategoryId)
                         ? loader.LoadAsync(parentCategoryId)
@@ -197,6 +197,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<CategoryType>>>>(
                 nameof(ExpCategory.ChildCategories),
                 resolve: context => context.Source.ChildCategories ?? Array.Empty<ExpCategory>());
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public CategoryType(IMediator mediator, IDataLoaderContextAccessor dataLoader)
+            : this(dataLoader)
+        {
         }
 
         protected virtual bool TryGetCategoryParentId(IResolveFieldContext<ExpCategory> context, out string parentId)
