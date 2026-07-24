@@ -37,7 +37,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
                 Resolver = new FuncFieldResolver<ProductAssociation, IDataLoaderResult<ExpProduct>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", ids => LoadProductsAsync(context, ids));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", ids => LoadProductsAsync(ids, context));
                     return loader.LoadAsync(context.Source.AssociatedObjectId);
                 })
             };
@@ -50,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
         }
 
-        public static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IResolveFieldContext context, IEnumerable<string> ids)
+        public static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadProductsQuery>();
             query.ObjectIds = ids.ToArray();
