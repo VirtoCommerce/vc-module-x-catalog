@@ -37,7 +37,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<ProductType>(),
                 Resolver = new FuncFieldResolver<ProductAssociation, IDataLoaderResult<ExpProduct>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", ids => LoadProductsAsync(context.GetMediator(), ids, context));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("associatedProductLoader", ids => LoadProductsAsync(ids, context));
                     return loader.LoadAsync(context.Source.AssociatedObjectId);
                 })
             };
@@ -50,13 +50,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
         }
 
-        public static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IMediator mediator, IEnumerable<string> ids, IResolveFieldContext context)
+        public static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadProductsQuery>();
             query.ObjectIds = ids.ToArray();
             query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).Select(x => x.Replace("associations.items.product", string.Empty)).ToArray();
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
             return response.Products.ToDictionary(x => x.Id);
         }
     }

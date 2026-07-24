@@ -26,7 +26,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Arguments = new QueryArguments(),
                 Resolver = new FuncFieldResolver<Discount, IDataLoaderResult<Promotion>>(async context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, Promotion>("promotionsLoader", ids => LoadPromotionsAsync(context.GetMediator(), ids));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, Promotion>("promotionsLoader", ids => LoadPromotionsAsync(ids, context));
                     var result = loader.LoadAsync(context.Source.PromotionId);
 
                     return await Task.FromResult(result);
@@ -42,9 +42,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         {
         }
 
-        protected virtual async Task<IDictionary<string, Promotion>> LoadPromotionsAsync(IMediator mediator, IEnumerable<string> ids)
+        protected virtual async Task<IDictionary<string, Promotion>> LoadPromotionsAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
-            var result = await mediator.Send(new LoadPromotionsQuery { Ids = ids });
+            var result = await context.GetMediator().Send(new LoadPromotionsQuery { Ids = ids });
 
             return result.Promotions;
         }

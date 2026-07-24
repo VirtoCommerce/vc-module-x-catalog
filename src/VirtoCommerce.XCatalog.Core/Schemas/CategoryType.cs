@@ -141,7 +141,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(context.GetMediator(), ids, context));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(ids, context));
 
                     return TryGetCategoryParentId(context, out var parentCategoryId)
                         ? loader.LoadAsync(parentCategoryId)
@@ -229,13 +229,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return false;
         }
 
-        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IMediator mediator, IEnumerable<string> ids, IResolveFieldContext context)
+        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var loadCategoryQuery = context.GetCatalogQuery<LoadCategoryQuery>();
             loadCategoryQuery.ObjectIds = ids.Where(x => x != null).ToArray();
             loadCategoryQuery.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
-            var response = await mediator.Send(loadCategoryQuery);
+            var response = await context.GetMediator().Send(loadCategoryQuery);
             return response.Categories.ToDictionary(x => x.Id);
         }
     }

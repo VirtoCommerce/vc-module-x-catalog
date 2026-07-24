@@ -285,7 +285,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
                 "variations",
-                resolve: async context => await ResolveVariationsFieldAsync(context.GetMediator(), context));
+                resolve: ResolveVariationsFieldAsync);
 
             Field<NonNullGraphType<BooleanGraphType>, bool>("hasVariations")
                 .Resolve(context =>
@@ -406,7 +406,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Connection<VideoType>("videos")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await ResolveVideosConnectionAsync(context.GetMediator(), context));
+              .ResolveAsync(ResolveVideosConnectionAsync);
         }
 
         [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
@@ -426,7 +426,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return brandName?.ToString();
         }
 
-        protected virtual async Task<object> ResolveVariationsFieldAsync(IMediator mediator, IResolveFieldContext<ExpProduct> context)
+        protected virtual async Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
             if (context.Source.IndexedVariationIds.IsNullOrEmpty())
             {
@@ -443,12 +443,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 query.IncludeFields.Add("isActive");
             }
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return response.Products.Where(x => x.IndexedProduct?.IsActive == true).Select(expProduct => new ExpVariation(expProduct));
         }
 
-        private static async Task<object> ResolveVideosConnectionAsync(IMediator mediator, IResolveConnectionContext<ExpProduct> context)
+        private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)
         {
             var first = context.First;
 
@@ -463,7 +463,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 CultureName = context.GetArgumentOrValue<string>("cultureName")
             };
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return new PagedConnection<Video>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }
