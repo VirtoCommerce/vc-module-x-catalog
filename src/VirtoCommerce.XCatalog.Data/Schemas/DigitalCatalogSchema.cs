@@ -30,24 +30,27 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
 {
     public class DigitalCatalogSchema : ISchemaBuilder
     {
-        private readonly IMediator _mediator;
         private readonly IDataLoaderContextAccessor _dataLoader;
         private readonly ICurrencyService _currencyService;
         private readonly IStoreService _storeService;
         private readonly IAuthorizationService _authorizationService;
 
         public DigitalCatalogSchema(
-            IMediator mediator,
             IDataLoaderContextAccessor dataLoader,
             ICurrencyService currencyService,
             IStoreService storeService,
             IAuthorizationService authorizationService)
         {
-            _mediator = mediator;
             _dataLoader = dataLoader;
             _currencyService = currencyService;
             _storeService = storeService;
             _authorizationService = authorizationService;
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public DigitalCatalogSchema(IMediator mediator, IDataLoaderContextAccessor dataLoader, ICurrencyService currencyService, IStoreService storeService, IAuthorizationService authorizationService)
+            : this(dataLoader, currencyService, storeService, authorizationService)
+        {
         }
 
         /// <summary>
@@ -90,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                     var cultureName = context.GetArgument<string>("cultureName");
                     context.SetCurrencies(allCurrencies, cultureName);
 
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(_mediator, ids, context));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>("productsLoader", ids => LoadProductsAsync(ids, context));
                     return loader.LoadAsync(context.GetArgument<string>("id"));
                 })
             };
@@ -119,7 +122,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                    // Authorize access to the store
                    await AuthorizeAsync(context, store);
 
-                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(_mediator, ids, context));
+                   var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("categoriesLoader", ids => LoadCategoriesAsync(ids, context));
                    return loader.LoadAsync(context.GetArgument<string>("id"));
                })
             };
@@ -151,7 +154,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 // Authorize access to the store
                 await AuthorizeAsync(context, store);
 
-                return await ResolveCategoriesConnectionAsync(_mediator, context);
+                return await ResolveCategoriesConnectionAsync(context);
             });
 
             schema.Query.AddField(categoriesConnectionBuilder.FieldType);
@@ -174,7 +177,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 // Authorize access to the store
                 await AuthorizeAsync(context, store);
 
-                return await ResolvePropertiesConnectionAsync(_mediator, context);
+                return await ResolvePropertiesConnectionAsync(context);
             });
 
             schema.Query.AddField(propertiesConnectionBuilder.FieldType);
@@ -191,7 +194,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 {
                     //PT-1606:  Need to check that there is no any alternative way to access to the original request arguments in sub selection
                     context.CopyArgumentsToUserContext();
-                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(_mediator, ids));
+                    var loader = _dataLoader.Context.GetOrAddBatchLoader<string, Property>("propertiesLoader", ids => LoadPropertiesAsync(ids, context));
                     var result = loader.LoadAsync(context.GetArgument<string>("id"));
 
                     return await Task.FromResult(result);
@@ -200,36 +203,36 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
             schema.Query.AddField(propertyField);
         }
 
-        private static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IMediator mediator, IEnumerable<string> ids, IResolveFieldContext context)
+        private static async Task<IDictionary<string, ExpProduct>> LoadProductsAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadProductsQuery>();
             query.ObjectIds = ids.ToArray();
             query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return response.Products.ToDictionary(x => x.Id);
         }
 
-        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IMediator mediator, IEnumerable<string> ids, IResolveFieldContext context)
+        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
             var query = context.GetCatalogQuery<LoadCategoryQuery>();
             query.ObjectIds = ids.ToArray();
             query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return response.Categories.ToDictionary(x => x.Id);
         }
 
-        protected virtual async Task<IDictionary<string, Property>> LoadPropertiesAsync(IMediator mediator, IEnumerable<string> ids)
+        protected virtual async Task<IDictionary<string, Property>> LoadPropertiesAsync(IEnumerable<string> ids, IResolveFieldContext context)
         {
-            var result = await mediator.Send(new LoadPropertiesQuery { Ids = ids });
+            var result = await context.GetMediator().Send(new LoadPropertiesQuery { Ids = ids });
 
             return result.Properties;
         }
 
-        private static async Task<object> ResolveCategoriesConnectionAsync(IMediator mediator, IResolveConnectionContext<object> context)
+        private static async Task<object> ResolveCategoriesConnectionAsync(IResolveConnectionContext<object> context)
         {
             var first = context.First;
             var skip = Convert.ToInt32(context.After ?? 0.ToString());
@@ -257,12 +260,12 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 query.Take = categoryIds.Count;
             }
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return new PagedConnection<ExpCategory>(response.Results, query.Skip, query.Take, response.TotalCount);
         }
 
-        private static async Task<object> ResolvePropertiesConnectionAsync(IMediator mediator, IResolveConnectionContext<object> context)
+        private static async Task<object> ResolvePropertiesConnectionAsync(IResolveConnectionContext<object> context)
         {
             var first = context.First;
 
@@ -278,7 +281,7 @@ namespace VirtoCommerce.XCatalog.Data.Schemas
                 Filter = context.GetArgument<string>("filter")
             };
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return new PagedConnection<Property>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }

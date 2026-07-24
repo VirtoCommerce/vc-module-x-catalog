@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Builders;
-using MediatR;
+using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.XCatalog.Core.Models;
@@ -15,7 +15,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
         /// Resolves the GraphQL associations connection for any product-like source (a product or its variation),
         /// searching associations by the source item's own id. Shared by ProductType and VariationType.
         /// </summary>
-        public static async Task<object> ResolveAssociationsConnectionAsync<TSource>(this IResolveConnectionContext<TSource> context, IMediator mediator)
+        public static async Task<object> ResolveAssociationsConnectionAsync<TSource>(this IResolveConnectionContext<TSource> context)
             where TSource : ExpProduct
         {
             var first = context.First;
@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                 ObjectIds = [context.Source.IndexedProduct.Id]
             };
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return new PagedConnection<ProductAssociation>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }

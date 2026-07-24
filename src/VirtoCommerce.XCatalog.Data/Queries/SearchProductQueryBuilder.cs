@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GraphQL;
 using GraphQL.Types;
@@ -23,11 +24,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         protected virtual int DefaultPageSize => Connections.DefaultPageSize;
 
         public SearchProductQueryBuilder(
-            IMediator mediator,
             IAuthorizationService authorizationService,
             IStoreService storeService,
             ICurrencyService currencyService)
-            : base(mediator, authorizationService, storeService, currencyService)
+            : base(authorizationService, storeService, currencyService)
+        {
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public SearchProductQueryBuilder(IMediator mediator, IAuthorizationService authorizationService, IStoreService storeService, ICurrencyService currencyService)
+            : this(authorizationService, storeService, currencyService)
         {
         }
 
