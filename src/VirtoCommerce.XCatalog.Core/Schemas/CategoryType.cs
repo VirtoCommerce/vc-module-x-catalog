@@ -141,7 +141,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 Type = GraphTypeExtensionHelper.GetActualType<CategoryType>(),
                 Resolver = new FuncFieldResolver<ExpCategory, IDataLoaderResult<ExpCategory>>(context =>
                 {
-                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(ids, context));
+                    var loader = dataLoader.Context.GetOrAddBatchLoader<string, ExpCategory>("parentsCategoryLoader", ids => LoadCategoriesAsync(context, ids));
 
                     return TryGetCategoryParentId(context, out var parentCategoryId)
                         ? loader.LoadAsync(parentCategoryId)
@@ -229,7 +229,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return false;
         }
 
-        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IEnumerable<string> ids, IResolveFieldContext context)
+        private static async Task<IDictionary<string, ExpCategory>> LoadCategoriesAsync(IResolveFieldContext context, IEnumerable<string> ids)
         {
             var loadCategoryQuery = context.GetCatalogQuery<LoadCategoryQuery>();
             loadCategoryQuery.ObjectIds = ids.Where(x => x != null).ToArray();
