@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,14 +26,19 @@ public class ChildCategoriesQueryBuilder : CatalogQueryBuilder<ChildCategoriesQu
     protected override string Name => "ChildCategories";
 
     public ChildCategoriesQueryBuilder(
-        IMediator mediator,
         IAuthorizationService authorizationService,
         IStoreService storeService,
         ICurrencyService currencyService,
         ICategoryService categoryService)
-        : base(mediator, authorizationService, storeService, currencyService)
+        : base(authorizationService, storeService, currencyService)
     {
         _categoryService = categoryService;
+    }
+
+    [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+    public ChildCategoriesQueryBuilder(IMediator mediator, IAuthorizationService authorizationService, IStoreService storeService, ICurrencyService currencyService, ICategoryService categoryService)
+        : this(authorizationService, storeService, currencyService, categoryService)
+    {
     }
 
     protected override async Task BeforeMediatorSend(IResolveFieldContext<object> context, ChildCategoriesQuery request)

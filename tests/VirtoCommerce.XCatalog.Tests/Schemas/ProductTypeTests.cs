@@ -19,7 +19,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 
         public ProductTypeTests()
         {
-            _productType = new ProductType(_mediatorMock.Object, _dataLoaderContextAccessorMock.Object);
+            _productType = new ProductType(_dataLoaderContextAccessorMock.Object);
         }
 
         #region Properties

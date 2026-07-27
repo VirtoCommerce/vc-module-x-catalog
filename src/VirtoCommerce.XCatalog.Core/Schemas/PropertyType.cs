@@ -26,7 +26,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     {
         private readonly IMeasureService _measureService;
 
-        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader, IMeasureService measureService, IPropertyGroupService propertyGroupService)
+        public PropertyType(IDataLoaderContextAccessor dataLoader, IMeasureService measureService, IPropertyGroupService propertyGroupService)
         {
             _measureService = measureService;
 
@@ -104,7 +104,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             Connection<PropertyDictionaryItemType>("propertyDictionaryItems")
                 .PageSize(Connections.DefaultPageSize)
-                .ResolveAsync(context => ResolveConnectionAsync(mediator, context));
+                .ResolveAsync(ResolveConnectionAsync);
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public PropertyType(IMediator mediator, IDataLoaderContextAccessor dataLoader, IMeasureService measureService, IPropertyGroupService propertyGroupService)
+            : this(dataLoader, measureService, propertyGroupService)
+        {
         }
 
         protected virtual async Task<object> ResolveValue(Property source, string languageCode)
@@ -135,7 +141,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 : $"{decimalValue.FormatDecimal(languageCode)} {symbol}";
         }
 
-        private static async Task<object> ResolveConnectionAsync(IMediator mediator, IResolveConnectionContext<Property> context)
+        private static async Task<object> ResolveConnectionAsync(IResolveConnectionContext<Property> context)
         {
             var first = context.First;
 
@@ -148,7 +154,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 PropertyIds = [context.Source.Id],
             };
 
-            var response = await mediator.Send(query);
+            var response = await context.GetMediator().Send(query);
 
             return new PagedConnection<PropertyDictionaryItem>(response.Result.Results, query.Skip, query.Take, response.Result.TotalCount);
         }

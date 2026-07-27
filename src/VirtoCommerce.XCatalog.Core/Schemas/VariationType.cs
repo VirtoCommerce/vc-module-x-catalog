@@ -16,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class VariationType : ExtendableGraphType<ExpVariation>
     {
-        public VariationType(IMediator mediator)
+        public VariationType()
         {
             Field<NonNullGraphType<StringGraphType>>("id")
                 .Description("Id of variation.")
@@ -93,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 var loadRelatedSlugPathQuery = context.GetCatalogQuery<LoadRelatedSlugPathQuery>();
                 loadRelatedSlugPathQuery.Outlines = outlines;
 
-                var response = await mediator.Send(loadRelatedSlugPathQuery);
+                var response = await context.GetMediator().Send(loadRelatedSlugPathQuery);
                 return response.Slug;
             }).Description("Request related slug for product");
 
@@ -111,7 +111,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
               .Argument<StringGraphType>("query", "the search phrase")
               .Argument<StringGraphType>("group", "association group (Accessories, RelatedItem)")
               .PageSize(Connections.DefaultPageSize)
-              .ResolveAsync(async context => await context.ResolveAssociationsConnectionAsync(mediator));
+              .ResolveAsync(context => context.ResolveAssociationsConnectionAsync());
+        }
+
+        [Obsolete("Use the constructor without IMediator. The mediator is resolved from context.RequestServices per request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public VariationType(IMediator mediator)
+            : this()
+        {
         }
     }
 }
