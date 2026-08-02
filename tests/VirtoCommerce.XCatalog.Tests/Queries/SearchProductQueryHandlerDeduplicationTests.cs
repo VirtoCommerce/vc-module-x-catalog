@@ -130,7 +130,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 });
         }
 
-        private IRequestScopedCacheAccessor Accessor(IRequestScopedCache cache)
+        private static IRequestScopedCacheAccessor Accessor(IRequestScopedCache cache)
         {
             var accessorMock = new Mock<IRequestScopedCacheAccessor>();
             accessorMock.Setup(x => x.Cache).Returns(cache);
