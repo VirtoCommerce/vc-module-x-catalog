@@ -6,8 +6,10 @@ namespace VirtoCommerce.XCatalog.Core
 
         // Key under which one request pins the instant its validity-window filters are evaluated at. The
         // request-scoped cache is shared with every other consumer in the request, hence the prefix.
-        // Deliberately not per-handler: product and category search in one response must be filtered
-        // against the SAME instant, or a page can show a product as active and its category as not.
+        // Named for the purpose rather than for the handler so that a second validity-window consumer can
+        // share the instant: two searches in one response evaluated against different instants can only
+        // produce an inconsistent view. Today product search is the only consumer - category search does not
+        // filter by date at all, and the pricing middleware still reads its own clock.
         public const string CertainDateRequestCacheKey = "xcatalog:search:certain-date";
 
         public const string DefaultBrandPropertyName = "Brand";

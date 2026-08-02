@@ -265,6 +265,12 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <br/><br/>
         /// <b>Failure semantics.</b> A faulted search must not be retried for the rest of the request; the
         /// request-scoped cache stores the faulted task and rethrows it, which is the intended behaviour.
+        /// <br/><br/>
+        /// One obligation the default copy below does NOT discharge, because it cannot: <c>Documents</c> is
+        /// shared by reference, and a <c>SearchDocument</c> is a mutable dictionary. Nothing on this path
+        /// writes to one - the binders only read, and each caller gets its own <c>ExpProduct</c> - but a
+        /// field binder that hands back a reference-typed value out of a document, which the caller then
+        /// mutates, corrupts every other holder of that cached entry. Treat documents as read-only.
         /// </remarks>
         protected virtual Task<SearchResponse> SearchProductsAsync(SearchRequest searchRequest)
         {
@@ -302,12 +308,15 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <c>ObjectIds</c> order is NOT canonicalised: it drives <c>IdsFilter.Values</c> and <c>Take</c>, so
         /// two orders are two different calls and hashing verbatim is correct.
         /// <br/><br/>
-        /// Keyed on <c>GetType()</c> rather than this class, so a subclass that alters the search cannot
-        /// collide with the base handler's entries.
+        /// Scoped by the runtime type's FULL name, so a subclass that alters the search cannot collide with
+        /// the base handler's entries. <c>CacheKey.With(Type, ...)</c> alone would not give that: it renders
+        /// the type through <c>PrettyPrint</c>, which for a non-generic type yields the SHORT name, so a
+        /// subclass keeping the name <c>SearchProductQueryHandler</c> in its own namespace would key
+        /// identically to this one.
         /// </remarks>
         protected virtual string BuildSearchCacheKey(SearchRequest searchRequest)
         {
-            return CacheKey.With(GetType(), nameof(SearchProductsAsync), KnownDocumentTypes.Product, searchRequest.GetJsonSha256Hex());
+            return CacheKey.With(GetType(), GetType().FullName, nameof(SearchProductsAsync), KnownDocumentTypes.Product, searchRequest.GetJsonSha256Hex());
         }
 
         /// <summary>

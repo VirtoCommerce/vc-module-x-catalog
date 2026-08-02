@@ -21,8 +21,10 @@ using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Xapi.Tests.Helpers;
+using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
 using Xunit;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
@@ -128,11 +130,16 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 });
         }
 
-        private TestableHandler GetHandler(IRequestScopedCache cache = null)
+        private IRequestScopedCacheAccessor Accessor(IRequestScopedCache cache)
         {
             var accessorMock = new Mock<IRequestScopedCacheAccessor>();
             accessorMock.Setup(x => x.Cache).Returns(cache);
 
+            return accessorMock.Object;
+        }
+
+        private TestableHandler GetHandler(IRequestScopedCache cache = null)
+        {
             return new TestableHandler(
                 _searchProviderMock.Object,
                 _mapperMock.Object,
@@ -143,7 +150,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 _phraseParserMock.Object,
                 _productSortingServiceMock.Object,
                 _propertyServiceMock.Object,
-                accessorMock.Object);
+                Accessor(cache));
         }
 
         private static SearchProductQuery Query(string keyword = null) => new()
@@ -156,24 +163,26 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         };
 
         [Fact]
-        public async Task Handle_TwoDifferentSearchesInOneScope_ShareOneCertainDate()
+        public async Task Handle_SearchesInOneScope_UseTheInstantPinnedInThatScope()
         {
-            // Two DIFFERENT searches, so both reach the provider and both certain-date filters are observable.
-            // The converse is deliberately not asserted by comparing two DateTime.UtcNow reads for inequality:
-            // they can land in the same tick and such a test would flake. B15 covers the no-scope case
-            // behaviourally instead.
-            var handler = GetHandler(new RequestScopedCache());
+            // Deterministic instead of clock-dependent. Asserting only that two searches agree would rest on
+            // DateTime.UtcNow advancing between two fully-mocked Handle calls, which nothing here forces: on
+            // a host with coarse clock granularity both reads land in one step, the two values match anyway,
+            // and the test would pass with the pinning deleted. Pinning a known instant up front instead
+            // asserts the stronger property — the handler READS the shared value — and fails deterministically
+            // when it stops doing so.
+            var pinned = new DateTime(2020, 5, 17, 4, 32, 11, DateTimeKind.Utc);
+            var cache = new RequestScopedCache();
+            await cache.GetOrAddAsync(ModuleConstants.CertainDateRequestCacheKey, () => Task.FromResult(pinned));
+
+            var handler = GetHandler(cache);
 
             await handler.Handle(Query("first"), CancellationToken.None);
             await handler.Handle(Query("second"), CancellationToken.None);
 
             _capturedSearchRequests.Should().HaveCount(2);
-
-            var first = CertainDateOf(_capturedSearchRequests[0]);
-            var second = CertainDateOf(_capturedSearchRequests[1]);
-
-            first.Should().NotBeNull("the certain-date filter must be present for this test to mean anything");
-            second.Should().Be(first);
+            CertainDateOf(_capturedSearchRequests[0]).Should().Be(pinned.ToString("O"));
+            CertainDateOf(_capturedSearchRequests[1]).Should().Be(pinned.ToString("O"));
         }
 
         [Fact]
@@ -321,8 +330,16 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         }
 
         [Fact]
-        public void CloneSearchResponse_DerivedSourceWithOverriddenClone_PreservesDerivedState()
+        public async Task SearchProductsAsync_OverriddenClone_IsTheOneTheCachePathUses()
         {
+            // Driven through the cache path rather than by calling the override directly: calling it directly
+            // would exercise only this test's own code and could fail for nothing but the removal of
+            // `virtual`. Going through SearchProductsAsync proves the seam actually routes copies through
+            // the overridable member, which is what the contract promises an overrider.
+            _searchProviderMock
+                .Setup(x => x.SearchAsync(It.IsAny<string>(), It.IsAny<SearchRequest>()))
+                .ReturnsAsync(() => new DerivedSearchResponse { TotalCount = 5, Marker = "derived" });
+
             var handler = new DerivedAwareHandler(
                 _searchProviderMock.Object,
                 _mapperMock.Object,
@@ -333,12 +350,16 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 _phraseParserMock.Object,
                 _productSortingServiceMock.Object,
                 _propertyServiceMock.Object,
-                Mock.Of<IRequestScopedCacheAccessor>());
+                Accessor(new RequestScopedCache()));
 
-            var clone = handler.CallCloneSearchResponse(new DerivedSearchResponse { TotalCount = 5, Marker = "derived" });
+            var request = new SearchRequest();
+            var onMiss = await handler.CallSearchProductsAsync(request);
+            var onHit = await handler.CallSearchProductsAsync(request);
 
-            clone.Should().BeOfType<DerivedSearchResponse>();
-            ((DerivedSearchResponse)clone).Marker.Should().Be("derived");
+            onMiss.Should().BeOfType<DerivedSearchResponse>();
+            onHit.Should().BeOfType<DerivedSearchResponse>();
+            ((DerivedSearchResponse)onHit).Marker.Should().Be("derived");
+            onHit.Should().NotBeSameAs(onMiss);
         }
 
         [Fact]
@@ -370,10 +391,12 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         public void BuildSearchCacheKey_DifferingObjectIdsOrder_AreDistinct()
         {
             // ObjectIds order is meaningful - it drives IdsFilter.Values and Take - so it is deliberately NOT
-            // canonicalised, and two orders must key differently.
+            // canonicalised. Built through the real AddObjectIds rather than by hand-rolling an IdsFilter:
+            // hand-rolling would only prove the hash is list-order-sensitive, and would keep passing if
+            // AddObjectIds ever started sorting, which is exactly the property under test.
             var handler = GetHandler();
-            var first = new SearchRequest { Filter = new IdsFilter { Values = ["a", "b"] } };
-            var second = new SearchRequest { Filter = new IdsFilter { Values = ["b", "a"] } };
+            var first = new IndexSearchRequestBuilder().AddObjectIds(["a", "b"]).Build();
+            var second = new IndexSearchRequestBuilder().AddObjectIds(["b", "a"]).Build();
 
             handler.CallBuildSearchCacheKey(first).Should().NotBe(handler.CallBuildSearchCacheKey(second));
         }
