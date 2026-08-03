@@ -78,8 +78,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         // Both obsolete overloads target the primary constructor directly rather than chaining through each
         // other: a chain would route a caller of the oldest one through a member that is itself deprecated.
-        // The DiagnosticId names the release wave the deprecation belongs to, so it is shared with every
-        // other member deprecated in the same release - it is not allocated per site.
         [Obsolete("Use the constructor overload with IRequestScopedCacheAccessor to deduplicate identical searches within one request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -242,35 +240,18 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// re-entering through the former - go through one overridable call.
         /// </summary>
         /// <remarks>
-        /// An override replacing this with a caching implementation takes on four obligations, none of which
-        /// the compiler or a passing test will remind it about:
-        /// <br/><br/>
-        /// <b>Key completeness.</b> The response is a pure function of the two arguments
-        /// <see cref="ISearchProvider.SearchAsync"/> receives, so a key derived from the whole
-        /// <see cref="SearchRequest"/> is complete by construction. Enumerating selected fields instead is
-        /// how a key silently goes under-inclusive - note that entitlement reaches the provider only as
-        /// filters written into <see cref="SearchRequest.Filter"/>, not as anything the builder carries
-        /// alongside. Anything read from ambient state rather than from the request must be in the key too.
-        /// <br/><br/>
-        /// <b>Response isolation.</b> Callers mutate what they receive - the aggregation converter rewrites
-        /// ids on <c>AggregationResponseValue</c> in place, and <c>SetAppliedAggregations</c> writes back to
-        /// the request. A cached entry handed out twice unmodified therefore corrupts the second caller. Copy
-        /// on the way out, on <b>both</b> paths: a store-the-task cache hands the first caller the very
-        /// instance every later caller gets.
-        /// <br/><br/>
-        /// <b>Derived state.</b> The copy must carry whatever a derived response type adds. The default copy
-        /// below cannot do that for a type it does not know, and
-        /// <c>AbstractTypeFactory.TryCreateInstance</c> cannot either - it resolves by the base type's name
-        /// and copies no state. A derived type is the overrider's to preserve.
-        /// <br/><br/>
-        /// <b>Failure semantics.</b> A faulted search must not be retried for the rest of the request; the
-        /// request-scoped cache stores the faulted task and rethrows it, which is the intended behaviour.
-        /// <br/><br/>
-        /// One obligation the default copy below does NOT discharge, because it cannot: <c>Documents</c> is
-        /// shared by reference, and a <c>SearchDocument</c> is a mutable dictionary. Nothing on this path
-        /// writes to one - the binders only read, and each caller gets its own <c>ExpProduct</c> - but a
-        /// field binder that hands back a reference-typed value out of a document, which the caller then
-        /// mutates, corrupts every other holder of that cached entry. Treat documents as read-only.
+        /// <para>
+        /// An override that caches inherits three obligations the compiler and a passing test are both silent
+        /// about: the key must cover every input (see <see cref="BuildSearchCacheKey"/>), every caller must
+        /// get its own copy (see <see cref="CloneSearchResponse"/>), and a derived response type is the
+        /// overrider's to preserve - neither plain construction nor <c>AbstractTypeFactory</c> can.
+        /// </para>
+        /// <para>
+        /// <c>Documents</c> is shared by reference and a <c>SearchDocument</c> is a mutable dictionary.
+        /// Nothing on this path writes to one, so treat them as read-only: a field binder that hands a
+        /// reference-typed value out of a document to a caller that then mutates it corrupts every other
+        /// holder of that entry.
+        /// </para>
         /// </remarks>
         protected virtual Task<SearchResponse> SearchProductsAsync(SearchRequest searchRequest)
         {
@@ -304,16 +285,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </summary>
         /// <remarks>
         /// The hash is over the request as a graph, not over selected fields - a hand-written projection goes
-        /// silently under-inclusive the day upstream adds a field, and serves the wrong documents. Note that
-        /// <c>ObjectIds</c> order is NOT canonicalised: it drives <c>IdsFilter.Values</c> and <c>Take</c>, so
-        /// two orders are two different calls and hashing verbatim is correct.
-        /// <br/><br/>
-        /// Scoped by <c>GetType()</c>, so a subclass that alters the search keys separately from the base
-        /// handler. Note the scoping is by the type's SHORT name - <c>CacheKey.With(Type, ...)</c> renders it
-        /// through <c>PrettyPrint</c> - so a subclass that kept the name <c>SearchProductQueryHandler</c> in
-        /// its own namespace would key identically. That is a property of the shared helper rather than of
-        /// this call site, and it is unreachable here anyway: the entry lives for one request, so it would
-        /// take two same-named handler types serving the same request to collide.
+        /// silently under-inclusive the day upstream adds a field, and serves the wrong documents.
+        /// <c>ObjectIds</c> order is deliberately NOT canonicalised: it drives <c>IdsFilter.Values</c> and
+        /// <c>Take</c>, so two orders are two different calls. <c>GetType()</c> scopes the key so a subclass
+        /// that alters the search keys separately from the base handler.
         /// </remarks>
         protected virtual string BuildSearchCacheKey(SearchRequest searchRequest)
         {
@@ -324,18 +299,19 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// A per-caller copy of a response that may be handed out more than once.
         /// </summary>
         /// <remarks>
-        /// Deep only where something downstream writes. <c>AggregationResponse.Id</c> and the ids on its
-        /// <c>Values</c> are both rewritten in place by the aggregation converter's range handling, so
-        /// sharing either would let one caller's conversion rewrite another's data - the values are the
-        /// half that is easy to miss, because copying only the <c>AggregationResponse</c> looks complete.
-        /// <c>Documents</c> and <c>Statistics</c> are shared deliberately: nothing on this path writes to
-        /// them, and documents are the large part of a response.
-        /// <br/><br/>
-        /// Deliberately <c>new SearchResponse()</c> rather than <c>AbstractTypeFactory</c>: that factory
-        /// resolves by the base type's NAME, so it would return the registered override type for a source
-        /// that is a plain base instance, and it copies no state either way. Neither plain construction nor
-        /// the factory can preserve a derived type - hence this is <c>virtual</c>, and preserving derived
-        /// state is stated as the overrider's obligation on <see cref="SearchProductsAsync"/>.
+        /// <para>
+        /// Deep only where something downstream writes, and the aggregation converter writes at both levels:
+        /// it replaces <c>AggregationResponse.Values</c> in place when it filters outlines, and mutates
+        /// <c>AggregationResponseValue.Id</c> in place in its range handling. The second is the one that is
+        /// easy to miss, because copying only the <c>AggregationResponse</c> looks complete.
+        /// <c>Documents</c> is shared deliberately - nothing on this path writes to one, and documents are
+        /// the large part of a response.
+        /// </para>
+        /// <para>
+        /// <c>new SearchResponse()</c> rather than <c>AbstractTypeFactory</c>: the factory resolves by the
+        /// base type's NAME, so it would return the registered override type for a source that is a plain base
+        /// instance, and it copies no state either way.
+        /// </para>
         /// </remarks>
         protected virtual SearchResponse CloneSearchResponse(SearchResponse source)
         {

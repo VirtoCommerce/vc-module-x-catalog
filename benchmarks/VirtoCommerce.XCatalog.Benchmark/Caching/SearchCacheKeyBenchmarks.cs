@@ -8,20 +8,12 @@ using VirtoCommerce.XCatalog.Data.Queries;
 namespace VirtoCommerce.XCatalog.Benchmark.Caching;
 
 // What a request that searches ONCE pays for the deduplication it never uses: BuildSearchCacheKey
-// serializes the whole SearchRequest and hashes it, and that cost is charged on every call with no hit to
-// amortise it. The platform's JsonHashBenchmarks measure the hashing utility on a synthetic tree, because
-// Platform.Core cannot reference a search module; these measure the shipped method on a request built the
-// way GetIndexedSearchRequestBuilder builds it.
+// serializes the whole SearchRequest and hashes it on every call, with no hit to amortise it.
 //
-// The fixtures mirror that method's call chain rather than picking builder calls that look representative.
-// A thinner graph does not fail — it silently reports a smaller number, and the first version of this file
-// did exactly that: it omitted AddCertainDateFilter (unconditional in production, and the whole reason the
-// certain-date pinning exists) and ApplyMultiSelectFacetSearch (which clones the filter tree onto EVERY
-// aggregation), understating by 1.6x and 3-4.5x respectively.
-//
-// Two production steps are deliberately NOT reproduced, and both make these figures a floor rather than an
-// estimate: ParseFilters / ParseFacets need an ISearchPhraseParser and add user filters on top, and the
-// module pipeline (_pipeline.Execute(builder)) lets other modules extend the request before it is built.
+// The fixtures mirror GetIndexedSearchRequestBuilder's call chain rather than picking builder calls that
+// look representative, and that is load-bearing: a thinner graph does not fail, it silently reports a
+// smaller number. The first version of this file omitted two such calls and understated the result — the
+// README says which, by how much, and which production steps are deliberately not reproduced.
 //
 // There is no baseline arm: the alternative to building a key is not building one, so the absolute figure
 // IS the overhead. Read it against an Elasticsearch round-trip (milliseconds) to judge the trade.
@@ -162,9 +154,9 @@ public class SearchCacheKeyBrowseBenchmarks
             });
         }
 
-        // Load-bearing, and the omission the first version of this file shipped: production calls this
-        // immediately after ParseFacets, and it attaches a filtered CLONE of the whole request filter tree
-        // to every aggregation. Without it the hashed graph is 3-4.5x smaller than anything production has.
+        // Load-bearing, and one of the omissions the first version of this file shipped: production calls
+        // this immediately after ParseFacets, and it attaches a filtered CLONE of the whole request filter
+        // tree to every aggregation - so without it the hashed graph is far smaller than production's.
         _request = builder
             .ApplyMultiSelectFacetSearch()
             .Build();
