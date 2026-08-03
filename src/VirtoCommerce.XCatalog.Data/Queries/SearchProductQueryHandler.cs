@@ -308,15 +308,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <c>ObjectIds</c> order is NOT canonicalised: it drives <c>IdsFilter.Values</c> and <c>Take</c>, so
         /// two orders are two different calls and hashing verbatim is correct.
         /// <br/><br/>
-        /// Scoped by the runtime type's FULL name, so a subclass that alters the search cannot collide with
-        /// the base handler's entries. <c>CacheKey.With(Type, ...)</c> alone would not give that: it renders
-        /// the type through <c>PrettyPrint</c>, which for a non-generic type yields the SHORT name, so a
-        /// subclass keeping the name <c>SearchProductQueryHandler</c> in its own namespace would key
-        /// identically to this one.
+        /// Scoped by <c>GetType()</c>, so a subclass that alters the search keys separately from the base
+        /// handler. Note the scoping is by the type's SHORT name - <c>CacheKey.With(Type, ...)</c> renders it
+        /// through <c>PrettyPrint</c> - so a subclass that kept the name <c>SearchProductQueryHandler</c> in
+        /// its own namespace would key identically. That is a property of the shared helper rather than of
+        /// this call site, and it is unreachable here anyway: the entry lives for one request, so it would
+        /// take two same-named handler types serving the same request to collide.
         /// </remarks>
         protected virtual string BuildSearchCacheKey(SearchRequest searchRequest)
         {
-            return CacheKey.With(GetType(), GetType().FullName, nameof(SearchProductsAsync), KnownDocumentTypes.Product, searchRequest.GetJsonSha256Hex());
+            return CacheKey.With(GetType(), nameof(SearchProductsAsync), KnownDocumentTypes.Product, searchRequest.GetJsonSha256Hex());
         }
 
         /// <summary>
