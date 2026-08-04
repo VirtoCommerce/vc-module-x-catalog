@@ -21,7 +21,6 @@ using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -215,7 +214,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // Mark applied aggregation items
             searchRequest.SetAppliedAggregations(resultAggregations);
 
-            var result = OverridableType<SearchProductResponse>.New();
+            var result = AbstractTypeFactory<SearchProductResponse>.TryCreateInstance();
             result.Query = request;
             result.UserFilters = builder.UserFilters;
             result.GeneratedFilters = builder.GeneratedFilters;
@@ -309,7 +308,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </remarks>
         protected virtual SearchResponse CloneSearchResponse(SearchResponse source)
         {
-            var clone = OverridableType<SearchResponse>.New();
+            var clone = AbstractTypeFactory<SearchResponse>.TryCreateInstance();
 
             clone.TotalCount = source.TotalCount;
             clone.Documents = source.Documents;
@@ -324,7 +323,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </summary>
         protected virtual AggregationResponse CloneAggregationResponse(AggregationResponse source)
         {
-            var clone = OverridableType<AggregationResponse>.New();
+            var clone = AbstractTypeFactory<AggregationResponse>.TryCreateInstance();
 
             clone.Id = source.Id;
             clone.Statistics = source.Statistics;
@@ -338,7 +337,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </summary>
         protected virtual AggregationResponseValue CloneAggregationResponseValue(AggregationResponseValue source)
         {
-            var clone = OverridableType<AggregationResponseValue>.New();
+            var clone = AbstractTypeFactory<AggregationResponseValue>.TryCreateInstance();
 
             clone.Id = source.Id;
             clone.Count = source.Count;

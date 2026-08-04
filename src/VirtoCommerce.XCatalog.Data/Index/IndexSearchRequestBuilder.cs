@@ -8,7 +8,6 @@ using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.XCatalog.Core.Extensions;
-using VirtoCommerce.XCatalog.Data.Extensions;
 
 namespace VirtoCommerce.XCatalog.Data.Index
 {
@@ -38,7 +37,7 @@ namespace VirtoCommerce.XCatalog.Data.Index
 
         public IndexSearchRequestBuilder()
         {
-            SearchRequest = OverridableType<SearchRequest>.New();
+            SearchRequest = AbstractTypeFactory<SearchRequest>.TryCreateInstance();
             SearchRequest.Filter = new AndFilter
             {
                 ChildFilters = new List<IFilter>(),
