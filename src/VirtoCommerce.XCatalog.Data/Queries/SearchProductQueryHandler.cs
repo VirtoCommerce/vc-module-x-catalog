@@ -76,8 +76,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _requestScopedCacheAccessor = requestScopedCacheAccessor;
         }
 
-        // Both obsolete overloads target the primary constructor directly rather than chaining through each
-        // other: a chain would route a caller of the oldest one through a member that is itself deprecated.
         [Obsolete("Use the constructor overload with IRequestScopedCacheAccessor to deduplicate identical searches within one request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -264,10 +262,10 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 return _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
             }
 
-            return SearchProductsThroughCacheAsync(cache, searchRequest);
+            return SearchProductsCachedAsync(cache, searchRequest);
         }
 
-        private async Task<SearchResponse> SearchProductsThroughCacheAsync(IRequestScopedCache cache, SearchRequest searchRequest)
+        private async Task<SearchResponse> SearchProductsCachedAsync(IRequestScopedCache cache, SearchRequest searchRequest)
         {
             var response = await cache.GetOrAddAsync(
                 BuildSearchCacheKey(searchRequest),
