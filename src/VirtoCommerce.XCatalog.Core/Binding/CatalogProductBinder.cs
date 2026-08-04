@@ -3,6 +3,7 @@ using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Serialization;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
@@ -17,45 +18,56 @@ namespace VirtoCommerce.XCatalog.Core.Binding
 
         public virtual object BindModel(SearchDocument searchDocument)
         {
-            var result = default(CatalogProduct);
-
             if (!searchDocument.TryGetValue(BindingInfo.FieldName, out var obj))
             {
                 // No object in index
-                return result;
+                return null;
             }
 
-            // check if __object document field name contains string or jObject
-            if (obj is string sObj)
+            var result = Deserialize(obj);
+
+            if (result == null)
             {
-                try
-                {
-                    obj = JObject.Parse(sObj);
-                }
-                catch (JsonReaderException)
-                {
-                    return result;
-                }
+                return null;
             }
 
-            if (obj is JObject jobj)
+            var productProperties = result.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var property in productProperties)
             {
-                result = (CatalogProduct)jobj.ToObject(_productType);
+                var binder = property.GetIndexModelBinder();
 
-                var productProperties = result.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-                foreach (var property in productProperties)
+                if (binder != null)
                 {
-                    var binder = property.GetIndexModelBinder();
-
-                    if (binder != null)
-                    {
-                        property.SetValue(result, binder.BindModel(searchDocument));
-                    }
+                    property.SetValue(result, binder.BindModel(searchDocument));
                 }
             }
 
             return result;
+        }
+
+        private static CatalogProduct Deserialize(object obj)
+        {
+            switch (obj)
+            {
+                case string sObj:
+                    try
+                    {
+                        return (CatalogProduct)ProductJsonSerializer.Deserialize(sObj, _productType);
+                    }
+                    // JObject.Parse rejected a payload that was not an object; the direct path reports
+                    // that as a serialization error, so both must stay non-fatal for the whole page.
+                    catch (JsonException)
+                    {
+                        return null;
+                    }
+
+                case JObject jobj:
+                    return (CatalogProduct)jobj.ToObject(_productType);
+
+                default:
+                    return null;
+            }
         }
     }
 }
