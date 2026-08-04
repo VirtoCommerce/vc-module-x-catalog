@@ -317,10 +317,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             return clone;
         }
 
-        /// <summary>
-        /// Copy of one aggregation, deep through its values. <c>Values</c> has no initializer, so null is
-        /// its default and a real response can carry it.
-        /// </summary>
         protected virtual AggregationResponse CloneAggregationResponse(AggregationResponse source)
         {
             var clone = AbstractTypeFactory<AggregationResponse>.TryCreateInstance();
@@ -332,9 +328,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             return clone;
         }
 
-        /// <summary>
-        /// Copy of one aggregation value - the level the converter's range handling mutates in place.
-        /// </summary>
         protected virtual AggregationResponseValue CloneAggregationResponseValue(AggregationResponseValue source)
         {
             var clone = AbstractTypeFactory<AggregationResponseValue>.TryCreateInstance();
