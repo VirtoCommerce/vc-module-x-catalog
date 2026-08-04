@@ -251,7 +251,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// holder of that entry.
         /// </para>
         /// </remarks>
-        protected virtual Task<SearchResponse> SearchProductsAsync(SearchRequest searchRequest)
+        protected virtual async Task<SearchResponse> SearchProductsAsync(SearchRequest searchRequest)
         {
             var cache = _requestScopedCacheAccessor?.Cache;
 
@@ -259,14 +259,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             // instance - the behaviour this handler had before the cache existed.
             if (cache is null)
             {
-                return _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
+                return await _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
             }
 
-            return SearchProductsCachedAsync(cache, searchRequest);
-        }
-
-        private async Task<SearchResponse> SearchProductsCachedAsync(IRequestScopedCache cache, SearchRequest searchRequest)
-        {
             var response = await cache.GetOrAddAsync(
                 BuildSearchCacheKey(searchRequest),
                 () => _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest));
