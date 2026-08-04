@@ -239,10 +239,11 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </summary>
         /// <remarks>
         /// <para>
-        /// An override that caches inherits three obligations the compiler and a passing test are both silent
-        /// about: the key must cover every input (see <see cref="BuildSearchCacheKey"/>), every caller must
-        /// get its own copy (see <see cref="CloneSearchResponse"/>), and a derived response type is the
-        /// overrider's to preserve - neither plain construction nor <c>AbstractTypeFactory</c> can.
+        /// An override that caches inherits two obligations the compiler and a passing test are both silent
+        /// about: the key must cover every input (see <see cref="BuildSearchCacheKey"/>), and every caller must
+        /// get its own copy (see <see cref="CloneSearchResponse"/>). The clone chain constructs through
+        /// <c>AbstractTypeFactory</c>, so a registered override type already comes back from it - what the base
+        /// cannot copy is the state that type adds.
         /// </para>
         /// <para>
         /// <c>Documents</c> is shared by reference and a <c>SearchDocument</c> is a mutable dictionary.
@@ -305,20 +306,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <c>Documents</c> is shared deliberately - nothing on this path writes to one, and documents are
         /// the large part of a response.
         /// </para>
-        /// <para>
-        /// <c>new SearchResponse()</c> rather than <c>AbstractTypeFactory</c>: the factory resolves by the
-        /// base type's NAME, so it would return the registered override type for a source that is a plain base
-        /// instance, and it copies no state either way.
-        /// </para>
         /// </remarks>
         protected virtual SearchResponse CloneSearchResponse(SearchResponse source)
         {
-            return new SearchResponse
-            {
-                TotalCount = source.TotalCount,
-                Documents = source.Documents,
-                Aggregations = source.Aggregations?.Select(CloneAggregationResponse).ToList(),
-            };
+            var clone = OverridableType<SearchResponse>.New();
+
+            clone.TotalCount = source.TotalCount;
+            clone.Documents = source.Documents;
+            clone.Aggregations = source.Aggregations?.Select(CloneAggregationResponse).ToList();
+
+            return clone;
         }
 
         /// <summary>
@@ -327,12 +324,26 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// </summary>
         protected virtual AggregationResponse CloneAggregationResponse(AggregationResponse source)
         {
-            return new AggregationResponse
-            {
-                Id = source.Id,
-                Statistics = source.Statistics,
-                Values = source.Values?.Select(x => new AggregationResponseValue { Id = x.Id, Count = x.Count }).ToList(),
-            };
+            var clone = OverridableType<AggregationResponse>.New();
+
+            clone.Id = source.Id;
+            clone.Statistics = source.Statistics;
+            clone.Values = source.Values?.Select(CloneAggregationResponseValue).ToList();
+
+            return clone;
+        }
+
+        /// <summary>
+        /// Copy of one aggregation value - the level the converter's range handling mutates in place.
+        /// </summary>
+        protected virtual AggregationResponseValue CloneAggregationResponseValue(AggregationResponseValue source)
+        {
+            var clone = OverridableType<AggregationResponseValue>.New();
+
+            clone.Id = source.Id;
+            clone.Count = source.Count;
+
+            return clone;
         }
 
         // A cache keyed on a request that embeds a clock reading can never hit. AddCertainDateFilter writes
