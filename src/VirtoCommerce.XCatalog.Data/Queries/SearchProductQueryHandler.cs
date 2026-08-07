@@ -8,6 +8,7 @@ using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
 using VirtoCommerce.CatalogModule.Core.Services;
+using VirtoCommerce.Platform.Core.Caching;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -16,10 +17,10 @@ using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Infrastructure;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Pipelines;
+using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -40,10 +41,15 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         private readonly ISearchPhraseParser _phraseParser;
         private readonly IProductSortingService _productSortingService;
         private readonly IPropertyService _propertyService;
+        private readonly IRequestScopedCacheAccessor _requestScopedCacheAccessor;
 
         // Set in Handle() before GetIndexedSearchRequestBuilder() is called; read by that method's own
         // WithMultilanguageProperties() call. Keeps the method's signature stable for existing overrides.
         protected IEnumerable<string> MultilanguagePropertyNames { get; set; } = [];
+
+        // Same arrangement, for the instant the validity-window filters are evaluated at. Null means "no
+        // request pinned one", which reads as UtcNow at the point of use.
+        protected DateTime? CertainDate { get; set; }
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
@@ -54,7 +60,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IAggregationConverter aggregationConverter,
             ISearchPhraseParser phraseParser,
             IProductSortingService productSortingService,
-            IPropertyService propertyService)
+            IPropertyService propertyService,
+            IRequestScopedCacheAccessor requestScopedCacheAccessor)
         {
             _searchProvider = searchProvider;
             _mapper = mapper;
@@ -65,6 +72,22 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             _phraseParser = phraseParser;
             _productSortingService = productSortingService;
             _propertyService = propertyService;
+            _requestScopedCacheAccessor = requestScopedCacheAccessor;
+        }
+
+        [Obsolete("Use the constructor overload with IRequestScopedCacheAccessor to deduplicate identical searches within one request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        public SearchProductQueryHandler(
+            ISearchProvider searchProvider,
+            IMapper mapper,
+            IStoreCurrencyResolver storeCurrencyResolver,
+            IStoreService storeService,
+            IGenericPipelineLauncher pipeline,
+            IAggregationConverter aggregationConverter,
+            ISearchPhraseParser phraseParser,
+            IProductSortingService productSortingService,
+            IPropertyService propertyService)
+            : this(searchProvider, mapper, storeCurrencyResolver, storeService, pipeline, aggregationConverter, phraseParser, productSortingService, propertyService, null)
+        {
         }
 
         [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
@@ -77,7 +100,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             IAggregationConverter aggregationConverter,
             ISearchPhraseParser phraseParser,
             IProductSortingService productSortingService)
-            : this(searchProvider, mapper, storeCurrencyResolver, storeService, pipeline, aggregationConverter, phraseParser, productSortingService, null)
+            : this(searchProvider, mapper, storeCurrencyResolver, storeService, pipeline, aggregationConverter, phraseParser, productSortingService, null, null)
         {
         }
 
@@ -108,6 +131,8 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             MultilanguagePropertyNames = _propertyService != null
                 ? (await _propertyService.GetAllCatalogPropertiesAsync(store.Catalog)).GetMultilanguagePropertyNames()
                 : [];
+
+            CertainDate = await ResolveCertainDateAsync();
 
             // Sortings are resolved further down (after the filter is parsed into the request builder), so a
             // resolver can read the current category (id / outline) rather than scraping the raw filter string.
@@ -182,14 +207,14 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             ApplyOutlineCriteria(criteria, searchRequest);
 
-            var searchResult = await _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
+            var searchResult = await SearchProductsAsync(searchRequest);
 
             var resultAggregations = await ConvertAggregations(searchResult, searchRequest, criteria);
 
             // Mark applied aggregation items
             searchRequest.SetAppliedAggregations(resultAggregations);
 
-            var result = OverridableType<SearchProductResponse>.New();
+            var result = AbstractTypeFactory<SearchProductResponse>.TryCreateInstance();
             result.Query = request;
             result.UserFilters = builder.UserFilters;
             result.GeneratedFilters = builder.GeneratedFilters;
@@ -206,6 +231,128 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             return result;
         }
 
+        /// <summary>
+        /// The single point through which this handler reaches the search provider, so that both query types
+        /// it serves - <see cref="SearchProductQuery"/> and <see cref="LoadProductsQuery"/>, the latter
+        /// re-entering through the former - go through one overridable call.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// An override that caches inherits two obligations the compiler and a passing test are both silent
+        /// about: the key must cover every input (see <see cref="BuildSearchCacheKey"/>), and every caller must
+        /// get its own copy (see <see cref="CloneSearchResponse"/>). The clone chain constructs through
+        /// <c>AbstractTypeFactory</c>, so a registered override type already comes back from it - what the base
+        /// cannot copy is the state that type adds.
+        /// </para>
+        /// <para>
+        /// <c>Documents</c> is shared by reference and a <c>SearchDocument</c> is a mutable dictionary.
+        /// Nothing on this path writes to one, so treat them as read-only: a field binder that hands a
+        /// reference-typed value out of a document to a caller that then mutates it corrupts every other
+        /// holder of that entry.
+        /// </para>
+        /// </remarks>
+        protected virtual async Task<SearchResponse> SearchProductsAsync(SearchRequest searchRequest)
+        {
+            var cache = _requestScopedCacheAccessor?.Cache;
+
+            // No ambient request scope: nothing to bound the entry to, so the caller gets the provider's own
+            // instance - the behaviour this handler had before the cache existed.
+            if (cache is null)
+            {
+                return await _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest);
+            }
+
+            var response = await cache.GetOrAddAsync(
+                BuildSearchCacheKey(searchRequest),
+                () => _searchProvider.SearchAsync(KnownDocumentTypes.Product, searchRequest));
+
+            // Copy on the miss as well as the hit. The cache stores the TASK the factory returned, so the
+            // caller that populated the entry holds the very instance every later caller will be handed;
+            // cloning only on the hit would leave the first caller aliased to all the others.
+            return CloneSearchResponse(response);
+        }
+
+        /// <summary>
+        /// Key for one provider call. Complete by construction: <see cref="ISearchProvider.SearchAsync"/>
+        /// takes exactly the document type and the request, so hashing the whole request covers every input.
+        /// </summary>
+        /// <remarks>
+        /// The hash is over the request as a graph, not over selected fields - a hand-written projection goes
+        /// silently under-inclusive the day upstream adds a field, and serves the wrong documents.
+        /// <c>ObjectIds</c> order is deliberately NOT canonicalised: it drives <c>IdsFilter.Values</c> and
+        /// <c>Take</c>, so two orders are two different calls. <c>GetType()</c> scopes the key so a subclass
+        /// that alters the search keys separately from the base handler.
+        /// </remarks>
+        protected virtual string BuildSearchCacheKey(SearchRequest searchRequest)
+        {
+            return CacheKey.With(GetType(), nameof(SearchProductsAsync), KnownDocumentTypes.Product, searchRequest.GetJsonSha256Hex());
+        }
+
+        /// <summary>
+        /// A per-caller copy of a response that may be handed out more than once.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Deep only where something downstream writes, and the aggregation converter writes at both levels:
+        /// it replaces <c>AggregationResponse.Values</c> in place when it filters outlines, and mutates
+        /// <c>AggregationResponseValue.Id</c> in place in its range handling. The second is the one that is
+        /// easy to miss, because copying only the <c>AggregationResponse</c> looks complete.
+        /// <c>Documents</c> is shared deliberately - nothing on this path writes to one, and documents are
+        /// the large part of a response.
+        /// </para>
+        /// </remarks>
+        protected virtual SearchResponse CloneSearchResponse(SearchResponse source)
+        {
+            var clone = AbstractTypeFactory<SearchResponse>.TryCreateInstance();
+
+            clone.TotalCount = source.TotalCount;
+            clone.Documents = source.Documents;
+            clone.Aggregations = source.Aggregations?.Select(CloneAggregationResponse).ToList();
+
+            return clone;
+        }
+
+        protected virtual AggregationResponse CloneAggregationResponse(AggregationResponse source)
+        {
+            var clone = AbstractTypeFactory<AggregationResponse>.TryCreateInstance();
+
+            clone.Id = source.Id;
+            clone.Statistics = source.Statistics;
+            clone.Values = source.Values?.Select(CloneAggregationResponseValue).ToList();
+
+            return clone;
+        }
+
+        protected virtual AggregationResponseValue CloneAggregationResponseValue(AggregationResponseValue source)
+        {
+            var clone = AbstractTypeFactory<AggregationResponseValue>.TryCreateInstance();
+
+            clone.Id = source.Id;
+            clone.Count = source.Count;
+
+            return clone;
+        }
+
+        // A cache keyed on a request that embeds a clock reading can never hit. AddCertainDateFilter writes
+        // the value as "O" - 100-nanosecond precision - into the filter tree, so two otherwise identical
+        // searches in one request differ on it alone and every lookup misses: no error, no log, just a cache
+        // that never helps. Pinning one instant per request is the precondition for the deduplication below,
+        // not an optimisation on top of it.
+        //
+        // No ambient request scope (a background job, startup) means nothing to bound the value to, so each
+        // send reads its own clock - which is the behaviour that existed before this method.
+        private Task<DateTime> ResolveCertainDateAsync()
+        {
+            var cache = _requestScopedCacheAccessor?.Cache;
+
+            if (cache is null)
+            {
+                return Task.FromResult(DateTime.UtcNow);
+            }
+
+            return cache.GetOrAddAsync(ModuleConstants.CertainDateRequestCacheKey, () => Task.FromResult(DateTime.UtcNow));
+        }
+
         protected virtual IndexSearchRequestBuilder GetIndexedSearchRequestBuilder(SearchProductQuery request, Store store, CoreModule.Core.Currency.Currency currency)
         {
             var builder = new IndexSearchRequestBuilder()
@@ -215,7 +362,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                                             .WithCatalog(store.Catalog)
                                             .WithCurrency(currency.Code)
                                             .WithFuzzy(request.Fuzzy, request.FuzzyLevel)
-                                            .AddCertainDateFilter(DateTime.UtcNow)
+                                            .AddCertainDateFilter(CertainDate ?? DateTime.UtcNow)
                                             .WithMultilanguageProperties(MultilanguagePropertyNames)
                                             .WithCultureName(request.CultureName)
                                             .ParseFilters(_phraseParser, request.Filter)

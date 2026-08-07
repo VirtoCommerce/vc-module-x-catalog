@@ -64,13 +64,26 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             act.Should().NotThrow();
         }
 
+        [Fact]
+        public void Constructor_ObsoleteOverloadWithoutRequestScopedCacheAccessor_DoesNotThrow()
+        {
+            // Back-compat: callers built against the constructor without IRequestScopedCacheAccessor must
+            // still compile and construct. They get no deduplication — a null accessor is the same
+            // "no ambient request scope" case the handler already has to handle.
+#pragma warning disable VC0015 // Type or member is obsolete
+            var act = () => new SearchProductQueryHandler(null, null, null, null, null, null, null, null, null);
+#pragma warning restore VC0015
+
+            act.Should().NotThrow();
+        }
+
         private static CatalogProductSorting Ordering(string code, string name, bool isVisible, bool isDefault = false) =>
             new() { Code = code, Name = name, IsVisible = isVisible, IsDefault = isDefault };
 
         // BuildSortings does not use any injected dependency, so the base ctor is satisfied with nulls.
         private sealed class TestHandler : SearchProductQueryHandler
         {
-            public TestHandler() : base(null, null, null, null, null, null, null, null, null) { }
+            public TestHandler() : base(null, null, null, null, null, null, null, null, null, null) { }
 
             public IList<XapiProductSorting> Build(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode) =>
                 BuildSortings(sortings, selected, languageCode);

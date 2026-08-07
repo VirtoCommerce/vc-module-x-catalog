@@ -17,7 +17,6 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Extensions;
 using VirtoCommerce.XCatalog.Data.Index;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
@@ -88,7 +87,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 options.Items["cultureName"] = request.CultureName;
             })).ToList() ?? [];
 
-            var result = OverridableType<SearchCategoryResponse>.New();
+            var result = AbstractTypeFactory<SearchCategoryResponse>.TryCreateInstance();
             result.Query = request;
             result.Results = categories;
             result.Store = store;
