@@ -29,6 +29,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
+        private readonly IDataLoaderContextAccessor _dataLoader;
+
         /// <example>
         ///{
         ///    product(id: "f1b26974b7634abaa0900e575a99476f")
@@ -67,6 +69,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         /// </example>
         public ProductType(IDataLoaderContextAccessor dataLoader)
         {
+            _dataLoader = dataLoader;
+
             Name = "Product";
             Description = "Products are the sellable goods in an e-commerce project.";
 
