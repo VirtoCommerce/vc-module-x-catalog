@@ -179,6 +179,122 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             sentFieldSets.Should().HaveCount(1);
         }
 
+        [Fact]
+        public async Task ResolveVariationsField_IdsExceedTheBatchCap_SplitsIntoTwoLoadProductsQueries()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            // One more id than the loader's maxBatchSize, so the split is observable rather than assumed:
+            // a single fetch would silently absorb any id count up to the cap.
+            var ids = Enumerable.Range(0, 201).Select(i => $"v{i}").ToList();
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ids,
+            };
+
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+
+            sentFieldSets.Should().HaveCount(2);
+            results.Single().Should().HaveCount(201);
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_IdSharedByTwoMasters_BothReceiveTheSameLoadedInstance()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var masterA = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "ma", IsActive = true },
+                IndexedVariationIds = ["shared", "onlyA"],
+            };
+            var masterB = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "mb", IsActive = true },
+                IndexedVariationIds = ["shared", "onlyB"],
+            };
+
+            var results = await ResolveVariationNodesAsync(
+                mediator, (masterA, new[] { "id", "name" }), (masterB, new[] { "id", "name" }));
+
+            sentFieldSets.Should().HaveCount(1);
+
+            var sharedFromA = results[0].Single(x => x.Id == "shared");
+            var sharedFromB = results[1].Single(x => x.Id == "shared");
+
+            // ExpVariation forwards the source ExpProduct's IndexedProduct reference rather than cloning it
+            // (see ExpVariation's constructor), so identical IndexedProduct references across both masters'
+            // results is the loader's per-key cache actually sharing one fetched instance - not two
+            // independently-built copies that merely compare equal by value.
+            sharedFromA.IndexedProduct.Should().BeSameAs(sharedFromB.IndexedProduct);
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_AnIdTheLoadDoesNotResolve_IsAbsentFromTheResult()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets, unresolvedIds: new HashSet<string> { "gone" });
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "gone"],
+            };
+
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+
+            // Not "contains v1" - the unresolved id must be absent, not present as a null/placeholder element.
+            // The field's graph type is NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>, so a
+            // null element reaching graphql-dotnet would be a runtime execution error, not a quiet gap.
+            results.Single().Select(x => x.Id).Should().Equal("v1");
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_MixOfActiveAndInactiveVariations_ExcludesInactiveOnes()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets, isActive: id => id != "inactive");
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["active1", "inactive"],
+            };
+
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+
+            // Every other test's mediator returns IsActive = true for everything, so this is the only test
+            // that exercises the Where(x => x?.IndexedProduct?.IsActive == true) filter as an actual filter.
+            results.Single().Select(x => x.Id).Should().Equal("active1");
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_ThreeMastersOnOnePage_EachReceivesExactlyItsOwnVariationIds()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var masters = new[] { "m1", "m2", "m3" }
+                .Select((id, i) => new ExpProduct
+                {
+                    IndexedProduct = new CatalogProduct { Id = id, IsActive = true },
+                    IndexedVariationIds = [$"v{i}a", $"v{i}b"],
+                })
+                .ToList();
+
+            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, new[] { "id", "name" })).ToArray());
+
+            // The page test above only asserts the total (6), which a loader bug that handed every master all
+            // six ids would also satisfy. This checks each master's result against exactly its own ids.
+            for (var i = 0; i < masters.Count; i++)
+            {
+                results[i].Select(x => x.Id).Should().BeEquivalentTo(masters[i].IndexedVariationIds);
+            }
+        }
+
         /// <summary>
         /// Drives the registered <c>variations</c> field over several sibling nodes sharing one
         /// <see cref="DataLoaderContext"/>, the way one request does.
@@ -292,6 +408,56 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                     sentFieldSets.Add(query.IncludeFields.ToList());
 
                     var products = query.ObjectIds
+                        .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = true } })
+                        .ToList();
+
+                    return Task.FromResult(new LoadProductResponse(products));
+                });
+
+            return mediatorMock.Object;
+        }
+
+        /// <summary>
+        /// <see cref="CreateRecordingMediator(IList{IList{string}})"/> with the resolved products' IsActive
+        /// flag driven per id, for tests that need a mix rather than every product uniformly active.
+        /// </summary>
+        private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, Func<string, bool> isActive)
+        {
+            var mediatorMock = new Mock<IMediator>();
+
+            mediatorMock
+                .Setup(x => x.Send(It.IsAny<LoadProductsQuery>(), It.IsAny<CancellationToken>()))
+                .Returns((LoadProductsQuery query, CancellationToken _) =>
+                {
+                    sentFieldSets.Add(query.IncludeFields.ToList());
+
+                    var products = query.ObjectIds
+                        .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = isActive(id) } })
+                        .ToList();
+
+                    return Task.FromResult(new LoadProductResponse(products));
+                });
+
+            return mediatorMock.Object;
+        }
+
+        /// <summary>
+        /// <see cref="CreateRecordingMediator(IList{IList{string}})"/> with the given ids dropped from the
+        /// response, simulating the fetch func's documented partial-dictionary contract: an id the load does
+        /// not resolve is simply missing, not present with a null/placeholder value.
+        /// </summary>
+        private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, ISet<string> unresolvedIds)
+        {
+            var mediatorMock = new Mock<IMediator>();
+
+            mediatorMock
+                .Setup(x => x.Send(It.IsAny<LoadProductsQuery>(), It.IsAny<CancellationToken>()))
+                .Returns((LoadProductsQuery query, CancellationToken _) =>
+                {
+                    sentFieldSets.Add(query.IncludeFields.ToList());
+
+                    var products = query.ObjectIds
+                        .Where(id => !unresolvedIds.Contains(id))
                         .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = true } })
                         .ToList();
 
