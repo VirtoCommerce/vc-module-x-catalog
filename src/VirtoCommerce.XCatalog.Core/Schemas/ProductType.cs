@@ -29,6 +29,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
+        private const int MaxVariationsBatchSize = 200;
+
         private readonly IDataLoaderContextAccessor _dataLoader;
 
         /// <example>
@@ -430,26 +432,51 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return brandName?.ToString();
         }
 
-        protected virtual async Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
+        protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
             if (context.Source.IndexedVariationIds.IsNullOrEmpty())
             {
-                return new List<ExpVariation>();
+                return Task.FromResult<object>(new List<ExpVariation>());
             }
 
-            var query = context.GetCatalogQuery<LoadProductsQuery>();
-            query.ObjectIds = context.Source.IndexedVariationIds;
-            query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+            var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
             // Include "isActive" field to filter out inactive variations
-            if (!query.IncludeFields.Contains("isActive"))
+            if (!includeFields.Contains("isActive"))
             {
-                query.IncludeFields.Add("isActive");
+                includeFields.Add("isActive");
             }
 
-            var response = await context.GetMediator().Send(query);
+            // The field set is part of the key, not just of the query: IncludeFields is derived from
+            // context.SubFields, so two aliases of this field selecting different subfields would otherwise
+            // share one loader and whichever registered second would be served an under-selected result.
+            var loaderKey = $"product_variations_{string.Join(',', includeFields.OrderBy(x => x, StringComparer.Ordinal))}";
 
-            return response.Products.Where(x => x.IndexedProduct?.IsActive == true).Select(expProduct => new ExpVariation(expProduct));
+            var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
+                loaderKey,
+                async ids =>
+                {
+                    var query = context.GetCatalogQuery<LoadProductsQuery>();
+                    query.ObjectIds = ids.ToList();
+                    query.IncludeFields = includeFields;
+
+                    var response = await context.GetMediator().Send(query);
+
+                    return response.Products.ToDictionary(x => x.Id);
+                },
+                // Caps the keys handed to one fetch, so a page of masters carrying many variations each cannot
+                // turn N moderate searches into one oversized peak of the same total size.
+                maxBatchSize: MaxVariationsBatchSize);
+
+            // Returned, never awaited: awaiting here dispatches one batch per node and restores the N sends.
+            // Task.FromResult is required rather than decoration - Then returns IDataLoaderResult<T>, not a
+            // Task, so returning it bare from a Task<object> method does not compile.
+            return Task.FromResult<object>(loader
+                .LoadAsync(context.Source.IndexedVariationIds)
+                .Then(products => products
+                    .Where(x => x?.IndexedProduct?.IsActive == true)
+                    .Select(x => new ExpVariation(x))
+                    .ToList()));
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)
