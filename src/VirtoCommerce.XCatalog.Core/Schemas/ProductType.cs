@@ -273,20 +273,23 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             ExtendableFieldAsync<VariationType>(
                 "masterVariation",
-                resolve: async context =>
+                resolve: context =>
                 {
                     if (string.IsNullOrEmpty(context.Source.IndexedProduct.MainProductId))
                     {
-                        return null;
+                        return Task.FromResult<object>(null);
                     }
 
-                    var query = context.GetCatalogQuery<LoadProductsQuery>();
-                    query.ObjectIds = new[] { context.Source.IndexedProduct.MainProductId };
-                    query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
+                    var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-                    var response = await context.GetMediator().Send(query);
+                    // Deliberately no IsActive filter on the result: a master product is not a variation and is
+                    // not subject to the variations field's active-only contract.
+                    var loader = GetVariationLoader(context, includeFields);
 
-                    return response.Products.Select(expProduct => new ExpVariation(expProduct)).FirstOrDefault();
+                    // Returned, never awaited - see the matching comment on ResolveVariationsFieldAsync.
+                    return Task.FromResult<object>(loader
+                        .LoadAsync(context.Source.IndexedProduct.MainProductId)
+                        .Then(product => product is null ? null : new ExpVariation(product)));
                 });
 
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
@@ -441,32 +444,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-            // Include "isActive" field to filter out inactive variations
-            if (!includeFields.Contains("isActive"))
-            {
-                includeFields.Add("isActive");
-            }
-
-            // The field set is part of the key, not just of the query: IncludeFields is derived from
-            // context.SubFields, so two aliases of this field selecting different subfields would otherwise
-            // share one loader and whichever registered second would be served an under-selected result.
-            var loaderKey = $"product_variations_{string.Join(',', includeFields.OrderBy(x => x, StringComparer.Ordinal))}";
-
-            var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
-                loaderKey,
-                async ids =>
-                {
-                    var query = context.GetCatalogQuery<LoadProductsQuery>();
-                    query.ObjectIds = ids.ToList();
-                    query.IncludeFields = includeFields;
-
-                    var response = await context.GetMediator().Send(query);
-
-                    return response.Products.ToDictionary(x => x.Id);
-                },
-                // Caps the keys handed to one fetch, so a page of masters carrying many variations each cannot
-                // turn N moderate searches into one oversized peak of the same total size.
-                maxBatchSize: MaxVariationsBatchSize);
+            var loader = GetVariationLoader(context, includeFields);
 
             // Returned, never awaited: awaiting here dispatches one batch per node and restores the N sends.
             // Task.FromResult is required rather than decoration - Then returns IDataLoaderResult<T>, not a
@@ -477,6 +455,44 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     .Where(x => x?.IndexedProduct?.IsActive == true)
                     .Select(x => new ExpVariation(x))
                     .ToList()));
+        }
+
+        // Shared by the variations and masterVariation resolvers so both fold onto the same loader when a page
+        // renders both fields. GetOrAddBatchLoader resolves a key through ConcurrentDictionary.GetOrAdd, so the
+        // first registration for a key wins - one definition removes the question of whether two independently
+        // written fetch funcs stay semantically equivalent as either one changes later. The key is built here
+        // rather than passed in for the same reason: two call sites composing it separately would drift apart
+        // into two loaders, which costs the second search back with nothing failing.
+        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, IList<string> includeFields)
+        {
+            // "isActive" is requested for both fields although only the variations field filters on it, so that
+            // the two agree on a key.
+            var loadedFields = includeFields.ToList();
+            if (!loadedFields.Contains("isActive"))
+            {
+                loadedFields.Add("isActive");
+            }
+
+            // The field set is part of the key, not just of the query: IncludeFields is derived from
+            // context.SubFields, so two aliases selecting different subfields would otherwise share one loader
+            // and whichever registered second would be served an under-selected result.
+            var loaderKey = $"product_variations_{string.Join(',', loadedFields.OrderBy(x => x, StringComparer.Ordinal))}";
+
+            return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
+                loaderKey,
+                async ids =>
+                {
+                    var query = context.GetCatalogQuery<LoadProductsQuery>();
+                    query.ObjectIds = ids.ToList();
+                    query.IncludeFields = loadedFields;
+
+                    var response = await context.GetMediator().Send(query);
+
+                    return response.Products.ToDictionary(x => x.Id);
+                },
+                // Caps the keys handed to one fetch, so a page of masters carrying many variations each cannot
+                // turn N moderate searches into one oversized peak of the same total size.
+                maxBatchSize: MaxVariationsBatchSize);
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)

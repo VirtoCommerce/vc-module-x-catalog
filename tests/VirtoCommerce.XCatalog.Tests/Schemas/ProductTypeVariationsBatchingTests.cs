@@ -28,6 +28,17 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
     /// </summary>
     public class ProductTypeVariationsBatchingTests : XCatalogMoqHelper
     {
+        private readonly ProductType _productType;
+
+        public ProductTypeVariationsBatchingTests()
+        {
+            // A mock IDataLoaderContextAccessor returns a null Context, and the loader would never be reached.
+            // One context per test, shared by every node, is what a single request gives the resolvers.
+            _dataLoaderContextAccessorMock.Setup(x => x.Context).Returns(new DataLoaderContext());
+
+            _productType = new ProductType(_dataLoaderContextAccessorMock.Object);
+        }
+
         [Fact]
         public async Task ResolveVariationsField_ThreeMastersOnOnePage_SendsOneLoadProductsQuery()
         {
@@ -76,6 +87,61 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 .Should().OnlyHaveUniqueItems();
         }
 
+        [Fact]
+        public async Task ResolveMasterVariationField_ThreeVariationsOnOnePage_SendsOneLoadProductsQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var variations = new[] { "p1", "p2", "p3" }
+                .Select((id, i) => new ExpProduct
+                {
+                    IndexedProduct = new CatalogProduct { Id = $"v{i}", MainProductId = id, IsActive = true },
+                })
+                .ToList();
+
+            var results = await ResolveMasterVariationNodesAsync(
+                mediator, variations.Select(x => (x, new[] { "id", "name" })).ToArray());
+
+            sentFieldSets.Should().HaveCount(1);
+            results.Should().HaveCount(3);
+        }
+
+        [Fact]
+        public async Task ResolveVariationsAndMasterVariationFields_OnOnePage_SendOneLoadProductsQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1"],
+            };
+
+            var variation = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "v9", MainProductId = "m2", IsActive = true },
+            };
+
+            var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
+            var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
+
+            // Both nodes resolved and queued before either is completed, as in the single-field helpers.
+            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, ["id", "name"]));
+            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, ["id", "name"]));
+
+            var resolvedVariations = await CompleteNodeAsync(pendingVariations);
+            var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
+
+            // The two fields build their loader key separately. Should those two compositions ever drift apart,
+            // each field registers its own loader and the page silently pays a second search - nothing else here
+            // would fail.
+            sentFieldSets.Should().HaveCount(1);
+            resolvedVariations.Should().ContainSingle();
+            resolvedMasterVariation.Should().NotBeNull();
+        }
+
         /// <summary>
         /// Drives the registered <c>variations</c> field over several sibling nodes sharing one
         /// <see cref="DataLoaderContext"/>, the way one request does.
@@ -84,11 +150,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             IMediator mediator,
             params (ExpProduct Master, string[] SubFields)[] nodes)
         {
-            // A mock IDataLoaderContextAccessor returns a null Context, and the loader would never be reached.
-            _dataLoaderContextAccessorMock.Setup(x => x.Context).Returns(new DataLoaderContext());
-
-            var productType = new ProductType(_dataLoaderContextAccessorMock.Object);
-            var variationsField = productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
+            var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
 
             // Every node must be resolved - and its loader result queued - before the first one is completed.
             // This mirrors the execution strategy, which runs ExecuteNodeAsync across sibling nodes and only
@@ -111,6 +173,33 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         /// <summary>
+        /// Drives the registered <c>masterVariation</c> field over several sibling nodes sharing one
+        /// <see cref="DataLoaderContext"/> - the single-result counterpart of <see cref="ResolveVariationNodesAsync"/>.
+        /// </summary>
+        private async Task<IList<ExpVariation>> ResolveMasterVariationNodesAsync(
+            IMediator mediator,
+            params (ExpProduct Variation, string[] SubFields)[] nodes)
+        {
+            var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
+
+            // Same ordering requirement as ResolveVariationNodesAsync: every node resolved and queued before
+            // the first one is completed.
+            var pending = new List<object>();
+            foreach (var (variation, subFields) in nodes)
+            {
+                pending.Add(await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, subFields)));
+            }
+
+            var results = new List<ExpVariation>();
+            foreach (var item in pending)
+            {
+                results.Add(await CompleteMasterVariationNodeAsync(item));
+            }
+
+            return results;
+        }
+
+        /// <summary>
         /// Completes one resolved node the way the execution strategy does - by the resolved value's runtime
         /// type. A resolver that loaded eagerly hands back the finished sequence instead of a pending result.
         /// </summary>
@@ -121,6 +210,19 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 : resolved;
 
             return ((IEnumerable<ExpVariation>)value).ToList();
+        }
+
+        /// <summary>
+        /// <see cref="CompleteNodeAsync"/> for <c>masterVariation</c>, whose resolved value is a single
+        /// <see cref="ExpVariation"/> rather than a list.
+        /// </summary>
+        private static async Task<ExpVariation> CompleteMasterVariationNodeAsync(object resolved)
+        {
+            var value = resolved is IDataLoaderResult loaderResult
+                ? await loaderResult.GetResultAsync()
+                : resolved;
+
+            return (ExpVariation)value;
         }
 
         private static IResolveFieldContext CreateResolveContext(ExpProduct source, IMediator mediator, string[] subFields)
