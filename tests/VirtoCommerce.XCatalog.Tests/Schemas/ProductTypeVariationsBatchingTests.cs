@@ -142,6 +142,43 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             resolvedMasterVariation.Should().NotBeNull();
         }
 
+        [Fact]
+        public async Task ResolveVariationsField_SelectionIsIdOnly_SendsNoLoadProductsQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id" }));
+
+            sentFieldSets.Should().BeEmpty();
+            results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_SelectionNeedsALoadedField_StillSendsTheQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            // The positive control: without it, the id-only test above would pass against a resolver that
+            // never loads anything at all, regardless of whether the gate is subset-correct.
+            await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+
+            sentFieldSets.Should().HaveCount(1);
+        }
+
         /// <summary>
         /// Drives the registered <c>variations</c> field over several sibling nodes sharing one
         /// <see cref="DataLoaderContext"/>, the way one request does.

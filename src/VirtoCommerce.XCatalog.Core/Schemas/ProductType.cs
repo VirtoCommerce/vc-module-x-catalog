@@ -31,6 +31,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     {
         private const int MaxVariationsBatchSize = 200;
 
+        // Fields the master's own indexed document can answer without loading the variation. Deliberately a
+        // named set rather than a general projection: every addition here changes which selections switch to
+        // reading the active flag from the master's document instead of the variation's own, so it must stay
+        // auditable.
+        private static readonly string[] _masterAnswerableVariationFields = ["id"];
+
         private readonly IDataLoaderContextAccessor _dataLoader;
 
         /// <example>
@@ -443,6 +449,29 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             }
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+
+            // An empty selection is not a subset to serve from the index - it is a caller asking for nothing -
+            // so the Count > 0 guard keeps it off this path.
+            if (includeFields.Count > 0 &&
+                includeFields.All(x => _masterAnswerableVariationFields.Contains(x, StringComparer.OrdinalIgnoreCase)))
+            {
+                // The stored id list is already active-only: the indexer writes an id into the master's document
+                // only inside its IsActive branch, and any variation change forces a full reindex of the master.
+                // The filter this skips read the variation's own index document, not the database - LoadProductsQuery
+                // is served by ISearchProvider.SearchAsync - so no live-to-stale transition happens here.
+                return Task.FromResult<object>(context.Source.IndexedVariationIds
+                    .Select(id =>
+                    {
+                        // Through the factory, not new: CatalogProduct is an overridable type, and downstream
+                        // schemas cast IndexedProduct to their own derived type. A synthetic base instance is the
+                        // one value in the system that would fail such a cast.
+                        var indexedProduct = AbstractTypeFactory<CatalogProduct>.TryCreateInstance();
+                        indexedProduct.Id = id;
+
+                        return new ExpVariation(new ExpProduct { IndexedProduct = indexedProduct });
+                    })
+                    .ToList());
+            }
 
             var loader = GetVariationLoader(context, includeFields);
 
