@@ -497,7 +497,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             // "isActive" is requested for both fields although only the variations field filters on it, so that
             // the two agree on a key.
             var loadedFields = includeFields.ToList();
-            if (!loadedFields.Contains("isActive"))
+            if (!loadedFields.Contains("isActive", StringComparer.OrdinalIgnoreCase))
             {
                 loadedFields.Add("isActive");
             }

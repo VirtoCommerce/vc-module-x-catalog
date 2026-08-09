@@ -104,7 +104,10 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 mediator, variations.Select(x => (x, new[] { "id", "name" })).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
-            results.Should().HaveCount(3);
+
+            // Not a bare count: three nulls would satisfy that, and a .Then projection that resolved every
+            // master to null is exactly the failure a count cannot see.
+            results.Select(x => x.Id).Should().Equal("p1", "p2", "p3");
         }
 
         [Fact]
@@ -134,9 +137,10 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var resolvedVariations = await CompleteNodeAsync(pendingVariations);
             var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
 
-            // The two fields build their loader key separately. Should those two compositions ever drift apart,
-            // each field registers its own loader and the page silently pays a second search - nothing else here
-            // would fail.
+            // What this pins is that masterVariation goes through the shared factory at all. Give it back its
+            // own LoadProductsQuery send - the shape it had before this branch, and the shape a reviewer might
+            // restore while "simplifying" the resolver - and the page pays a second search with every other
+            // assertion here still holding.
             sentFieldSets.Should().HaveCount(1);
             resolvedVariations.Should().ContainSingle();
             resolvedMasterVariation.Should().NotBeNull();
