@@ -23,6 +23,10 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 {
     public class ProductTypeVariationsBatchingTests : XCatalogMoqHelper
     {
+        // "name" is not one of the fields the master's document answers, so this selection is the one that
+        // reaches the loader. Tests about batching use it; tests about the gate spell their selection out.
+        private static readonly string[] _selectionRequiringLoad = ["id", "name"];
+
         private readonly ProductType _productType;
 
         public ProductTypeVariationsBatchingTests()
@@ -46,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, new[] { "id", "name" })).ToArray());
+            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _selectionRequiringLoad)).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
             results.SelectMany(x => x).Should().HaveCount(6);
@@ -87,7 +91,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 .ToList();
 
             var results = await ResolveMasterVariationNodesAsync(
-                mediator, variations.Select(x => (x, new[] { "id", "name" })).ToArray());
+                mediator, variations.Select(x => (x, _selectionRequiringLoad)).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
 
@@ -114,8 +118,8 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
             var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
 
-            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, ["id", "name"]));
-            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, ["id", "name"]));
+            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, _selectionRequiringLoad));
+            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, _selectionRequiringLoad));
 
             var resolvedVariations = await CompleteNodeAsync(pendingVariations);
             var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
@@ -155,7 +159,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "v2"],
             };
 
-            await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+            await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
 
             sentFieldSets.Should().HaveCount(1);
         }
@@ -210,7 +214,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ids,
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
 
             sentFieldSets.Should().HaveCount(2);
             results.Single().Should().HaveCount(201);
@@ -234,7 +238,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             var results = await ResolveVariationNodesAsync(
-                mediator, (masterA, new[] { "id", "name" }), (masterB, new[] { "id", "name" }));
+                mediator, (masterA, _selectionRequiringLoad), (masterB, _selectionRequiringLoad));
 
             sentFieldSets.Should().HaveCount(1);
 
@@ -256,7 +260,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "gone"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
 
             results.Single().Select(x => x.Id).Should().Equal("v1");
         }
@@ -273,7 +277,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["active1", "inactive"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
 
             results.Single().Select(x => x.Id).Should().Equal("active1");
         }
@@ -292,7 +296,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, new[] { "id", "name" })).ToArray());
+            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _selectionRequiringLoad)).ToArray());
 
             for (var i = 0; i < masters.Count; i++)
             {
@@ -362,7 +366,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return (ExpVariation)value;
         }
 
-        private static IResolveFieldContext CreateResolveContext(ExpProduct source, IMediator mediator, string[] subFields)
+        private static ResolveFieldContext CreateResolveContext(ExpProduct source, IMediator mediator, string[] subFields)
         {
             var serviceProviderMock = new Mock<IServiceProvider>();
             serviceProviderMock.Setup(x => x.GetService(typeof(IMediator))).Returns(mediator);
@@ -378,7 +382,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
         }
 
-        private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets)
+        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets)
         {
             var mediatorMock = new Mock<IMediator>();
 
@@ -398,7 +402,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return mediatorMock.Object;
         }
 
-        private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, Func<string, bool> isActive)
+        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets, Func<string, bool> isActive)
         {
             var mediatorMock = new Mock<IMediator>();
 
@@ -418,7 +422,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return mediatorMock.Object;
         }
 
-        private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, ISet<string> unresolvedIds)
+        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets, HashSet<string> unresolvedIds)
         {
             var mediatorMock = new Mock<IMediator>();
 
