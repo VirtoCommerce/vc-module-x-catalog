@@ -29,12 +29,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
-        private const int MaxVariationsBatchSize = 200;
-        private const string TypeNameMetaField = "__typename";
+        private const int _maxVariationsBatchSize = 200;
+        private const string _typeNameMetaField = "__typename";
 
         // Every name added here is one more selection whose active flag starts coming from the master's document
         // instead of the variation's own - hence a named set rather than a projection rule.
-        private static readonly string[] _masterAnswerableVariationFields = ["id"];
+        private static readonly string[] _indexedVariationFields = ["id"];
 
         private readonly IDataLoaderContextAccessor _dataLoader;
 
@@ -439,61 +439,55 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
         protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
+            return Task.FromResult(ResolveVariationsField(context));
+        }
+
+        private object ResolveVariationsField(IResolveFieldContext<ExpProduct> context)
+        {
             if (context.Source.IndexedVariationIds.IsNullOrEmpty())
             {
-                return Task.FromResult<object>(new List<ExpVariation>());
+                return new List<ExpVariation>();
             }
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-            // Clients that normalise a cache add __typename to every selection set, so counting it as a data
+            // Clients that normalize a cache add __typename to every selection set, so counting it as a data
             // field would keep the gate below from ever firing.
-            var dataFields = includeFields.Where(x => x != TypeNameMetaField).ToList();
+            var dataFields = includeFields.Where(x => x != _typeNameMetaField).ToList();
 
-            if (includeFields.Count > 0 &&
-                dataFields.All(x => _masterAnswerableVariationFields.Contains(x)))
+            if (includeFields.Count > 0 && dataFields.All(x => _indexedVariationFields.Contains(x)))
             {
-                // The skipped filter read the variation's own index document, not the database, and the indexer
+                // The skipped filter read the variation's own index document, not the database. The indexer
                 // writes an id into the master's document only inside its IsActive branch - so the stored list is
-                // already active-only and nothing here goes from live to stale.
-                return Task.FromResult<object>(context.Source.IndexedVariationIds
+                // already active-only, and nothing here goes from live to stale.
+                return context.Source.IndexedVariationIds
                     .Select(id =>
                     {
-                        // Downstream schemas cast IndexedProduct to their own derived type, which a base instance
-                        // built with new would fail.
                         var indexedProduct = AbstractTypeFactory<CatalogProduct>.TryCreateInstance();
                         indexedProduct.Id = id;
 
                         return new ExpVariation(new ExpProduct { IndexedProduct = indexedProduct });
                     })
-                    .ToList());
+                    .ToList();
             }
 
-            var loader = GetVariationLoader(context, includeFields);
-
-            return Task.FromResult<object>(loader
+            return GetVariationLoader(context, includeFields)
                 .LoadAsync(context.Source.IndexedVariationIds)
                 .Then(products => products
                     .Where(x => x?.IndexedProduct?.IsActive == true)
                     .Select(x => new ExpVariation(x))
-                    .ToList()));
+                    .ToList());
         }
 
-        // The key is composed here rather than by each caller: two call sites composing it separately drift into
-        // two loaders, and the page pays the second search with nothing failing.
-        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, IList<string> includeFields)
+        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, List<string> includeFields)
         {
-            // Requested for both fields although only the variations field filters on it, so the two agree on a key.
-            var loadedFields = includeFields.ToList();
-            if (!loadedFields.Contains("isActive"))
+            // Requested for both fields, although only the variations field filters on it, so the two agree on a key.
+            if (!includeFields.Contains("isActive"))
             {
-                loadedFields.Add("isActive");
+                includeFields.Add("isActive");
             }
 
-            // Drop the field set from the key and two aliases selecting different subfields share one loader,
-            // serving the second an under-selected result. Ordinal because ordering, unlike equality, otherwise
-            // follows the thread's culture.
-            var loaderKey = $"product_variations_{string.Join(',', loadedFields.OrderBy(x => x, StringComparer.Ordinal))}";
+            var loaderKey = $"product_variations_{string.Join(',', includeFields.OrderBy(x => x, StringComparer.Ordinal))}";
 
             return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
                 loaderKey,
@@ -501,13 +495,13 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 {
                     var query = context.GetCatalogQuery<LoadProductsQuery>();
                     query.ObjectIds = ids.ToList();
-                    query.IncludeFields = loadedFields;
+                    query.IncludeFields = includeFields;
 
                     var response = await context.GetMediator().Send(query);
 
                     return response.Products.ToDictionary(x => x.Id);
                 },
-                maxBatchSize: MaxVariationsBatchSize);
+                maxBatchSize: _maxVariationsBatchSize);
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)
