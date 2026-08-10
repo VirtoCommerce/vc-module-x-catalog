@@ -32,10 +32,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         private const int MaxVariationsBatchSize = 200;
         private const string TypeNameMetaField = "__typename";
 
-        // Fields the master's own indexed document can answer without loading the variation. Deliberately a
-        // named set rather than a general projection: every addition here changes which selections switch to
-        // reading the active flag from the master's document instead of the variation's own, so it must stay
-        // auditable.
+        // Every name added here is one more selection whose active flag starts coming from the master's document
+        // instead of the variation's own - hence a named set rather than a projection rule.
         private static readonly string[] _masterAnswerableVariationFields = ["id"];
 
         private readonly IDataLoaderContextAccessor _dataLoader;
@@ -278,25 +276,22 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             };
             AddField(brandField);
 
-            ExtendableFieldAsync<VariationType>(
+            ExtendableField<VariationType>(
                 "masterVariation",
                 resolve: context =>
                 {
                     if (string.IsNullOrEmpty(context.Source.IndexedProduct.MainProductId))
                     {
-                        return Task.FromResult<object>(null);
+                        return null;
                     }
 
-                    var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+                    // No IsActive filter here: a master product is not a variation and is not subject to the
+                    // variations field's active-only contract.
+                    var loader = GetVariationLoader(context, context.SubFields.Values.GetAllNodesPaths(context).ToList());
 
-                    // Deliberately no IsActive filter on the result: a master product is not a variation and is
-                    // not subject to the variations field's active-only contract.
-                    var loader = GetVariationLoader(context, includeFields);
-
-                    // Returned, never awaited - see the matching comment on ResolveVariationsFieldAsync.
-                    return Task.FromResult<object>(loader
+                    return loader
                         .LoadAsync(context.Source.IndexedProduct.MainProductId)
-                        .Then(product => product is null ? null : new ExpVariation(product)));
+                        .Then(product => product is null ? null : new ExpVariation(product));
                 });
 
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
@@ -451,30 +446,21 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-            // __typename is resolved from the schema and depends on no data, so a selection carrying it needs
-            // exactly what the same selection without it needs. Excluding it widens nothing: the spec reserves
-            // the __ prefix for introspection and graphql-dotnet rejects any other name that uses it when the
-            // schema is built, and of the three meta-fields only __typename is reachable on a nested field -
-            // __schema and __type exist on the root query type alone. Leaving it in would matter: clients that
-            // normalise a cache add __typename to every selection set, so the gate below would never fire.
+            // Clients that normalise a cache add __typename to every selection set, so counting it as a data
+            // field would keep the gate below from ever firing.
             var dataFields = includeFields.Where(x => x != TypeNameMetaField).ToList();
 
-            // Count is read off the raw selection, not the filtered one: a caller selecting nothing at all has
-            // asked for nothing and must not be served, while a caller selecting only __typename has asked for
-            // something the master's document can answer.
             if (includeFields.Count > 0 &&
                 dataFields.All(x => _masterAnswerableVariationFields.Contains(x)))
             {
-                // The stored id list is already active-only: the indexer writes an id into the master's document
-                // only inside its IsActive branch, and any variation change forces a full reindex of the master.
-                // The filter this skips read the variation's own index document, not the database - LoadProductsQuery
-                // is served by ISearchProvider.SearchAsync - so no live-to-stale transition happens here.
+                // The skipped filter read the variation's own index document, not the database, and the indexer
+                // writes an id into the master's document only inside its IsActive branch - so the stored list is
+                // already active-only and nothing here goes from live to stale.
                 return Task.FromResult<object>(context.Source.IndexedVariationIds
                     .Select(id =>
                     {
-                        // Through the factory, not new: CatalogProduct is an overridable type, and downstream
-                        // schemas cast IndexedProduct to their own derived type. A synthetic base instance is the
-                        // one value in the system that would fail such a cast.
+                        // Downstream schemas cast IndexedProduct to their own derived type, which a base instance
+                        // built with new would fail.
                         var indexedProduct = AbstractTypeFactory<CatalogProduct>.TryCreateInstance();
                         indexedProduct.Id = id;
 
@@ -485,9 +471,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var loader = GetVariationLoader(context, includeFields);
 
-            // Returned, never awaited: awaiting here dispatches one batch per node and restores the N sends.
-            // Task.FromResult is required rather than decoration - Then returns IDataLoaderResult<T>, not a
-            // Task, so returning it bare from a Task<object> method does not compile.
             return Task.FromResult<object>(loader
                 .LoadAsync(context.Source.IndexedVariationIds)
                 .Then(products => products
@@ -496,29 +479,20 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     .ToList()));
         }
 
-        // Shared by the variations and masterVariation resolvers so both fold onto the same loader when a page
-        // renders both fields. GetOrAddBatchLoader resolves a key through ConcurrentDictionary.GetOrAdd, so the
-        // first registration for a key wins - one definition removes the question of whether two independently
-        // written fetch funcs stay semantically equivalent as either one changes later. The key is built here
-        // rather than passed in for the same reason: two call sites composing it separately would drift apart
-        // into two loaders, which costs the second search back with nothing failing.
+        // The key is composed here rather than by each caller: two call sites composing it separately drift into
+        // two loaders, and the page pays the second search with nothing failing.
         private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, IList<string> includeFields)
         {
-            // "isActive" is requested for both fields although only the variations field filters on it, so that
-            // the two agree on a key.
+            // Requested for both fields although only the variations field filters on it, so the two agree on a key.
             var loadedFields = includeFields.ToList();
             if (!loadedFields.Contains("isActive"))
             {
                 loadedFields.Add("isActive");
             }
 
-            // The field set is part of the key, not just of the query: IncludeFields is derived from
-            // context.SubFields, so two aliases selecting different subfields would otherwise share one loader
-            // and whichever registered second would be served an under-selected result.
-            // The comparer here is the one that is not redundant. Equality on string defaults to ordinal, but
-            // ORDERING defaults to the current culture - and sibling nodes of one request can be resolved on
-            // threads whose culture differs, which would sort the same field set two ways, produce two keys and
-            // quietly cost the second search.
+            // Drop the field set from the key and two aliases selecting different subfields share one loader,
+            // serving the second an under-selected result. Ordinal because ordering, unlike equality, otherwise
+            // follows the thread's culture.
             var loaderKey = $"product_variations_{string.Join(',', loadedFields.OrderBy(x => x, StringComparer.Ordinal))}";
 
             return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
@@ -533,8 +507,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
                     return response.Products.ToDictionary(x => x.Id);
                 },
-                // Caps the keys handed to one fetch, so a page of masters carrying many variations each cannot
-                // turn N moderate searches into one oversized peak of the same total size.
                 maxBatchSize: MaxVariationsBatchSize);
         }
 

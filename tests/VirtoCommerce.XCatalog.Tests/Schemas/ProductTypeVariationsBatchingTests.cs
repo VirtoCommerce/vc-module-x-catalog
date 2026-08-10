@@ -21,19 +21,12 @@ using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Schemas
 {
-    /// <summary>
-    /// The subject is the number of <see cref="LoadProductsQuery"/> sends a page of masters produces, not the
-    /// variations that come back: the returned variations are correct both before and after batching, so only
-    /// the send count scales with the bug.
-    /// </summary>
     public class ProductTypeVariationsBatchingTests : XCatalogMoqHelper
     {
         private readonly ProductType _productType;
 
         public ProductTypeVariationsBatchingTests()
         {
-            // A mock IDataLoaderContextAccessor returns a null Context, and the loader would never be reached.
-            // One context per test, shared by every node, is what a single request gives the resolvers.
             _dataLoaderContextAccessorMock.Setup(x => x.Context).Returns(new DataLoaderContext());
 
             _productType = new ProductType(_dataLoaderContextAccessorMock.Object);
@@ -53,8 +46,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            // "name" alongside "id" keeps the selection deliberately not id-only, so this exercises batching
-            // rather than any selection that can be answered from the master's own document.
             var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, new[] { "id", "name" })).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
@@ -73,15 +64,10 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "v2"],
             };
 
-            // Neither alias is id-only: a later gate short-circuits an id-only selection before the loader is
-            // reached, which would make this test fail for a reason that is not the key.
             await ResolveVariationNodesAsync(mediator, (master, ["id", "name"]), (master, ["id", "code"]));
 
             sentFieldSets.Should().HaveCount(2);
 
-            // Compare the CONTENT of the two field sets, not the two list objects: OnlyHaveUniqueItems over
-            // IList<string> compares references, which differ by construction, so it would pass against a
-            // loader key that ignores the field set entirely.
             sentFieldSets
                 .Select(x => string.Join(',', x.OrderBy(f => f, StringComparer.Ordinal)))
                 .Should().OnlyHaveUniqueItems();
@@ -105,8 +91,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 
             sentFieldSets.Should().HaveCount(1);
 
-            // Not a bare count: three nulls would satisfy that, and a .Then projection that resolved every
-            // master to null is exactly the failure a count cannot see.
             results.Select(x => x.Id).Should().Equal("p1", "p2", "p3");
         }
 
@@ -130,17 +114,12 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
             var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
 
-            // Both nodes resolved and queued before either is completed, as in the single-field helpers.
             var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, ["id", "name"]));
             var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, ["id", "name"]));
 
             var resolvedVariations = await CompleteNodeAsync(pendingVariations);
             var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
 
-            // What this pins is that masterVariation goes through the shared factory at all. Give it back its
-            // own LoadProductsQuery send - the shape it had before this branch, and the shape a reviewer might
-            // restore while "simplifying" the resolver - and the page pays a second search with every other
-            // assertion here still holding.
             sentFieldSets.Should().HaveCount(1);
             resolvedVariations.Should().ContainSingle();
             resolvedMasterVariation.Should().NotBeNull();
@@ -176,8 +155,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "v2"],
             };
 
-            // The positive control: without it, the id-only test above would pass against a resolver that
-            // never loads anything at all, regardless of whether the gate is subset-correct.
             await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
 
             sentFieldSets.Should().HaveCount(1);
@@ -196,8 +173,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             // This, not the bare id-only case, is what an id-only source query looks like on the wire: a client
-            // that normalises a cache adds __typename to every selection set. A gate that treats it as a data
-            // field is a gate that never fires in production while passing every test written without it.
+            // that normalises a cache adds __typename to every selection set.
             var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "__typename" }));
 
             sentFieldSets.Should().BeEmpty();
@@ -216,8 +192,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "v2"],
             };
 
-            // Discounting __typename must not discount anything else: a selection that still needs a loaded
-            // field takes the loaded path.
             await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name", "__typename" }));
 
             sentFieldSets.Should().HaveCount(1);
@@ -229,8 +203,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var sentFieldSets = new List<IList<string>>();
             var mediator = CreateRecordingMediator(sentFieldSets);
 
-            // One more id than the loader's maxBatchSize, so the split is observable rather than assumed:
-            // a single fetch would silently absorb any id count up to the cap.
             var ids = Enumerable.Range(0, 201).Select(i => $"v{i}").ToList();
             var master = new ExpProduct
             {
@@ -269,10 +241,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var sharedFromA = results[0].Single(x => x.Id == "shared");
             var sharedFromB = results[1].Single(x => x.Id == "shared");
 
-            // ExpVariation forwards the source ExpProduct's IndexedProduct reference rather than cloning it
-            // (see ExpVariation's constructor), so identical IndexedProduct references across both masters'
-            // results is the loader's per-key cache actually sharing one fetched instance - not two
-            // independently-built copies that merely compare equal by value.
             sharedFromA.IndexedProduct.Should().BeSameAs(sharedFromB.IndexedProduct);
         }
 
@@ -290,9 +258,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 
             var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
 
-            // Not "contains v1" - the unresolved id must be absent, not present as a null/placeholder element.
-            // The field's graph type is NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>, so a
-            // null element reaching graphql-dotnet would be a runtime execution error, not a quiet gap.
             results.Single().Select(x => x.Id).Should().Equal("v1");
         }
 
@@ -310,8 +275,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 
             var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name" }));
 
-            // Every other test's mediator returns IsActive = true for everything, so this is the only test
-            // that exercises the Where(x => x?.IndexedProduct?.IsActive == true) filter as an actual filter.
             results.Single().Select(x => x.Id).Should().Equal("active1");
         }
 
@@ -331,29 +294,20 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 
             var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, new[] { "id", "name" })).ToArray());
 
-            // The page test above only asserts the total (6), which a loader bug that handed every master all
-            // six ids would also satisfy. This checks each master's result against exactly its own ids.
             for (var i = 0; i < masters.Count; i++)
             {
                 results[i].Select(x => x.Id).Should().BeEquivalentTo(masters[i].IndexedVariationIds);
             }
         }
 
-        /// <summary>
-        /// Drives the registered <c>variations</c> field over several sibling nodes sharing one
-        /// <see cref="DataLoaderContext"/>, the way one request does.
-        /// </summary>
         private async Task<IList<IList<ExpVariation>>> ResolveVariationNodesAsync(
             IMediator mediator,
             params (ExpProduct Master, string[] SubFields)[] nodes)
         {
             var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
 
-            // Every node must be resolved - and its loader result queued - before the first one is completed.
-            // This mirrors the execution strategy, which runs ExecuteNodeAsync across sibling nodes and only
-            // then completes the pending data-loader nodes. Resolving and completing one node at a time
-            // dispatches a batch of one each time and reports one send per node against a correctly batched
-            // implementation - a failure that is not the bug.
+            // Every node is resolved before any is completed. Completing one at a time dispatches a batch of one
+            // each time and reports one send per node against a correctly batched resolver.
             var pending = new List<object>();
             foreach (var (master, subFields) in nodes)
             {
@@ -369,18 +323,12 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return results;
         }
 
-        /// <summary>
-        /// Drives the registered <c>masterVariation</c> field over several sibling nodes sharing one
-        /// <see cref="DataLoaderContext"/> - the single-result counterpart of <see cref="ResolveVariationNodesAsync"/>.
-        /// </summary>
         private async Task<IList<ExpVariation>> ResolveMasterVariationNodesAsync(
             IMediator mediator,
             params (ExpProduct Variation, string[] SubFields)[] nodes)
         {
             var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
 
-            // Same ordering requirement as ResolveVariationNodesAsync: every node resolved and queued before
-            // the first one is completed.
             var pending = new List<object>();
             foreach (var (variation, subFields) in nodes)
             {
@@ -396,10 +344,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return results;
         }
 
-        /// <summary>
-        /// Completes one resolved node the way the execution strategy does - by the resolved value's runtime
-        /// type. A resolver that loaded eagerly hands back the finished sequence instead of a pending result.
-        /// </summary>
         private static async Task<IList<ExpVariation>> CompleteNodeAsync(object resolved)
         {
             var value = resolved is IDataLoaderResult loaderResult
@@ -409,10 +353,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return ((IEnumerable<ExpVariation>)value).ToList();
         }
 
-        /// <summary>
-        /// <see cref="CompleteNodeAsync"/> for <c>masterVariation</c>, whose resolved value is a single
-        /// <see cref="ExpVariation"/> rather than a list.
-        /// </summary>
         private static async Task<ExpVariation> CompleteMasterVariationNodeAsync(object resolved)
         {
             var value = resolved is IDataLoaderResult loaderResult
@@ -430,10 +370,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return new ResolveFieldContext
             {
                 Source = source,
-                // GetCatalogQuery reaches the current principal through a GraphQLUserContext cast, which a plain
-                // dictionary fails.
                 UserContext = new GraphQLUserContext(null) { { "cultureName", CULTURE_NAME } },
-                // The resolver reaches the mediator through context.GetMediator(), which requires RequestServices.
                 RequestServices = serviceProviderMock.Object,
                 SubFields = subFields.ToDictionary(
                     x => x,
@@ -461,10 +398,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return mediatorMock.Object;
         }
 
-        /// <summary>
-        /// <see cref="CreateRecordingMediator(IList{IList{string}})"/> with the resolved products' IsActive
-        /// flag driven per id, for tests that need a mix rather than every product uniformly active.
-        /// </summary>
         private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, Func<string, bool> isActive)
         {
             var mediatorMock = new Mock<IMediator>();
@@ -485,11 +418,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             return mediatorMock.Object;
         }
 
-        /// <summary>
-        /// <see cref="CreateRecordingMediator(IList{IList{string}})"/> with the given ids dropped from the
-        /// response, simulating the fetch func's documented partial-dictionary contract: an id the load does
-        /// not resolve is simply missing, not present with a null/placeholder value.
-        /// </summary>
         private static IMediator CreateRecordingMediator(IList<IList<string>> sentFieldSets, ISet<string> unresolvedIds)
         {
             var mediatorMock = new Mock<IMediator>();
