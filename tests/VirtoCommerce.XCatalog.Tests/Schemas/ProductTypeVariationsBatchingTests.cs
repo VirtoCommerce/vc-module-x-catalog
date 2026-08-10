@@ -202,6 +202,45 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
+        public async Task ResolveVariationsField_SelectionIsTypeNameAlone_SendsNoLoadProductsQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            // __typename needs no data at all, so this is answerable from the master's document. Reading the gate's
+            // first operand off the filtered list instead of the raw selection sends it to the loader instead.
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "__typename" }));
+
+            sentFieldSets.Should().BeEmpty();
+            results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_SelectionResolvesToNothing_SendsTheQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            // An empty walk result is ambiguous - nothing was selected, or nothing the walker recognised - and only
+            // loading answers both readings. Dropping the gate's first operand serves it from the master instead.
+            await ResolveVariationNodesAsync(mediator, (master, []));
+
+            sentFieldSets.Should().HaveCount(1);
+        }
+
+        [Fact]
         public async Task ResolveVariationsField_IdsExceedTheBatchCap_SplitsIntoTwoLoadProductsQueries()
         {
             var sentFieldSets = new List<IList<string>>();
