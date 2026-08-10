@@ -463,7 +463,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             // asked for nothing and must not be served, while a caller selecting only __typename has asked for
             // something the master's document can answer.
             if (includeFields.Count > 0 &&
-                dataFields.All(x => _masterAnswerableVariationFields.Contains(x, StringComparer.OrdinalIgnoreCase)))
+                dataFields.All(x => _masterAnswerableVariationFields.Contains(x)))
             {
                 // The stored id list is already active-only: the indexer writes an id into the master's document
                 // only inside its IsActive branch, and any variation change forces a full reindex of the master.
@@ -507,7 +507,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             // "isActive" is requested for both fields although only the variations field filters on it, so that
             // the two agree on a key.
             var loadedFields = includeFields.ToList();
-            if (!loadedFields.Contains("isActive", StringComparer.OrdinalIgnoreCase))
+            if (!loadedFields.Contains("isActive"))
             {
                 loadedFields.Add("isActive");
             }
@@ -515,6 +515,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             // The field set is part of the key, not just of the query: IncludeFields is derived from
             // context.SubFields, so two aliases selecting different subfields would otherwise share one loader
             // and whichever registered second would be served an under-selected result.
+            // The comparer here is the one that is not redundant. Equality on string defaults to ordinal, but
+            // ORDERING defaults to the current culture - and sibling nodes of one request can be resolved on
+            // threads whose culture differs, which would sort the same field set two ways, produce two keys and
+            // quietly cost the second search.
             var loaderKey = $"product_variations_{string.Join(',', loadedFields.OrderBy(x => x, StringComparer.Ordinal))}";
 
             return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
