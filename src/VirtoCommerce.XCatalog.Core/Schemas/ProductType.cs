@@ -30,11 +30,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
         private const int _maxVariationsBatchSize = 200;
-        private const string _typeNameMetaField = "__typename";
-
-        // Every name added here is one more selection whose active flag starts coming from the master's document
-        // instead of the variation's own - hence a named set rather than a projection rule.
-        private static readonly string[] _indexedVariationFields = ["id"];
 
         private readonly IDataLoaderContextAccessor _dataLoader;
 
@@ -450,26 +445,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             }
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
-
-            // Clients that normalize a cache add __typename to every selection set, so counting it as a data
-            // field would keep the gate below from ever firing.
-            var dataFields = includeFields.Where(x => x != _typeNameMetaField).ToList();
-
-            if (includeFields.Count > 0 && dataFields.All(x => _indexedVariationFields.Contains(x)))
-            {
-                // The skipped filter read the variation's own index document, not the database. The indexer
-                // writes an id into the master's document only inside its IsActive branch - so the stored list is
-                // already active-only, and nothing here goes from live to stale.
-                return context.Source.IndexedVariationIds
-                    .Select(id =>
-                    {
-                        var indexedProduct = AbstractTypeFactory<CatalogProduct>.TryCreateInstance();
-                        indexedProduct.Id = id;
-
-                        return new ExpVariation(new ExpProduct { IndexedProduct = indexedProduct });
-                    })
-                    .ToList();
-            }
 
             return GetVariationLoader(context, includeFields)
                 .LoadAsync(context.Source.IndexedVariationIds)

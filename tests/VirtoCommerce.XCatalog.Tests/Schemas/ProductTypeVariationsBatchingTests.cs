@@ -23,9 +23,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
 {
     public class ProductTypeVariationsBatchingTests : XCatalogMoqHelper
     {
-        // "name" is not one of the fields the master's document answers, so this selection is the one that
-        // reaches the loader. Tests about batching use it; tests about the gate spell their selection out.
-        private static readonly string[] _selectionRequiringLoad = ["id", "name"];
+        private static readonly string[] _subFields = ["id", "name"];
 
         private readonly ProductType _productType;
 
@@ -50,7 +48,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _selectionRequiringLoad)).ToArray());
+            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _subFields)).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
             results.SelectMany(x => x).Should().HaveCount(6);
@@ -91,7 +89,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 .ToList();
 
             var results = await ResolveMasterVariationNodesAsync(
-                mediator, variations.Select(x => (x, _selectionRequiringLoad)).ToArray());
+                mediator, variations.Select(x => (x, _subFields)).ToArray());
 
             sentFieldSets.Should().HaveCount(1);
 
@@ -118,8 +116,8 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
             var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
 
-            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, _selectionRequiringLoad));
-            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, _selectionRequiringLoad));
+            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, _subFields));
+            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, _subFields));
 
             var resolvedVariations = await CompleteNodeAsync(pendingVariations);
             var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
@@ -130,7 +128,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public async Task ResolveVariationsField_SelectionIsIdOnly_SendsNoLoadProductsQuery()
+        public async Task ResolveVariationsField_SelectionIsIdOnly_SendsTheQuery()
         {
             var sentFieldSets = new List<IList<string>>();
             var mediator = CreateRecordingMediator(sentFieldSets);
@@ -141,103 +139,13 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "v2"],
             };
 
+            // Answering this from the master's own document is the tempting shortcut, and it drops the
+            // startDate/endDate window that the search applies to every other selection - so an id-only
+            // selection would return variations outside their validity window that "id name" filters out.
             var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id" }));
 
-            sentFieldSets.Should().BeEmpty();
-            results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
-        }
-
-        [Fact]
-        public async Task ResolveVariationsField_SelectionNeedsALoadedField_StillSendsTheQuery()
-        {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var master = new ExpProduct
-            {
-                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
-                IndexedVariationIds = ["v1", "v2"],
-            };
-
-            await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
-
             sentFieldSets.Should().HaveCount(1);
-        }
-
-        [Fact]
-        public async Task ResolveVariationsField_SelectionIsIdAndTypeName_SendsNoLoadProductsQuery()
-        {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var master = new ExpProduct
-            {
-                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
-                IndexedVariationIds = ["v1", "v2"],
-            };
-
-            // This, not the bare id-only case, is what an id-only source query looks like on the wire: a client
-            // that normalises a cache adds __typename to every selection set.
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "__typename" }));
-
-            sentFieldSets.Should().BeEmpty();
             results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
-        }
-
-        [Fact]
-        public async Task ResolveVariationsField_SelectionIsTypeNameBesideALoadedField_StillSendsTheQuery()
-        {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var master = new ExpProduct
-            {
-                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
-                IndexedVariationIds = ["v1", "v2"],
-            };
-
-            await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name", "__typename" }));
-
-            sentFieldSets.Should().HaveCount(1);
-        }
-
-        [Fact]
-        public async Task ResolveVariationsField_SelectionIsTypeNameAlone_SendsNoLoadProductsQuery()
-        {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var master = new ExpProduct
-            {
-                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
-                IndexedVariationIds = ["v1", "v2"],
-            };
-
-            // __typename needs no data at all, so this is answerable from the master's document. Reading the gate's
-            // first operand off the filtered list instead of the raw selection sends it to the loader instead.
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "__typename" }));
-
-            sentFieldSets.Should().BeEmpty();
-            results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
-        }
-
-        [Fact]
-        public async Task ResolveVariationsField_SelectionResolvesToNothing_SendsTheQuery()
-        {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var master = new ExpProduct
-            {
-                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
-                IndexedVariationIds = ["v1", "v2"],
-            };
-
-            // An empty walk result is ambiguous - nothing was selected, or nothing the walker recognised - and only
-            // loading answers both readings. Dropping the gate's first operand serves it from the master instead.
-            await ResolveVariationNodesAsync(mediator, (master, []));
-
-            sentFieldSets.Should().HaveCount(1);
         }
 
         [Fact]
@@ -253,7 +161,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ids,
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
 
             sentFieldSets.Should().HaveCount(2);
             results.Single().Should().HaveCount(201);
@@ -277,7 +185,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
 
             var results = await ResolveVariationNodesAsync(
-                mediator, (masterA, _selectionRequiringLoad), (masterB, _selectionRequiringLoad));
+                mediator, (masterA, _subFields), (masterB, _subFields));
 
             sentFieldSets.Should().HaveCount(1);
 
@@ -299,7 +207,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "gone"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
 
             results.Single().Select(x => x.Id).Should().Equal("v1");
         }
@@ -316,7 +224,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["active1", "inactive"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _selectionRequiringLoad));
+            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
 
             results.Single().Select(x => x.Id).Should().Equal("active1");
         }
@@ -335,7 +243,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _selectionRequiringLoad)).ToArray());
+            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _subFields)).ToArray());
 
             for (var i = 0; i < masters.Count; i++)
             {
