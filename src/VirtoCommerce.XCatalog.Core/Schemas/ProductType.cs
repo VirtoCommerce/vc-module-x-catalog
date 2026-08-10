@@ -30,6 +30,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
         private const int MaxVariationsBatchSize = 200;
+        private const string TypeNameMetaField = "__typename";
 
         // Fields the master's own indexed document can answer without loading the variation. Deliberately a
         // named set rather than a general projection: every addition here changes which selections switch to
@@ -450,10 +451,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-            // An empty selection is not a subset to serve from the index - it is a caller asking for nothing -
-            // so the Count > 0 guard keeps it off this path.
+            // __typename is resolved from the schema and depends on no data, so a selection carrying it needs
+            // exactly what the same selection without it needs. Excluding it widens nothing: the spec reserves
+            // the __ prefix for introspection and graphql-dotnet rejects any other name that uses it when the
+            // schema is built, and of the three meta-fields only __typename is reachable on a nested field -
+            // __schema and __type exist on the root query type alone. Leaving it in would matter: clients that
+            // normalise a cache add __typename to every selection set, so the gate below would never fire.
+            var dataFields = includeFields.Where(x => x != TypeNameMetaField).ToList();
+
+            // Count is read off the raw selection, not the filtered one: a caller selecting nothing at all has
+            // asked for nothing and must not be served, while a caller selecting only __typename has asked for
+            // something the master's document can answer.
             if (includeFields.Count > 0 &&
-                includeFields.All(x => _masterAnswerableVariationFields.Contains(x, StringComparer.OrdinalIgnoreCase)))
+                dataFields.All(x => _masterAnswerableVariationFields.Contains(x, StringComparer.OrdinalIgnoreCase)))
             {
                 // The stored id list is already active-only: the indexer writes an id into the master's document
                 // only inside its IsActive branch, and any variation change forces a full reindex of the master.

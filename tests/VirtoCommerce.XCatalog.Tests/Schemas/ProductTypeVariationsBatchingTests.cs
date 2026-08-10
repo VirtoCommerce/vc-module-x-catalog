@@ -184,6 +184,46 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
+        public async Task ResolveVariationsField_SelectionIsIdAndTypeName_SendsNoLoadProductsQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            // This, not the bare id-only case, is what an id-only source query looks like on the wire: a client
+            // that normalises a cache adds __typename to every selection set. A gate that treats it as a data
+            // field is a gate that never fires in production while passing every test written without it.
+            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "__typename" }));
+
+            sentFieldSets.Should().BeEmpty();
+            results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_SelectionIsTypeNameBesideALoadedField_StillSendsTheQuery()
+        {
+            var sentFieldSets = new List<IList<string>>();
+            var mediator = CreateRecordingMediator(sentFieldSets);
+
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1", "v2"],
+            };
+
+            // Discounting __typename must not discount anything else: a selection that still needs a loaded
+            // field takes the loaded path.
+            await ResolveVariationNodesAsync(mediator, (master, new[] { "id", "name", "__typename" }));
+
+            sentFieldSets.Should().HaveCount(1);
+        }
+
+        [Fact]
         public async Task ResolveVariationsField_IdsExceedTheBatchCap_SplitsIntoTwoLoadProductsQueries()
         {
             var sentFieldSets = new List<IList<string>>();
