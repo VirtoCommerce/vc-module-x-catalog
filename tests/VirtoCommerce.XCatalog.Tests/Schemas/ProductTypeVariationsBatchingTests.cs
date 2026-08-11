@@ -215,6 +215,66 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             results.Single().Select(x => x.Id).Should().Equal("active1");
         }
 
+        [Fact]
+        public async Task ResolveMasterVariationField_InactiveMainProduct_IsStillReturned()
+        {
+            _inactiveIds.Add("m1");
+
+            var variation = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "v1", MainProductId = "m1", IsActive = true },
+            };
+
+            var results = await ResolveMasterVariationNodesAsync((variation, _subFields));
+
+            results.Single().Id.Should().Be("m1");
+        }
+
+        [Fact]
+        public async Task ResolveMasterVariationField_MainProductIsNotFound_ReturnsNull()
+        {
+            _unresolvedIds.Add("m1");
+
+            var variation = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "v1", MainProductId = "m1", IsActive = true },
+            };
+
+            var results = await ResolveMasterVariationNodesAsync((variation, _subFields));
+
+            results.Single().Should().BeNull();
+            _sentFieldSets.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public async Task ResolveVariationsField_NoVariationIds_SendsNoQuery()
+        {
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = [],
+            };
+
+            var results = await ResolveVariationNodesAsync((master, _subFields));
+
+            results.Single().Should().BeEmpty();
+            _sentFieldSets.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ResolveMasterVariationField_NoMainProductId_SendsNoQuery()
+        {
+            var product = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "p1", IsActive = true },
+            };
+
+            var results = await ResolveMasterVariationNodesAsync((product, _subFields));
+
+            results.Single().Should().BeNull();
+            _sentFieldSets.Should().BeEmpty();
+        }
+
         private Task<IList<IList<ExpVariation>>> ResolveVariationNodesAsync(params (ExpProduct Source, string[] SubFields)[] nodes)
         {
             return ResolveNodesAsync<IList<ExpVariation>>("variations", nodes);
