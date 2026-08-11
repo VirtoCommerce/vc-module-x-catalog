@@ -280,13 +280,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                         return null;
                     }
 
-                    // No IsActive filter here: a master product is not a variation and is not subject to the
-                    // variations field's active-only contract.
-                    var loader = GetVariationLoader(context, context.SubFields.Values.GetAllNodesPaths(context).ToList());
-
-                    return loader
-                        .LoadAsync(context.Source.IndexedProduct.MainProductId)
-                        .Then(product => product is null ? null : new ExpVariation(product));
+                    // No IsActive filter here: a main product is not subject to the variations field's active-only contract.
+                    return LoadVariations(context, [context.Source.IndexedProduct.MainProductId], onlyActive: false)
+                        .Then(variations => variations.FirstOrDefault());
                 });
 
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
@@ -434,29 +430,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
         protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
-            return Task.FromResult(ResolveVariationsField(context));
-        }
-
-        private object ResolveVariationsField(IResolveFieldContext<ExpProduct> context)
-        {
             if (context.Source.IndexedVariationIds.IsNullOrEmpty())
             {
-                return new List<ExpVariation>();
+                return Task.FromResult<object>(new List<ExpVariation>());
             }
 
-            var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
-
-            return GetVariationLoader(context, includeFields)
-                .LoadAsync(context.Source.IndexedVariationIds)
-                .Then(products => products
-                    .Where(x => x?.IndexedProduct?.IsActive == true)
-                    .Select(x => new ExpVariation(x))
-                    .ToList());
+            return Task.FromResult<object>(LoadVariations(context, context.Source.IndexedVariationIds, onlyActive: true));
         }
 
-        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, List<string> includeFields)
+        private IDataLoaderResult<IEnumerable<ExpVariation>> LoadVariations(IResolveFieldContext context, IEnumerable<string> variationIds, bool onlyActive)
         {
-            // Requested for both fields, although only the variations field filters on it, so the two agree on a key.
+            var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+
+            // Always request isActive, so that filtered and unfiltered requests share the same key.
             if (!includeFields.Contains("isActive"))
             {
                 includeFields.Add("isActive");
@@ -464,7 +450,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             var loaderKey = $"product_variations_{string.Join(',', includeFields.OrderBy(x => x, StringComparer.Ordinal))}";
 
-            return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
+            var loader = _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
                 loaderKey,
                 async ids =>
                 {
@@ -477,6 +463,12 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     return response.Products.ToDictionary(x => x.Id);
                 },
                 maxBatchSize: _maxVariationsBatchSize);
+
+            return loader
+                .LoadAsync(variationIds)
+                .Then(products => products
+                    .Where(x => x is not null && (!onlyActive || x.IndexedProduct?.IsActive == true))
+                    .Select(x => new ExpVariation(x)));
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)
