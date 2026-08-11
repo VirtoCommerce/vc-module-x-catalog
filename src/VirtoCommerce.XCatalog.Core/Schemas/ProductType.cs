@@ -462,7 +462,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             return loader
                 .LoadAsync(variationIds)
-                .Then(products => (IList<ExpVariation>)products
+                .Then(IList<ExpVariation> (products) => products
                     .Where(x => x is not null && (!onlyActive || x.IndexedProduct?.IsActive == true))
                     .Select(x => new ExpVariation(x))
                     .ToList());
