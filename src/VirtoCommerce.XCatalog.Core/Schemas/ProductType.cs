@@ -274,20 +274,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<VariationType>(
                 "masterVariation",
                 resolve: context =>
-                {
-                    if (string.IsNullOrEmpty(context.Source.IndexedProduct.MainProductId))
-                    {
-                        return null;
-                    }
+                    // A main product is not subject to the variations field's active-only contract.
+                    ResolveVariations(context, [context.Source.IndexedProduct.MainProductId], onlyActive: false)
+                        .Then(variations => variations.FirstOrDefault()));
 
-                    // No IsActive filter here: a main product is not subject to the variations field's active-only contract.
-                    return LoadVariations(context, [context.Source.IndexedProduct.MainProductId], onlyActive: false)
-                        .Then(variations => variations.FirstOrDefault());
-                });
-
+#pragma warning disable VC0015 // Type or member is obsolete
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
                 "variations",
                 resolve: ResolveVariationsFieldAsync);
+#pragma warning restore VC0015 // Type or member is obsolete
 
             Field<NonNullGraphType<BooleanGraphType>, bool>("hasVariations")
                 .Resolve(context =>
@@ -428,18 +423,19 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return brandName?.ToString();
         }
 
+        [Obsolete("Use ResolveVariations.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
-            if (context.Source.IndexedVariationIds.IsNullOrEmpty())
-            {
-                return Task.FromResult<object>(new List<ExpVariation>());
-            }
-
-            return Task.FromResult<object>(LoadVariations(context, context.Source.IndexedVariationIds, onlyActive: true));
+            return Task.FromResult<object>(ResolveVariations(context, context.Source.IndexedVariationIds, onlyActive: true));
         }
 
-        private IDataLoaderResult<IEnumerable<ExpVariation>> LoadVariations(IResolveFieldContext context, IEnumerable<string> variationIds, bool onlyActive)
+        protected virtual IDataLoaderResult<IList<ExpVariation>> ResolveVariations(IResolveFieldContext context, IList<string> variationIds, bool onlyActive)
         {
+            if (variationIds.IsNullOrEmpty() || variationIds.All(string.IsNullOrEmpty))
+            {
+                return new DataLoaderResult<IList<ExpVariation>>([]);
+            }
+
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
             // Always request isActive, so that filtered and unfiltered requests share the same key.
@@ -466,9 +462,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 
             return loader
                 .LoadAsync(variationIds)
-                .Then(products => products
+                .Then(products => (IList<ExpVariation>)products
                     .Where(x => x is not null && (!onlyActive || x.IndexedProduct?.IsActive == true))
-                    .Select(x => new ExpVariation(x)));
+                    .Select(x => new ExpVariation(x))
+                    .ToList());
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)

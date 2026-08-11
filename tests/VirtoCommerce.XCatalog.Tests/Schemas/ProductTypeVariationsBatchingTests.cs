@@ -25,21 +25,25 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
     {
         private static readonly string[] _subFields = ["id", "name"];
 
+        private readonly HashSet<string> _inactiveIds = [];
+        private readonly HashSet<string> _unresolvedIds = [];
+
         private readonly ProductType _productType;
+        private readonly IMediator _mediator;
+
+        private readonly List<IList<string>> _sentFieldSets = [];
 
         public ProductTypeVariationsBatchingTests()
         {
             _dataLoaderContextAccessorMock.Setup(x => x.Context).Returns(new DataLoaderContext());
 
             _productType = new ProductType(_dataLoaderContextAccessorMock.Object);
+            _mediator = CreateRecordingMediator();
         }
 
         [Fact]
-        public async Task ResolveVariationsField_ThreeMastersOnOnePage_SendsOneLoadProductsQuery()
+        public async Task ResolveVariationsField_ThreeMastersOnOnePage_SendsOneQueryAndSplitsResultsByMaster()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var masters = new[] { "m1", "m2", "m3" }
                 .Select((id, i) => new ExpProduct
                 {
@@ -48,29 +52,30 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _subFields)).ToArray());
+            var results = await ResolveVariationNodesAsync(masters.Select(x => (x, _subFields)).ToArray());
 
-            sentFieldSets.Should().HaveCount(1);
-            results.SelectMany(x => x).Should().HaveCount(6);
+            _sentFieldSets.Should().HaveCount(1);
+
+            for (var i = 0; i < masters.Count; i++)
+            {
+                results[i].Select(x => x.Id).Should().BeEquivalentTo(masters[i].IndexedVariationIds);
+            }
         }
 
         [Fact]
         public async Task ResolveVariationsField_TwoAliasesWithDifferentSubfields_DoNotShareALoader()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var master = new ExpProduct
             {
                 IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
                 IndexedVariationIds = ["v1", "v2"],
             };
 
-            await ResolveVariationNodesAsync(mediator, (master, ["id", "name"]), (master, ["id", "code"]));
+            await ResolveVariationNodesAsync((master, ["id", "name"]), (master, ["id", "code"]));
 
-            sentFieldSets.Should().HaveCount(2);
+            _sentFieldSets.Should().HaveCount(2);
 
-            sentFieldSets
+            _sentFieldSets
                 .Select(x => string.Join(',', x.OrderBy(f => f, StringComparer.Ordinal)))
                 .Should().OnlyHaveUniqueItems();
         }
@@ -78,9 +83,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         [Fact]
         public async Task ResolveMasterVariationField_ThreeVariationsOnOnePage_SendsOneLoadProductsQuery()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var variations = new[] { "p1", "p2", "p3" }
                 .Select((id, i) => new ExpProduct
                 {
@@ -88,10 +90,9 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 })
                 .ToList();
 
-            var results = await ResolveMasterVariationNodesAsync(
-                mediator, variations.Select(x => (x, _subFields)).ToArray());
+            var results = await ResolveMasterVariationNodesAsync(variations.Select(x => (x, _subFields)).ToArray());
 
-            sentFieldSets.Should().HaveCount(1);
+            _sentFieldSets.Should().HaveCount(1);
 
             results.Select(x => x.Id).Should().Equal("p1", "p2", "p3");
         }
@@ -99,9 +100,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         [Fact]
         public async Task ResolveVariationsAndMasterVariationFields_OnOnePage_SendOneLoadProductsQuery()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var master = new ExpProduct
             {
                 IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
@@ -116,13 +114,13 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
             var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
 
-            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, _subFields));
-            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, _subFields));
+            var pendingVariations = await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, _subFields));
+            var pendingMasterVariation = await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, _subFields));
 
-            var resolvedVariations = await CompleteNodeAsync(pendingVariations);
-            var resolvedMasterVariation = await CompleteMasterVariationNodeAsync(pendingMasterVariation);
+            var resolvedVariations = await CompleteNodeAsync<IList<ExpVariation>>(pendingVariations);
+            var resolvedMasterVariation = await CompleteNodeAsync<ExpVariation>(pendingMasterVariation);
 
-            sentFieldSets.Should().HaveCount(1);
+            _sentFieldSets.Should().HaveCount(1);
             resolvedVariations.Should().ContainSingle();
             resolvedMasterVariation.Should().NotBeNull();
         }
@@ -130,9 +128,6 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         [Fact]
         public async Task ResolveVariationsField_SelectionIsIdOnly_SendsTheQuery()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var master = new ExpProduct
             {
                 IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
@@ -142,18 +137,15 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             // Answering this from the master's own document is the tempting shortcut, and it drops the
             // startDate/endDate window that the search applies to every other selection - so an id-only
             // selection would return variations outside their validity window that "id name" filters out.
-            var results = await ResolveVariationNodesAsync(mediator, (master, new[] { "id" }));
+            var results = await ResolveVariationNodesAsync((master, ["id"]));
 
-            sentFieldSets.Should().HaveCount(1);
+            _sentFieldSets.Should().HaveCount(1);
             results.Single().Select(x => x.Id).Should().Equal("v1", "v2");
         }
 
         [Fact]
         public async Task ResolveVariationsField_IdsExceedTheBatchCap_SplitsIntoTwoLoadProductsQueries()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var ids = Enumerable.Range(0, 201).Select(i => $"v{i}").ToList();
             var master = new ExpProduct
             {
@@ -161,18 +153,15 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ids,
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
+            var results = await ResolveVariationNodesAsync((master, _subFields));
 
-            sentFieldSets.Should().HaveCount(2);
+            _sentFieldSets.Should().HaveCount(2);
             results.Single().Should().HaveCount(201);
         }
 
         [Fact]
         public async Task ResolveVariationsField_IdSharedByTwoMasters_BothReceiveTheSameLoadedInstance()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
             var masterA = new ExpProduct
             {
                 IndexedProduct = new CatalogProduct { Id = "ma", IsActive = true },
@@ -184,10 +173,9 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["shared", "onlyB"],
             };
 
-            var results = await ResolveVariationNodesAsync(
-                mediator, (masterA, _subFields), (masterB, _subFields));
+            var results = await ResolveVariationNodesAsync((masterA, _subFields), (masterB, _subFields));
 
-            sentFieldSets.Should().HaveCount(1);
+            _sentFieldSets.Should().HaveCount(1);
 
             var sharedFromA = results[0].Single(x => x.Id == "shared");
             var sharedFromB = results[1].Single(x => x.Id == "shared");
@@ -198,8 +186,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         [Fact]
         public async Task ResolveVariationsField_AnIdTheLoadDoesNotResolve_IsAbsentFromTheResult()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets, unresolvedIds: new HashSet<string> { "gone" });
+            _unresolvedIds.Add("gone");
 
             var master = new ExpProduct
             {
@@ -207,7 +194,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["v1", "gone"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
+            var results = await ResolveVariationNodesAsync((master, _subFields));
 
             results.Single().Select(x => x.Id).Should().Equal("v1");
         }
@@ -215,8 +202,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         [Fact]
         public async Task ResolveVariationsField_MixOfActiveAndInactiveVariations_ExcludesInactiveOnes()
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets, isActive: id => id != "inactive");
+            _inactiveIds.Add("inactive");
 
             var master = new ExpProduct
             {
@@ -224,99 +210,53 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 IndexedVariationIds = ["active1", "inactive"],
             };
 
-            var results = await ResolveVariationNodesAsync(mediator, (master, _subFields));
+            var results = await ResolveVariationNodesAsync((master, _subFields));
 
             results.Single().Select(x => x.Id).Should().Equal("active1");
         }
 
-        [Fact]
-        public async Task ResolveVariationsField_ThreeMastersOnOnePage_EachReceivesExactlyItsOwnVariationIds()
+        private Task<IList<IList<ExpVariation>>> ResolveVariationNodesAsync(params (ExpProduct Source, string[] SubFields)[] nodes)
         {
-            var sentFieldSets = new List<IList<string>>();
-            var mediator = CreateRecordingMediator(sentFieldSets);
-
-            var masters = new[] { "m1", "m2", "m3" }
-                .Select((id, i) => new ExpProduct
-                {
-                    IndexedProduct = new CatalogProduct { Id = id, IsActive = true },
-                    IndexedVariationIds = [$"v{i}a", $"v{i}b"],
-                })
-                .ToList();
-
-            var results = await ResolveVariationNodesAsync(mediator, masters.Select(x => (x, _subFields)).ToArray());
-
-            for (var i = 0; i < masters.Count; i++)
-            {
-                results[i].Select(x => x.Id).Should().BeEquivalentTo(masters[i].IndexedVariationIds);
-            }
+            return ResolveNodesAsync<IList<ExpVariation>>("variations", nodes);
         }
 
-        private async Task<IList<IList<ExpVariation>>> ResolveVariationNodesAsync(
-            IMediator mediator,
-            params (ExpProduct Master, string[] SubFields)[] nodes)
+        private Task<IList<ExpVariation>> ResolveMasterVariationNodesAsync(params (ExpProduct Source, string[] SubFields)[] nodes)
         {
-            var variationsField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("variations"));
+            return ResolveNodesAsync<ExpVariation>("masterVariation", nodes);
+        }
+
+        private async Task<IList<T>> ResolveNodesAsync<T>(string fieldName, (ExpProduct Source, string[] SubFields)[] nodes)
+        {
+            var field = _productType.Fields.First(x => x.Name.EqualsIgnoreCase(fieldName));
 
             // Every node is resolved before any is completed. Completing one at a time dispatches a batch of one
             // each time and reports one send per node against a correctly batched resolver.
             var pending = new List<object>();
-            foreach (var (master, subFields) in nodes)
+            foreach (var (source, subFields) in nodes)
             {
-                pending.Add(await variationsField.Resolver.ResolveAsync(CreateResolveContext(master, mediator, subFields)));
+                pending.Add(await field.Resolver.ResolveAsync(CreateResolveContext(source, subFields)));
             }
 
-            var results = new List<IList<ExpVariation>>();
+            var results = new List<T>();
             foreach (var item in pending)
             {
-                results.Add(await CompleteNodeAsync(item));
+                results.Add(await CompleteNodeAsync<T>(item));
             }
 
             return results;
         }
 
-        private async Task<IList<ExpVariation>> ResolveMasterVariationNodesAsync(
-            IMediator mediator,
-            params (ExpProduct Variation, string[] SubFields)[] nodes)
+        private static async Task<T> CompleteNodeAsync<T>(object resolved)
         {
-            var masterVariationField = _productType.Fields.First(x => x.Name.EqualsIgnoreCase("masterVariation"));
+            resolved.Should().BeAssignableTo<IDataLoaderResult<T>>();
 
-            var pending = new List<object>();
-            foreach (var (variation, subFields) in nodes)
-            {
-                pending.Add(await masterVariationField.Resolver.ResolveAsync(CreateResolveContext(variation, mediator, subFields)));
-            }
-
-            var results = new List<ExpVariation>();
-            foreach (var item in pending)
-            {
-                results.Add(await CompleteMasterVariationNodeAsync(item));
-            }
-
-            return results;
+            return await ((IDataLoaderResult<T>)resolved).GetResultAsync();
         }
 
-        private static async Task<IList<ExpVariation>> CompleteNodeAsync(object resolved)
-        {
-            var value = resolved is IDataLoaderResult loaderResult
-                ? await loaderResult.GetResultAsync()
-                : resolved;
-
-            return ((IEnumerable<ExpVariation>)value).ToList();
-        }
-
-        private static async Task<ExpVariation> CompleteMasterVariationNodeAsync(object resolved)
-        {
-            var value = resolved is IDataLoaderResult loaderResult
-                ? await loaderResult.GetResultAsync()
-                : resolved;
-
-            return (ExpVariation)value;
-        }
-
-        private static ResolveFieldContext CreateResolveContext(ExpProduct source, IMediator mediator, string[] subFields)
+        private ResolveFieldContext CreateResolveContext(ExpProduct source, string[] subFields)
         {
             var serviceProviderMock = new Mock<IServiceProvider>();
-            serviceProviderMock.Setup(x => x.GetService(typeof(IMediator))).Returns(mediator);
+            serviceProviderMock.Setup(x => x.GetService(typeof(IMediator))).Returns(_mediator);
 
             return new ResolveFieldContext
             {
@@ -329,7 +269,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
             };
         }
 
-        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets)
+        private IMediator CreateRecordingMediator()
         {
             var mediatorMock = new Mock<IMediator>();
 
@@ -337,51 +277,14 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
                 .Setup(x => x.Send(It.IsAny<LoadProductsQuery>(), It.IsAny<CancellationToken>()))
                 .Returns((LoadProductsQuery query, CancellationToken _) =>
                 {
-                    sentFieldSets.Add(query.IncludeFields.ToList());
+                    _sentFieldSets.Add(query.IncludeFields.ToList());
 
                     var products = query.ObjectIds
-                        .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = true } })
-                        .ToList();
-
-                    return Task.FromResult(new LoadProductResponse(products));
-                });
-
-            return mediatorMock.Object;
-        }
-
-        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets, Func<string, bool> isActive)
-        {
-            var mediatorMock = new Mock<IMediator>();
-
-            mediatorMock
-                .Setup(x => x.Send(It.IsAny<LoadProductsQuery>(), It.IsAny<CancellationToken>()))
-                .Returns((LoadProductsQuery query, CancellationToken _) =>
-                {
-                    sentFieldSets.Add(query.IncludeFields.ToList());
-
-                    var products = query.ObjectIds
-                        .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = isActive(id) } })
-                        .ToList();
-
-                    return Task.FromResult(new LoadProductResponse(products));
-                });
-
-            return mediatorMock.Object;
-        }
-
-        private static IMediator CreateRecordingMediator(List<IList<string>> sentFieldSets, HashSet<string> unresolvedIds)
-        {
-            var mediatorMock = new Mock<IMediator>();
-
-            mediatorMock
-                .Setup(x => x.Send(It.IsAny<LoadProductsQuery>(), It.IsAny<CancellationToken>()))
-                .Returns((LoadProductsQuery query, CancellationToken _) =>
-                {
-                    sentFieldSets.Add(query.IncludeFields.ToList());
-
-                    var products = query.ObjectIds
-                        .Where(id => !unresolvedIds.Contains(id))
-                        .Select(id => new ExpProduct { IndexedProduct = new CatalogProduct { Id = id, IsActive = true } })
+                        .Where(id => !_unresolvedIds.Contains(id))
+                        .Select(id => new ExpProduct
+                        {
+                            IndexedProduct = new CatalogProduct { Id = id, IsActive = !_inactiveIds.Contains(id) },
+                        })
                         .ToList();
 
                     return Task.FromResult(new LoadProductResponse(products));
