@@ -144,6 +144,23 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
+        public async Task ResolveVariationsField_SelectionOmitsIsActive_RequestsItAnyway()
+        {
+            var master = new ExpProduct
+            {
+                IndexedProduct = new CatalogProduct { Id = "m1", IsActive = true },
+                IndexedVariationIds = ["v1"],
+            };
+
+            await ResolveVariationNodesAsync((master, ["id", "name"]));
+
+            _sentFieldSets.Single().Should().Contain("isActive",
+                "the projection filters on IsActive, and IncludeFields narrows what the document carries - "
+                + "fetched without that field it deserializes as null, every variation is filtered out, and "
+                + "the field returns empty for every product with no error and no failing assertion elsewhere");
+        }
+
+        [Fact]
         public async Task ResolveVariationsField_IdsExceedTheBatchCap_SplitsIntoTwoLoadProductsQueries()
         {
             var ids = Enumerable.Range(0, 201).Select(i => $"v{i}").ToList();
