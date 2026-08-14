@@ -42,7 +42,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public async Task ResolveVariationsField_ThreeMastersOnOnePage_SendsOneQueryAndSplitsResultsByMaster()
+        public async Task ResolveVariationsField_ThreeMastersWithSameSubfields_SendsOneQueryAndSplitsResultsByMaster()
         {
             var masters = new[] { "m1", "m2", "m3" }
                 .Select((id, i) => new ExpProduct
@@ -81,7 +81,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public async Task ResolveMasterVariationField_ThreeVariationsOnOnePage_SendsOneLoadProductsQuery()
+        public async Task ResolveMasterVariationField_ThreeVariationsWithSameSubfields_SendsOneQuery()
         {
             var variations = new[] { "p1", "p2", "p3" }
                 .Select((id, i) => new ExpProduct
@@ -98,7 +98,7 @@ namespace VirtoCommerce.XCatalog.Tests.Schemas
         }
 
         [Fact]
-        public async Task ResolveVariationsAndMasterVariationFields_OnOnePage_SendOneLoadProductsQuery()
+        public async Task ResolveVariationsAndMasterVariation_WithSameSubfields_SendsOneQuery()
         {
             var master = new ExpProduct
             {

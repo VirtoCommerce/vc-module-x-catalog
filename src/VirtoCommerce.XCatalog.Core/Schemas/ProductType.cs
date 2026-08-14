@@ -420,20 +420,6 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return brandName?.ToString();
         }
 
-        protected virtual IDataLoaderResult<ExpVariation> ResolveMasterVariation(IResolveFieldContext<ExpProduct> context)
-        {
-            var id = context.Source.IndexedProduct.MainProductId;
-
-            if (string.IsNullOrEmpty(id))
-            {
-                return new DataLoaderResult<ExpVariation>((ExpVariation)null);
-            }
-
-            return GetVariationLoader(context)
-                .LoadAsync(id)
-                .Then(product => product is null ? null : new ExpVariation(product));
-        }
-
         [Obsolete("Use ResolveVariations.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
@@ -449,8 +435,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 return new DataLoaderResult<IList<ExpVariation>>([]);
             }
 
-            // Include 'isActive' field to filter out inactive variations
-            return GetVariationLoader(context, includeIsActiveField: true)
+            return GetVariationLoader(context)
                 .LoadAsync(ids)
                 .Then(IList<ExpVariation> (products) => products
                     .Where(x => x?.IndexedProduct?.IsActive == true)
@@ -458,11 +443,27 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                     .ToList());
         }
 
-        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context, bool includeIsActiveField = false)
+        protected virtual IDataLoaderResult<ExpVariation> ResolveMasterVariation(IResolveFieldContext<ExpProduct> context)
+        {
+            var id = context.Source.IndexedProduct.MainProductId;
+
+            if (string.IsNullOrEmpty(id))
+            {
+                return new DataLoaderResult<ExpVariation>((ExpVariation)null);
+            }
+
+            return GetVariationLoader(context)
+                .LoadAsync(id)
+                .Then(product => product is null ? null : new ExpVariation(product));
+        }
+
+        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context)
         {
             var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
 
-            if (includeIsActiveField && !includeFields.Contains("isActive"))
+            // ResolveVariations filters by IsActive;
+            // ResolveMasterVariation needs it only to have the same key.
+            if (!includeFields.Contains("isActive"))
             {
                 includeFields.Add("isActive");
             }
