@@ -58,7 +58,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<PriceType>>(
                 "price",
                 "Product price",
-                resolve: context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
+                resolve: context => context.Source.AllPrices.FirstOrDefault() ?? AbstractTypeFactory<ProductPrice>.TryCreateInstance(nameof(ProductPrice), context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>(
                 "prices",
