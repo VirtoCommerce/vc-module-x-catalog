@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
@@ -22,6 +21,7 @@ using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Index;
+using VirtoCommerce.XCatalog.Data.Services;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
 using XapiProductSorting = VirtoCommerce.XCatalog.Core.Models.ProductSorting;
@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         IQueryHandler<SearchProductQuery, SearchProductResponse>,
         IQueryHandler<LoadProductsQuery, LoadProductResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly ISearchProvider _searchProvider;
         private readonly IStoreCurrencyResolver _storeCurrencyResolver;
         private readonly IStoreService _storeService;
@@ -53,7 +53,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -78,7 +78,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         [Obsolete("Use the constructor overload with IRequestScopedCacheAccessor to deduplicate identical searches within one request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -93,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -106,7 +106,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
         {
-            var searchRequest = _mapper.Map<SearchProductQuery>(request);
+            var searchRequest = _mapper.ToSearchProductQuery(request);
 
             var result = await Handle(searchRequest, cancellationToken);
 
@@ -411,18 +411,14 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<ExpProduct> ConvertProducts(SearchResponse searchResponse)
         {
-            return searchResponse.Documents?.Select(x => _mapper.Map<ExpProduct>(x)).ToList() ?? new List<ExpProduct>();
+            return searchResponse.Documents?.Select(_mapper.ToExpProduct).ToList() ?? [];
         }
 
         protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode)
         {
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
-                .Select(x => _mapper.Map<FacetResult>(x, options =>
-                {
-                    options.Items["cultureName"] = languageCode;
-                    options.Items["order"] = Array.IndexOf(resultAggregations, x);
-                }))
+                .Select(x => _mapper.ToFacetResult(x, languageCode, Array.IndexOf(resultAggregations, x)))
                 .ToList();
         }
 

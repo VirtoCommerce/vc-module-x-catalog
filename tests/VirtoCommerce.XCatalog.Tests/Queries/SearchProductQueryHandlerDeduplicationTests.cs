@@ -3,16 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
 using VirtoCommerce.CatalogModule.Core.Services;
-using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Caching;
 using VirtoCommerce.Platform.Core.Caching;
 using VirtoCommerce.SearchModule.Core.Model;
@@ -26,8 +23,8 @@ using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
+using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
-using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
 
 namespace VirtoCommerce.XCatalog.Tests.Queries
@@ -43,7 +40,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         private const string START_DATE_FIELD = "startdate";
 
         private readonly Mock<ISearchProvider> _searchProviderMock = new();
-        private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<IXCatalogMapper> _mapperMock = new();
         private readonly Mock<IStoreCurrencyResolver> _storeCurrencyResolverMock = new();
         private readonly Mock<IStoreService> _storeServiceMock = new();
         private readonly Mock<IGenericPipelineLauncher> _pipelineMock = new();
@@ -95,7 +92,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 .ReturnsAsync([]);
 
             _mapperMock
-                .Setup(x => x.Map<ExpProduct>(It.IsAny<object>()))
+                .Setup(x => x.ToExpProduct(It.IsAny<SearchDocument>()))
                 .Returns(() => new ExpProduct());
 
             SetupProviderResponse();
@@ -419,7 +416,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 Mock.Of<IRequestScopedCacheAccessor>());
 
             _mapperMock
-                .Setup(x => x.Map<SearchProductQuery>(It.IsAny<LoadProductsQuery>()))
+                .Setup(x => x.ToSearchProductQuery(It.IsAny<LoadProductsQuery>()))
                 .Returns(() => Query("mapped"));
 
             await handler.Handle(Query("direct"), CancellationToken.None);
@@ -476,7 +473,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         {
             public TestableHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,
@@ -500,7 +497,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         {
             public DerivedAwareHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,
@@ -534,7 +531,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         {
             public SeamOverridingHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,

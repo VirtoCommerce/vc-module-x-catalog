@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.SearchModule.Core.Services;
@@ -16,18 +15,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
     {
         private readonly IPropertySearchService _propertySearchService;
         private readonly ISearchPhraseParser _searchPhraseParser;
-        private readonly IMapper _mapper;
 
-        public SearchPropertiesQueryHandler(ISearchPhraseParser searchPhraseParser, IPropertySearchService propertySearchService, IMapper mapper)
+        public SearchPropertiesQueryHandler(ISearchPhraseParser searchPhraseParser, IPropertySearchService propertySearchService)
         {
             _searchPhraseParser = searchPhraseParser;
-            _mapper = mapper;
             _propertySearchService = propertySearchService;
         }
 
         public virtual async Task<SearchPropertiesResponse> Handle(SearchPropertiesQuery request, CancellationToken cancellationToken)
         {
-            var searchCriteria = new PropertySearchCriteriaBuilder(_searchPhraseParser, _mapper)
+            var searchCriteria = new PropertySearchCriteriaBuilder(_searchPhraseParser)
                             .ParseFilters(request.Filter)
                             .WithCatalogId(request.CatalogId)
                             .WithPaging(request.Skip, request.Take)

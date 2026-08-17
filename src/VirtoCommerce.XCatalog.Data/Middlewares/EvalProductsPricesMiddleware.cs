@@ -1,30 +1,28 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.PricingModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class EvalProductsPricesMiddleware : IAsyncMiddleware<SearchProductResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly IPricingEvaluatorService _pricingEvaluatorService;
         private readonly IGenericPipelineLauncher _pipeline;
         private readonly IStoreService _storeService;
 
         public EvalProductsPricesMiddleware(
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IOptionalDependency<IPricingEvaluatorService> pricingEvaluatorService,
             IGenericPipelineLauncher pipeline,
             IStoreService storeService)
@@ -65,12 +63,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                 foreach (var product in parameter.Results)
                 {
-                    product.AllPrices = _mapper.Map<IEnumerable<ProductPrice>>(prices.Where(x => x.ProductId == product.Id), options =>
-                    {
-                        options.Items["all_currencies"] = parameter.AllStoreCurrencies;
-                        options.Items["currency"] = parameter.Currency;
-                        options.Items["pricelists"] = evalContext.Pricelists;
-                    }).ToList();
+                    product.AllPrices = _mapper
+                        .ToProductPrices(prices.Where(x => x.ProductId == product.Id), parameter.AllStoreCurrencies, evalContext.Pricelists)
+                        .ToList();
 
                     product.ApplyStaticDiscounts();
                 }
@@ -80,11 +75,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             {
                 foreach (var expProducts in parameter.Results)
                 {
-                    var minVariationPrices = _mapper.Map<IEnumerable<ProductPrice>>(expProducts.IndexedMinVariationPrices, options =>
-                    {
-                        options.Items["all_currencies"] = parameter.AllStoreCurrencies;
-                        options.Items["currency"] = parameter.Currency;
-                    }).ToList();
+                    var minVariationPrices = _mapper.
+                        ToProductPrices(expProducts.IndexedMinVariationPrices, parameter.AllStoreCurrencies)
+                        .ToList();
 
                     expProducts.MinVariationPrice = parameter.Currency != null
                         ? minVariationPrices.FirstOrDefault(x => x.Currency.Equals(parameter.Currency))

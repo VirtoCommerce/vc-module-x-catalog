@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
@@ -12,18 +10,19 @@ using VirtoCommerce.TaxModule.Core.Model.Search;
 using VirtoCommerce.TaxModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Data.Services;
 using StoreSetting = VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.General;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class EvalProductsTaxMiddleware : IAsyncMiddleware<SearchProductResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly IOptionalDependency<ITaxProviderSearchService> _taxProviderSearchService;
         private readonly IGenericPipelineLauncher _pipeline;
 
         public EvalProductsTaxMiddleware(
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IOptionalDependency<ITaxProviderSearchService> taxProviderSearchService,
             IGenericPipelineLauncher pipeline)
         {
@@ -68,7 +67,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     await _pipeline.Execute(taxEvalContext);
 
-                    taxEvalContext.Lines = parameter.Results.SelectMany(x => _mapper.Map<IEnumerable<TaxLine>>(x)).ToList();
+                    taxEvalContext.Lines = parameter.Results.SelectMany(x => _mapper.ToTaxLines(x)).ToList();
 
                     var taxRates = activeTaxProvider.CalculateRates(taxEvalContext);
 

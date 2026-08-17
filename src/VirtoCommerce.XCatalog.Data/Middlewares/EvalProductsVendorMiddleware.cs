@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares;
 
@@ -17,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares;
 /// </summary>
 public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductResponse>
 {
-    private readonly IMapper _mapper;
+    private readonly IXCatalogMapper _mapper;
     private readonly IMemberService _memberService;
 
     /// <summary>
@@ -25,7 +24,7 @@ public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductRespon
     /// </summary>
     /// <param name="mapper"></param>
     /// <param name="memberService"></param>
-    public EvalProductsVendorMiddleware(IMapper mapper, IMemberService memberService)
+    public EvalProductsVendorMiddleware(IXCatalogMapper mapper, IMemberService memberService)
     {
         _mapper = mapper;
         _memberService = memberService;
@@ -123,7 +122,7 @@ public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductRespon
             {
                 if (vendorsByIds.TryGetValue(product.IndexedProduct.Vendor, out var member))
                 {
-                    product.Vendor = _mapper.Map<ExpVendor>(member);
+                    product.Vendor = _mapper.ToExpVendor(member);
                 }
             });
     }

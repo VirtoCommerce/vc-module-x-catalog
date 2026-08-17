@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using FluentAssertions;
 using Moq;
 using VirtoCommerce.CatalogModule.Core.Model;
@@ -16,6 +14,7 @@ using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Queries;
+using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Queries
@@ -26,7 +25,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         private const string SCORE_FIELD = "score";
 
         private readonly Mock<ISearchProvider> _searchProviderMock = new();
-        private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<IXCatalogMapper> _mapperMock = new();
         private readonly Mock<ISearchPhraseParser> _phraseParserMock = new();
         private readonly Mock<IStoreService> _storeServiceMock = new();
         private readonly Mock<IGenericPipelineLauncher> _pipelineMock = new();
@@ -52,7 +51,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             // Each mapped category is a fresh instance with a null ChildCategories so the child-loading branch is entered.
             _mapperMock
-                .Setup(x => x.Map<ExpCategory>(It.IsAny<object>(), It.IsAny<Action<IMappingOperationOptions<object, ExpCategory>>>()))
+                .Setup(x => x.ToExpCategory(It.IsAny<SearchDocument>()))
                 .Returns(() => new ExpCategory { Category = new Category { Id = "category-1" } });
 
             // The child-categories lookup returns one child id so the recursive search is triggered.

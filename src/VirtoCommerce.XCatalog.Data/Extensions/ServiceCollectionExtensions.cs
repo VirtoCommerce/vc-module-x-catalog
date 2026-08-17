@@ -11,6 +11,7 @@ using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Middlewares;
+using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Extensions
 {
@@ -18,6 +19,8 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
     {
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
+            services.AddSingleton<IXCatalogMapper, XCatalogMapper>();
+
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();
 
             services.AddSingleton<ScopedSchemaFactory<DataAssemblyMarker>>();
