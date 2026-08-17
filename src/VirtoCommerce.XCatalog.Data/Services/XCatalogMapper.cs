@@ -383,15 +383,12 @@ public class XCatalogMapper : IXCatalogMapper
             var currency = allCurrencies[price.Currency];
             if (currency != null)
             {
-                var productPrice = new ProductPrice(currency)
-                {
-                    ProductId = price.ProductId,
-                    PricelistId = price.PricelistId,
-                    Currency = currency,
-                    StartDate = price.StartDate,
-                    EndDate = price.EndDate,
-                    ListPrice = new Money(price.List, currency),
-                };
+                var productPrice = AbstractTypeFactory<ProductPrice>.TryCreateInstance(nameof(ProductPrice), currency);
+                productPrice.ProductId = price.ProductId;
+                productPrice.PricelistId = price.PricelistId;
+                productPrice.StartDate = price.StartDate;
+                productPrice.EndDate = price.EndDate;
+                productPrice.ListPrice = new Money(price.List, currency);
                 productPrice.SalePrice = price.Sale == null ? productPrice.ListPrice : new Money(price.Sale ?? 0m, currency);
                 productPrice.MinQuantity = price.MinQuantity;
 

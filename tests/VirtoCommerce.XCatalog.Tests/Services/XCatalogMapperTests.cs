@@ -7,6 +7,7 @@ using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.PricingModule.Core.Model;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -20,6 +21,14 @@ namespace VirtoCommerce.XCatalog.Tests.Services;
 public class XCatalogMapperTests
 {
     private readonly IXCatalogMapper _mapper = new XCatalogMapper();
+
+    // Mirrors the AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>() call in AddXCatalog:
+    // without it, TryCreateInstance(typeName, args) can't find a registered type and falls back to a
+    // parameterless-constructor path ProductPrice doesn't have.
+    static XCatalogMapperTests()
+    {
+        AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
+    }
 
     [Fact]
     public void Initialize_Registers_XCatalogMapper_AsSingleton()

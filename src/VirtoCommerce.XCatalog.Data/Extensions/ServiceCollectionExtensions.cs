@@ -3,15 +3,18 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
+using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Infrastructure;
+using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Authorization;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Middlewares;
 using VirtoCommerce.XCatalog.Data.Services;
+using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Data.Extensions
 {
@@ -20,6 +23,11 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
             services.AddSingleton<IXCatalogMapper, XCatalogMapper>();
+
+            // ProductPrice has no self-registration anywhere in Xapi.Core; without it,
+            // AbstractTypeFactory<ProductPrice>.TryCreateInstance(typeName, args) falls back to a
+            // parameterless-constructor path that ProductPrice doesn't have, throwing MissingMethodException.
+            AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
 
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();
 
