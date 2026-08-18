@@ -418,7 +418,13 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         {
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
-                .Select(x => _mapper.ToFacetResult(x, languageCode, Array.IndexOf(resultAggregations, x)))
+                .Select(x =>
+                {
+                    var context = AbstractTypeFactory<FacetMappingContext>.TryCreateInstance();
+                    context.CultureName = languageCode;
+                    context.Order = Array.IndexOf(resultAggregations, x);
+                    return _mapper.ToFacetResult(x, context);
+                })
                 .ToList();
         }
 

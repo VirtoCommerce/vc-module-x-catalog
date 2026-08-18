@@ -84,6 +84,16 @@ public class XCatalogMapperTests
     }
 
     [Fact]
+    public void ToSearchProductQuery_NullIncludeFields_MapsToEmptyCollection()
+    {
+        var source = new LoadProductsQuery { IncludeFields = null };
+
+        var result = _mapper.ToSearchProductQuery(source);
+
+        result.IncludeFields.Should().NotBeNull().And.BeEmpty();
+    }
+
+    [Fact]
     public void ToSearchCategoryQuery_MapsAllFields()
     {
         var source = new LoadCategoryQuery
@@ -112,6 +122,16 @@ public class XCatalogMapperTests
         result.Query.Should().BeNull();
         result.Filter.Should().BeNull();
         result.Sort.Should().BeNull();
+    }
+
+    [Fact]
+    public void ToSearchCategoryQuery_NullIncludeFields_MapsToEmptyCollection()
+    {
+        var source = new LoadCategoryQuery { IncludeFields = null };
+
+        var result = _mapper.ToSearchCategoryQuery(source);
+
+        result.IncludeFields.Should().NotBeNull().And.BeEmpty();
     }
 
     [Fact]

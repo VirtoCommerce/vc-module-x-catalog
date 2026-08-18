@@ -24,9 +24,10 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
         {
             services.AddSingleton<IXCatalogMapper, XCatalogMapper>();
 
-            // ProductPrice has no self-registration anywhere in Xapi.Core; without it,
-            // AbstractTypeFactory<ProductPrice>.TryCreateInstance(typeName, args) falls back to a
-            // parameterless-constructor path that ProductPrice doesn't have, throwing MissingMethodException.
+            // Xapi.Web's Module.Initialize registers this too, but only once the manifest dependency on
+            // x-api has actually loaded that module; registering it here as well removes that ordering
+            // requirement, so AbstractTypeFactory<ProductPrice>.TryCreateInstance(typeName, args) doesn't
+            // fall back to a parameterless-constructor path that ProductPrice doesn't have.
             AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
 
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();

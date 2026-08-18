@@ -17,7 +17,7 @@ namespace VirtoCommerce.XCatalog.Data.Services;
 
 public interface IXCatalogMapper
 {
-    FacetResult ToFacetResult(Aggregation source, string cultureName, int? order);
+    FacetResult ToFacetResult(Aggregation source, FacetMappingContext context);
 
     ExpCategory ToExpCategory(SearchDocument source);
 

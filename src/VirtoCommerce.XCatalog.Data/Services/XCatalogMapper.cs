@@ -26,20 +26,16 @@ namespace VirtoCommerce.XCatalog.Data.Services;
 
 public class XCatalogMapper : IXCatalogMapper
 {
-    public virtual FacetResult ToFacetResult(Aggregation source, string cultureName, int? order)
+    public virtual FacetResult ToFacetResult(Aggregation source, FacetMappingContext context)
     {
         if (source == null)
         {
             return null;
         }
 
-        FacetResult result = source.AggregationType switch
-        {
-            "attr" => ToTermFacetResult(source, cultureName),
-            "range" or "pricerange" => ToRangeFacetResult(source),
-            _ => null,
-        };
+        var cultureName = context?.CultureName;
 
+        var result = CreateFacetResultByAggregationType(source, cultureName);
         if (result == null)
         {
             return null;
@@ -47,14 +43,24 @@ public class XCatalogMapper : IXCatalogMapper
 
         result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, cultureName)?.Label ?? result.Name;
 
-        if (order.HasValue)
+        if (context?.Order != null)
         {
-            result.Order = order.Value;
+            result.Order = context.Order.Value;
         }
 
         SortTermFacetResultByLabels(source, result);
 
         return result;
+    }
+
+    private FacetResult CreateFacetResultByAggregationType(Aggregation source, string cultureName)
+    {
+        return source.AggregationType switch
+        {
+            "attr" => ToTermFacetResult(source, cultureName),
+            "range" or "pricerange" => ToRangeFacetResult(source),
+            _ => null,
+        };
     }
 
     protected virtual TermFacetResult ToTermFacetResult(Aggregation source, string cultureName)
@@ -205,7 +211,7 @@ public class XCatalogMapper : IXCatalogMapper
         result.PreviousOutline = source.PreviousOutline;
         result.OrganizationId = source.OrganizationId;
         result.Store = source.Store;
-        result.IncludeFields = source.IncludeFields;
+        result.IncludeFields = source.IncludeFields?.ToList() ?? [];
         result.ObjectIds = source.ObjectIds?.ToArray();
         result.EvaluatePromotions = source.EvaluatePromotions;
 
@@ -228,7 +234,7 @@ public class XCatalogMapper : IXCatalogMapper
         result.PreviousOutline = source.PreviousOutline;
         result.OrganizationId = source.OrganizationId;
         result.Store = source.Store;
-        result.IncludeFields = source.IncludeFields;
+        result.IncludeFields = source.IncludeFields?.ToList() ?? [];
         result.ObjectIds = source.ObjectIds;
 
         return result;
@@ -309,7 +315,7 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null;
+            return null; // NOSONAR: null on a null source mirrors the original AutoMapper mapping's behavior and is asserted by ToTaxLines_NullSource_ReturnsNull.
         }
 
         var result = new List<TaxLine>();
@@ -346,7 +352,7 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null;
+            return null; // NOSONAR: null on a null source mirrors the original AutoMapper mapping's behavior and is asserted by ToProductPrices_NullSource_ReturnsNull.
         }
 
         if (allCurrencies == null)
@@ -376,7 +382,7 @@ public class XCatalogMapper : IXCatalogMapper
         return result;
     }
 
-    private static IEnumerable<ProductPrice> ToProductPricesByCurrency(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IList<Pricelist> pricelists)
+    protected virtual IEnumerable<ProductPrice> ToProductPricesByCurrency(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IList<Pricelist> pricelists)
     {
         foreach (var price in prices)
         {

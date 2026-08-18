@@ -33,7 +33,7 @@ public class MappingTermFilterTests
             options.Items["order"] = 3;
         }) as TermFacetResult;
 
-        var actual = _mapper.ToFacetResult(source, "en-US", 3) as TermFacetResult;
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 3 }) as TermFacetResult;
 
         actual.Should().NotBeNull();
         actual.Name.Should().Be(legacy.Name);
@@ -72,7 +72,7 @@ public class MappingTermFilterTests
             options.Items["order"] = 1;
         }) as RangeFacetResult;
 
-        var actual = _mapper.ToFacetResult(source, "en-US", 1) as RangeFacetResult;
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 1 }) as RangeFacetResult;
 
         actual.Should().NotBeNull();
         actual.Name.Should().Be(legacy.Name);
@@ -90,7 +90,7 @@ public class MappingTermFilterTests
         var source = new Aggregation { AggregationType = "unknown", Field = "color" };
 
         var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US");
-        var actual = _mapper.ToFacetResult(source, "en-US", 0);
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 0 });
 
         actual.Should().BeNull();
         legacy.Should().BeNull();
@@ -99,7 +99,7 @@ public class MappingTermFilterTests
     [Fact]
     public void ToFacetResult_NullSource_ReturnsNull()
     {
-        _mapper.ToFacetResult(null, "en-US", 0).Should().BeNull();
+        _mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US", Order = 0 }).Should().BeNull();
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class MappingTermFilterTests
         };
 
         var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US");
-        var actual = _mapper.ToFacetResult(source, "en-US", order: null);
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = null });
 
         actual.Order.Should().Be(legacy.Order);
         actual.Order.Should().Be(0);
