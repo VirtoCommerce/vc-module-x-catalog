@@ -8,7 +8,7 @@ using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Services;
 
-public class PropertyFilterMappingExtensionsTests
+public class PropertyFilterMappingTests
 {
     private readonly IXCatalogMapper _mapper = new XCatalogMapper();
 
