@@ -15,16 +15,18 @@ namespace VirtoCommerce.XCatalog.Data.Queries
     {
         private readonly IPropertySearchService _propertySearchService;
         private readonly ISearchPhraseParser _searchPhraseParser;
+        private readonly IXCatalogMapper _mapper;
 
-        public SearchPropertiesQueryHandler(ISearchPhraseParser searchPhraseParser, IPropertySearchService propertySearchService)
+        public SearchPropertiesQueryHandler(ISearchPhraseParser searchPhraseParser, IPropertySearchService propertySearchService, IXCatalogMapper mapper)
         {
             _searchPhraseParser = searchPhraseParser;
             _propertySearchService = propertySearchService;
+            _mapper = mapper;
         }
 
         public virtual async Task<SearchPropertiesResponse> Handle(SearchPropertiesQuery request, CancellationToken cancellationToken)
         {
-            var searchCriteria = new PropertySearchCriteriaBuilder(_searchPhraseParser)
+            var searchCriteria = new PropertySearchCriteriaBuilder(_searchPhraseParser, _mapper)
                             .ParseFilters(request.Filter)
                             .WithCatalogId(request.CatalogId)
                             .WithPaging(request.Skip, request.Take)

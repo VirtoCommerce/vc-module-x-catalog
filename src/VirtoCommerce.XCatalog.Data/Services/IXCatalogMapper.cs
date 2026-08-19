@@ -19,6 +19,8 @@ public interface IXCatalogMapper
 {
     FacetResult ToFacetResult(Aggregation source, FacetMappingContext context);
 
+    void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria);
+
     ExpCategory ToExpCategory(SearchDocument source);
 
     ExpProduct ToExpProduct(SearchDocument source);

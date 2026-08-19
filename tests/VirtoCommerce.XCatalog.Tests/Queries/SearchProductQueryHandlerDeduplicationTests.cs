@@ -19,7 +19,6 @@ using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Xapi.Tests.Helpers;
-using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -27,6 +26,7 @@ using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
 using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
+using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
 
 namespace VirtoCommerce.XCatalog.Tests.Queries

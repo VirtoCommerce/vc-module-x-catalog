@@ -8,12 +8,13 @@ namespace VirtoCommerce.XCatalog.Data.Services
     public class PropertySearchCriteriaBuilder
     {
         private readonly ISearchPhraseParser _phraseParser;
+        private readonly IXCatalogMapper _mapper;
         private readonly PropertySearchCriteria _searchCriteria;
 
-
-        public PropertySearchCriteriaBuilder(ISearchPhraseParser phraseParser) : this()
+        public PropertySearchCriteriaBuilder(ISearchPhraseParser phraseParser, IXCatalogMapper mapper) : this()
         {
             _phraseParser = phraseParser;
+            _mapper = mapper;
         }
 
         public PropertySearchCriteriaBuilder()
@@ -38,7 +39,7 @@ namespace VirtoCommerce.XCatalog.Data.Services
             }
 
             var parseResult = _phraseParser.Parse(filterPhrase);
-            parseResult.Filters.MapTo(_searchCriteria);
+            _mapper.MapTo(parseResult.Filters, _searchCriteria);
 
             return this;
         }

@@ -12,6 +12,7 @@ using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
 using VirtoCommerce.Xapi.Core.Extensions;
+using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.XCatalog.Core.Models;
@@ -46,6 +47,21 @@ public class XCatalogMapper : IXCatalogMapper
         SortTermFacetResultByLabels(source, result);
 
         return result;
+    }
+
+    public virtual void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria)
+    {
+        ArgumentNullException.ThrowIfNull(criteria);
+
+        if (filters == null)
+        {
+            return;
+        }
+
+        foreach (var term in filters.OfType<TermFilter>())
+        {
+            term.MapTo(criteria);
+        }
     }
 
     private FacetResult CreateFacetResultByAggregationType(Aggregation source, string cultureName)
