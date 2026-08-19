@@ -24,10 +24,9 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
         {
             services.AddSingleton<IXCatalogMapper, XCatalogMapper>();
 
-            // Xapi.Web's Module.Initialize registers this too, but only once the manifest dependency on
-            // x-api has actually loaded that module; registering it here as well removes that ordering
-            // requirement, so AbstractTypeFactory<ProductPrice>.TryCreateInstance(typeName, args) doesn't
-            // fall back to a parameterless-constructor path that ProductPrice doesn't have.
+            // Duplicates a registration Xapi.Web's Module.Initialize already performs (RegisterType is a
+            // harmless no-op if the entry exists). Kept here so AbstractTypeFactory<ProductPrice>
+            // .TryCreateInstance(typeName, args) doesn't depend on that module having registered it.
             AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
 
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();

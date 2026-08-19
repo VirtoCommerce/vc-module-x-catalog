@@ -27,18 +27,13 @@ public class MappingTermFilterTests
             ],
         };
 
-        var legacy = _legacyMapper.Map<FacetResult>(source, options =>
-        {
-            options.Items["cultureName"] = "en-US";
-            options.Items["order"] = 3;
-        }) as TermFacetResult;
+        var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US") as TermFacetResult;
 
-        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 3 }) as TermFacetResult;
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US" }) as TermFacetResult;
 
         actual.Should().NotBeNull();
         actual.Name.Should().Be(legacy.Name);
         actual.Label.Should().Be(legacy.Label);
-        actual.Order.Should().Be(legacy.Order);
         actual.Terms.Select(x => (x.Term, x.Count, x.IsSelected, x.Label))
             .Should().BeEquivalentTo(legacy.Terms.Select(x => (x.Term, x.Count, x.IsSelected, x.Label)), o => o.WithStrictOrdering());
     }
@@ -66,18 +61,13 @@ public class MappingTermFilterTests
             Statistics = new AggregationStatistics { Min = 0, Max = 999 },
         };
 
-        var legacy = _legacyMapper.Map<FacetResult>(source, options =>
-        {
-            options.Items["cultureName"] = "en-US";
-            options.Items["order"] = 1;
-        }) as RangeFacetResult;
+        var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US") as RangeFacetResult;
 
-        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 1 }) as RangeFacetResult;
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US" }) as RangeFacetResult;
 
         actual.Should().NotBeNull();
         actual.Name.Should().Be(legacy.Name);
         actual.Label.Should().Be(legacy.Label);
-        actual.Order.Should().Be(legacy.Order);
         actual.Statistics.Min.Should().Be(legacy.Statistics.Min);
         actual.Statistics.Max.Should().Be(legacy.Statistics.Max);
         actual.Ranges.Select(x => (x.From, x.To, x.FromStr, x.ToStr, x.IncludeFrom, x.IncludeTo, x.Count, x.IsSelected, x.Label))
@@ -90,7 +80,7 @@ public class MappingTermFilterTests
         var source = new Aggregation { AggregationType = "unknown", Field = "color" };
 
         var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US");
-        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = 0 });
+        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US" });
 
         actual.Should().BeNull();
         legacy.Should().BeNull();
@@ -99,23 +89,6 @@ public class MappingTermFilterTests
     [Fact]
     public void ToFacetResult_NullSource_ReturnsNull()
     {
-        _mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US", Order = 0 }).Should().BeNull();
-    }
-
-    [Fact]
-    public void ToFacetResult_NoOrderProvided_LeavesOrderAtDefault_MatchesLegacyMapper()
-    {
-        var source = new Aggregation
-        {
-            AggregationType = "attr",
-            Field = "color",
-            Items = [new AggregationItem { Count = 1, Value = "red", IsApplied = true }],
-        };
-
-        var legacy = _legacyMapper.Map<FacetResult>(source, options => options.Items["cultureName"] = "en-US");
-        var actual = _mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US", Order = null });
-
-        actual.Order.Should().Be(legacy.Order);
-        actual.Order.Should().Be(0);
+        _mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US" }).Should().BeNull();
     }
 }

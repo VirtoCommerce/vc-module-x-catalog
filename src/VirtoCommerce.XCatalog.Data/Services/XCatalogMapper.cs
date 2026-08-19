@@ -43,11 +43,6 @@ public class XCatalogMapper : IXCatalogMapper
 
         result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, cultureName)?.Label ?? result.Name;
 
-        if (context?.Order != null)
-        {
-            result.Order = context.Order.Value;
-        }
-
         SortTermFacetResultByLabels(source, result);
 
         return result;
@@ -282,10 +277,7 @@ public class XCatalogMapper : IXCatalogMapper
             return null;
         }
 
-        if (currency == null)
-        {
-            throw new OperationCanceledException("currency must be set");
-        }
+        ArgumentNullException.ThrowIfNull(currency);
 
         var result = AbstractTypeFactory<ProductPromoEntry>.TryCreateInstance();
 
@@ -315,7 +307,7 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null; // NOSONAR: null on a null source mirrors the original AutoMapper mapping's behavior and is asserted by ToTaxLines_NullSource_ReturnsNull.
+            return null;
         }
 
         var result = new List<TaxLine>();
@@ -352,13 +344,10 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null; // NOSONAR: null on a null source mirrors the original AutoMapper mapping's behavior and is asserted by ToProductPrices_NullSource_ReturnsNull.
+            return null;
         }
 
-        if (allCurrencies == null)
-        {
-            throw new OperationCanceledException("all_currencies must be set");
-        }
+        ArgumentNullException.ThrowIfNull(allCurrencies);
 
         var currenciesByCode = allCurrencies.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
         var priceLists = pricelists?.ToList() ?? [];

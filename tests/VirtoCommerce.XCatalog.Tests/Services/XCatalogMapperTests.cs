@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -22,9 +23,6 @@ public class XCatalogMapperTests
 {
     private readonly IXCatalogMapper _mapper = new XCatalogMapper();
 
-    // Mirrors the AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>() call in AddXCatalog:
-    // without it, TryCreateInstance(typeName, args) can't find a registered type and falls back to a
-    // parameterless-constructor path ProductPrice doesn't have.
     static XCatalogMapperTests()
     {
         AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
@@ -310,7 +308,7 @@ public class XCatalogMapperTests
         var product = new ExpProduct { IndexedProduct = new CatalogProduct { Id = "product-1" } };
 
         FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, null))
-            .Should().Throw<System.OperationCanceledException>();
+            .Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -448,7 +446,7 @@ public class XCatalogMapperTests
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", List = 100m } };
 
         FluentActions.Invoking(() => _mapper.ToProductPrices(prices, null))
-            .Should().Throw<System.OperationCanceledException>();
+            .Should().Throw<ArgumentNullException>();
     }
 
     private static Currency CreateCurrency(string code)

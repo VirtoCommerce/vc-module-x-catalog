@@ -75,8 +75,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             {
                 foreach (var expProducts in parameter.Results)
                 {
-                    var minVariationPrices = _mapper.
-                        ToProductPrices(expProducts.IndexedMinVariationPrices, parameter.AllStoreCurrencies)
+                    var minVariationPrices = (_mapper.
+                        ToProductPrices(expProducts.IndexedMinVariationPrices, parameter.AllStoreCurrencies) ?? [])
                         .ToList();
 
                     expProducts.MinVariationPrice = parameter.Currency != null

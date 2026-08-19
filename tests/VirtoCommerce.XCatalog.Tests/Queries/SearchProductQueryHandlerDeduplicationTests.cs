@@ -16,8 +16,10 @@ using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Xapi.Tests.Helpers;
+using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
@@ -191,6 +193,29 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             await handler.Handle(Query("shoes"), CancellationToken.None);
 
             _capturedSearchRequests.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_AssignsOrderMatchingOriginalArrayPosition_EvenWhenAFakeLanguageAggregationIsFiltered()
+        {
+            var color = new Aggregation { Field = "color", AggregationType = "attr" };
+            var colorLanguageSpecific = new Aggregation { Field = "color_en-us", AggregationType = "attr" };
+            var brand = new Aggregation { Field = "brand", AggregationType = "attr" };
+            var resultAggregations = new[] { color, colorLanguageSpecific, brand };
+
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((source, _) => new TermFacetResult { Name = source.Field });
+
+            var handler = GetHandler();
+
+            var result = handler.CallApplyFacetLocalization(resultAggregations, "en-US");
+
+            result.Should().HaveCount(2);
+            result[0].Name.Should().Be("color");
+            result[0].Order.Should().Be(0);
+            result[1].Name.Should().Be("brand");
+            result[1].Order.Should().Be(2);
         }
 
         [Fact]
@@ -491,6 +516,8 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             public SearchResponse CallCloneSearchResponse(SearchResponse source) => CloneSearchResponse(source);
 
             public string CallBuildSearchCacheKey(SearchRequest searchRequest) => BuildSearchCacheKey(searchRequest);
+
+            public IList<FacetResult> CallApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode) => ApplyFacetLocalization(resultAggregations, languageCode);
         }
 
         private sealed class DerivedAwareHandler : TestableHandler

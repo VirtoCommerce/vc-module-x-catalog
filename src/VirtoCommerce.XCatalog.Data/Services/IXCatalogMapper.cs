@@ -31,10 +31,14 @@ public interface IXCatalogMapper
 
     PropertyDictionaryItemSearchCriteria ToPropertyDictionaryItemSearchCriteria(SearchPropertyDictionaryItemQuery source);
 
+    /// <exception cref="System.ArgumentNullException"><paramref name="currency"/> is null.</exception>
     ProductPromoEntry ToProductPromoEntry(ExpProduct source, Currency currency);
 
+    /// <returns>Null if <paramref name="source"/> is null.</returns>
     IEnumerable<TaxLine> ToTaxLines(ExpProduct source);
 
+    /// <returns>Null if <paramref name="source"/> is null.</returns>
+    /// <exception cref="System.ArgumentNullException"><paramref name="allCurrencies"/> is null.</exception>
     IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, IEnumerable<Currency> allCurrencies, IEnumerable<Pricelist> pricelists = null);
 
     ExpVendor ToExpVendor(Member source);
