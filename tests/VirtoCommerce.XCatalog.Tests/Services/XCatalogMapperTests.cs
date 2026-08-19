@@ -388,9 +388,9 @@ public class XCatalogMapperTests
     }
 
     [Fact]
-    public void ToTaxLines_NullSource_ReturnsNull()
+    public void ToTaxLines_NullSource_ReturnsEmpty()
     {
-        _mapper.ToTaxLines(null).Should().BeNull();
+        _mapper.ToTaxLines(null).Should().BeEmpty();
     }
 
     [Fact]
@@ -435,9 +435,9 @@ public class XCatalogMapperTests
     }
 
     [Fact]
-    public void ToProductPrices_NullSource_ReturnsNull()
+    public void ToProductPrices_NullSource_ReturnsEmpty()
     {
-        _mapper.ToProductPrices(null, []).Should().BeNull();
+        _mapper.ToProductPrices(null, []).Should().BeEmpty();
     }
 
     [Fact]

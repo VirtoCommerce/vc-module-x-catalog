@@ -67,7 +67,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                     await _pipeline.Execute(taxEvalContext);
 
-                    taxEvalContext.Lines = parameter.Results.SelectMany(x => _mapper.ToTaxLines(x) ?? []).ToList();
+                    taxEvalContext.Lines = parameter.Results.SelectMany(x => _mapper.ToTaxLines(x)).ToList();
 
                     var taxRates = activeTaxProvider.CalculateRates(taxEvalContext);
 

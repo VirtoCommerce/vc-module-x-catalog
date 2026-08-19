@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using VirtoCommerce.InventoryModule.Core.Model.Search;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
-using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Infrastructure;
@@ -13,7 +12,6 @@ using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Middlewares;
 using VirtoCommerce.XCatalog.Data.Services;
-using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Data.Extensions
 {
@@ -22,11 +20,6 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
         public static IServiceCollection AddXCatalog(this IServiceCollection services, IGraphQLBuilder graphQLBuilder)
         {
             services.AddSingleton<IXCatalogMapper, XCatalogMapper>();
-
-            // Duplicates a registration Xapi.Web's Module.Initialize already performs (RegisterType is a
-            // harmless no-op if the entry exists). Kept here so AbstractTypeFactory<ProductPrice>
-            // .TryCreateInstance(typeName, args) doesn't depend on that module having registered it.
-            AbstractTypeFactory<ProductPrice>.RegisterType<ProductPrice>();
 
             services.AddSingleton<IAuthorizationHandler, CanAccessStoreAuthorizationHandler>();
 

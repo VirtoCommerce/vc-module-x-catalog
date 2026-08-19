@@ -323,7 +323,7 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null;
+            return [];
         }
 
         var result = new List<TaxLine>();
@@ -360,7 +360,7 @@ public class XCatalogMapper : IXCatalogMapper
     {
         if (source == null)
         {
-            return null;
+            return [];
         }
 
         ArgumentNullException.ThrowIfNull(allCurrencies);
