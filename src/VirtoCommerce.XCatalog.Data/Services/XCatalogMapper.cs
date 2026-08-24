@@ -34,15 +34,13 @@ public class XCatalogMapper : IXCatalogMapper
             return null;
         }
 
-        var cultureName = context?.CultureName;
-
-        var result = CreateFacetResultByAggregationType(source, cultureName);
+        var result = CreateFacetResultByAggregationType(source, context);
         if (result == null)
         {
             return null;
         }
 
-        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, cultureName)?.Label ?? result.Name;
+        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, context?.CultureName)?.Label ?? result.Name;
 
         SortTermFacetResultByLabels(source, result);
 
@@ -64,17 +62,17 @@ public class XCatalogMapper : IXCatalogMapper
         }
     }
 
-    private FacetResult CreateFacetResultByAggregationType(Aggregation source, string cultureName)
+    private FacetResult CreateFacetResultByAggregationType(Aggregation source, FacetMappingContext context)
     {
         return source.AggregationType switch
         {
-            "attr" => ToTermFacetResult(source, cultureName),
+            "attr" => ToTermFacetResult(source, context),
             "range" or "pricerange" => ToRangeFacetResult(source),
             _ => null,
         };
     }
 
-    protected virtual TermFacetResult ToTermFacetResult(Aggregation source, string cultureName)
+    protected virtual TermFacetResult ToTermFacetResult(Aggregation source, FacetMappingContext context)
     {
         if (source == null)
         {
@@ -84,12 +82,12 @@ public class XCatalogMapper : IXCatalogMapper
         var result = AbstractTypeFactory<TermFacetResult>.TryCreateInstance();
 
         result.Name = source.Field;
-        result.Terms = source.Items?.Select(x => ToFacetTerm(x, cultureName)).ToArray() ?? [];
+        result.Terms = source.Items?.Select(x => ToFacetTerm(x, context)).ToArray() ?? [];
 
         return result;
     }
 
-    protected virtual FacetTerm ToFacetTerm(AggregationItem source, string cultureName)
+    protected virtual FacetTerm ToFacetTerm(AggregationItem source, FacetMappingContext context)
     {
         if (source == null)
         {
@@ -101,7 +99,7 @@ public class XCatalogMapper : IXCatalogMapper
         result.Count = source.Count;
         result.IsSelected = source.IsApplied;
         result.Term = source.Value?.ToString();
-        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, cultureName)?.Label ?? source.Value?.ToString();
+        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, context?.CultureName)?.Label ?? source.Value?.ToString();
 
         return result;
     }
@@ -286,18 +284,19 @@ public class XCatalogMapper : IXCatalogMapper
         return result;
     }
 
-    public virtual ProductPromoEntry ToProductPromoEntry(ExpProduct source, Currency currency)
+    public virtual ProductPromoEntry ToProductPromoEntry(ExpProduct source, PriceMappingContext context)
     {
         if (source == null)
         {
             return null;
         }
 
-        ArgumentNullException.ThrowIfNull(currency);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(context.Currency);
 
         var result = AbstractTypeFactory<ProductPromoEntry>.TryCreateInstance();
 
-        var productPrice = source.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsIgnoreCase(currency.Code));
+        var productPrice = source.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsIgnoreCase(context.Currency.Code));
 
         result.CatalogId = source.IndexedProduct.CatalogId;
         result.CategoryId = source.IndexedProduct.CategoryId;
@@ -356,17 +355,18 @@ public class XCatalogMapper : IXCatalogMapper
         return result.ToArray();
     }
 
-    public virtual IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, IEnumerable<Currency> allCurrencies, IEnumerable<Pricelist> pricelists = null)
+    public virtual IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, PriceMappingContext context)
     {
         if (source == null)
         {
             return [];
         }
 
-        ArgumentNullException.ThrowIfNull(allCurrencies);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(context.AllStoreCurrencies);
 
-        var currenciesByCode = allCurrencies.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
-        var priceLists = pricelists?.ToList() ?? [];
+        var currenciesByCode = context.AllStoreCurrencies.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
+        var priceLists = context.Pricelists?.ToList() ?? [];
 
         var result = new List<ProductPrice>();
 

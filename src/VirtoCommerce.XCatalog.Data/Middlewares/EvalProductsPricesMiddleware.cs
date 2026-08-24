@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineNet.Middleware;
+using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
+using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.PricingModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
@@ -61,10 +64,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 evalContext.ProductIds = parameter.Results.Select(x => x.Id).ToArray();
                 var prices = await _pricingEvaluatorService.EvaluateProductPricesAsync(evalContext);
 
+                var priceContext = CreatePriceMappingContext(parameter.AllStoreCurrencies, evalContext.Pricelists);
                 foreach (var product in parameter.Results)
                 {
                     product.AllPrices = _mapper
-                        .ToProductPrices(prices.Where(x => x.ProductId == product.Id), parameter.AllStoreCurrencies, evalContext.Pricelists)
+                        .ToProductPrices(prices.Where(x => x.ProductId == product.Id), priceContext)
                         .ToList();
 
                     product.ApplyStaticDiscounts();
@@ -73,10 +77,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadVariationPrices) && parameter.Results.Any())
             {
+                var variationPriceContext = CreatePriceMappingContext(parameter.AllStoreCurrencies, null);
                 foreach (var expProducts in parameter.Results)
                 {
                     var minVariationPrices = _mapper
-                        .ToProductPrices(expProducts.IndexedMinVariationPrices, parameter.AllStoreCurrencies)
+                        .ToProductPrices(expProducts.IndexedMinVariationPrices, variationPriceContext)
                         .ToList();
 
                     expProducts.MinVariationPrice = parameter.Currency != null
@@ -88,9 +93,9 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await next(parameter);
         }
 
-        protected virtual async Task<PricingModule.Core.Model.PriceEvaluationContext> GetPriceEvaluationContext(SearchProductQuery query, Store store)
+        protected virtual async Task<PriceEvaluationContext> GetPriceEvaluationContext(SearchProductQuery query, Store store)
         {
-            var evalContext = AbstractTypeFactory<PricingModule.Core.Model.PriceEvaluationContext>.TryCreateInstance();
+            var evalContext = AbstractTypeFactory<PriceEvaluationContext>.TryCreateInstance();
             evalContext.Currency = query.CurrencyCode;
             evalContext.StoreId = query.StoreId;
             evalContext.CatalogId = store?.Catalog;
@@ -102,6 +107,15 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await _pipeline.Execute(evalContext);
 
             return evalContext;
+        }
+
+        protected virtual PriceMappingContext CreatePriceMappingContext(IEnumerable<Currency> allStoreCurrencies, IEnumerable<Pricelist> pricelists)
+        {
+            var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
+            context.AllStoreCurrencies = allStoreCurrencies;
+            context.Pricelists = pricelists;
+
+            return context;
         }
     }
 }

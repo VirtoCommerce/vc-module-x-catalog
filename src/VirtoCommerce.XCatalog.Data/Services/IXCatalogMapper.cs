@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
-using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.PricingModule.Core.Model;
@@ -33,15 +32,15 @@ public interface IXCatalogMapper
 
     PropertyDictionaryItemSearchCriteria ToPropertyDictionaryItemSearchCriteria(SearchPropertyDictionaryItemQuery source);
 
-    /// <exception cref="System.ArgumentNullException"><paramref name="currency"/> is null.</exception>
-    ProductPromoEntry ToProductPromoEntry(ExpProduct source, Currency currency);
+    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="PriceMappingContext.Currency"/> is null.</exception>
+    ProductPromoEntry ToProductPromoEntry(ExpProduct source, PriceMappingContext context);
 
     /// <returns>An empty collection if <paramref name="source"/> is null.</returns>
     IEnumerable<TaxLine> ToTaxLines(ExpProduct source);
 
     /// <returns>An empty collection if <paramref name="source"/> is null.</returns>
-    /// <exception cref="System.ArgumentNullException"><paramref name="allCurrencies"/> is null.</exception>
-    IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, IEnumerable<Currency> allCurrencies, IEnumerable<Pricelist> pricelists = null);
+    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="PriceMappingContext.AllStoreCurrencies"/> is null.</exception>
+    IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, PriceMappingContext context);
 
     ExpVendor ToExpVendor(Member source);
 }

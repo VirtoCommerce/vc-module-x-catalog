@@ -262,7 +262,7 @@ public class XCatalogMapperTests
             ],
         };
 
-        var result = _mapper.ToProductPromoEntry(product, currency);
+        var result = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = currency });
 
         result.CatalogId.Should().Be("catalog-1");
         result.CategoryId.Should().Be("category-1");
@@ -289,7 +289,7 @@ public class XCatalogMapperTests
             AllPrices = [new ProductPrice(otherCurrency) { ListPrice = new Money(20m, otherCurrency) }],
         };
 
-        var result = _mapper.ToProductPromoEntry(product, requestedCurrency);
+        var result = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = requestedCurrency });
 
         result.Price.Should().Be(0m);
         result.ListPrice.Should().Be(0m);
@@ -299,7 +299,16 @@ public class XCatalogMapperTests
     [Fact]
     public void ToProductPromoEntry_NullSource_ReturnsNull()
     {
-        _mapper.ToProductPromoEntry(null, CreateCurrency("USD")).Should().BeNull();
+        _mapper.ToProductPromoEntry(null, new PriceMappingContext { Currency = CreateCurrency("USD") }).Should().BeNull();
+    }
+
+    [Fact]
+    public void ToProductPromoEntry_NullContext_Throws()
+    {
+        var product = new ExpProduct { IndexedProduct = new CatalogProduct { Id = "product-1" } };
+
+        FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, null))
+            .Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -307,7 +316,7 @@ public class XCatalogMapperTests
     {
         var product = new ExpProduct { IndexedProduct = new CatalogProduct { Id = "product-1" } };
 
-        FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, null))
+        FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, new PriceMappingContext()))
             .Should().Throw<ArgumentNullException>();
     }
 
@@ -403,7 +412,7 @@ public class XCatalogMapperTests
             new() { Currency = "USD", ProductId = "p-1", List = 100m, Sale = 80m, MinQuantity = 1 },
         };
 
-        var result = _mapper.ToProductPrices(prices, [currency]).ToList();
+        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency] }).ToList();
 
         result.Should().HaveCount(1);
         result[0].MinQuantity.Should().Be(1);
@@ -417,7 +426,7 @@ public class XCatalogMapperTests
         var currency = CreateCurrency("USD");
         var prices = new List<Price> { new() { Currency = "GBP", ProductId = "p-1", List = 100m } };
 
-        var result = _mapper.ToProductPrices(prices, [currency]).ToList();
+        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency] }).ToList();
 
         result.Should().BeEmpty();
     }
@@ -429,7 +438,7 @@ public class XCatalogMapperTests
         var pricelist = new Pricelist { Id = "pl-1", Name = "Default" };
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", PricelistId = "pl-1", List = 100m } };
 
-        var result = _mapper.ToProductPrices(prices, [currency], [pricelist]).ToList();
+        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency], Pricelists = [pricelist] }).ToList();
 
         result.Should().ContainSingle().Which.PricelistName.Should().Be("Default");
     }
@@ -437,7 +446,16 @@ public class XCatalogMapperTests
     [Fact]
     public void ToProductPrices_NullSource_ReturnsEmpty()
     {
-        _mapper.ToProductPrices(null, []).Should().BeEmpty();
+        _mapper.ToProductPrices(null, new PriceMappingContext { AllStoreCurrencies = [] }).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToProductPrices_NullContext_Throws()
+    {
+        var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", List = 100m } };
+
+        FluentActions.Invoking(() => _mapper.ToProductPrices(prices, null))
+            .Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -445,7 +463,7 @@ public class XCatalogMapperTests
     {
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", List = 100m } };
 
-        FluentActions.Invoking(() => _mapper.ToProductPrices(prices, null))
+        FluentActions.Invoking(() => _mapper.ToProductPrices(prices, new PriceMappingContext()))
             .Should().Throw<ArgumentNullException>();
     }
 

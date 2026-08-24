@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineNet.Middleware;
+using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.MarketingModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
@@ -54,7 +55,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 if (query.EvaluatePromotions)
                 {
                     //Evaluate promotions
-                    promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.ToProductPromoEntry(x, parameter.Currency)).ToList();
+                    var priceContext = CreatePriceMappingContext(parameter.Currency);
+                    promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.ToProductPromoEntry(x, priceContext)).ToList();
 
                     var promotionResults = await _marketingEvaluator.EvaluatePromotionAsync(promoEvalContext);
                     var promoRewards = promotionResults.Rewards.OfType<CatalogItemAmountReward>().ToArray();
@@ -79,6 +81,14 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await _pipeline.Execute(promoEvalContext);
 
             return promoEvalContext;
+        }
+
+        protected virtual PriceMappingContext CreatePriceMappingContext(Currency currency)
+        {
+            var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
+            context.Currency = currency;
+
+            return context;
         }
     }
 }
