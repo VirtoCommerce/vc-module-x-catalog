@@ -219,6 +219,28 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         }
 
         [Fact]
+        public void ApplyFacetLocalization_MapperReturnsNullForOneAggregation_LeavesThatEntryNullWithoutThrowing()
+        {
+            var color = new Aggregation { Field = "color", AggregationType = "attr" };
+            var unrecognized = new Aggregation { Field = "unknown", AggregationType = "category" };
+            var resultAggregations = new[] { color, unrecognized };
+
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((source, _) =>
+                    source.AggregationType == "attr" ? new TermFacetResult { Name = source.Field } : null);
+
+            var handler = GetHandler();
+
+            var result = handler.CallApplyFacetLocalization(resultAggregations, "en-US");
+
+            result.Should().HaveCount(2);
+            result[0].Should().NotBeNull();
+            result[0]!.Order.Should().Be(0);
+            result[1].Should().BeNull();
+        }
+
+        [Fact]
         public async Task Handle_TwoDifferentSearchesInOneScope_CallTheProviderTwice()
         {
             var handler = GetHandler(new RequestScopedCache());

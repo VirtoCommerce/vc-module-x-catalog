@@ -19,6 +19,7 @@ using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Services;
 using VirtoCommerce.XCatalog.Web;
 using Xunit;
+using CatalogModuleConstants = VirtoCommerce.CatalogModule.Core.ModuleConstants;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
 namespace VirtoCommerce.XCatalog.Tests.Services;
@@ -539,7 +540,7 @@ public class XCatalogMapperTests
     }
 
     [Fact]
-    public void ToFacetResult_NullSource_PassesNullToFacetMapper()
+    public void ToFacetResult_UnsetTermValuesSortingType_DefaultsToNameAscending()
     {
         AggregationFacetSource captured = null;
         var facetMapperMock = new Mock<IFacetMapper>();
@@ -548,9 +549,26 @@ public class XCatalogMapperTests
             .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source);
         var mapper = new XCatalogMapper(facetMapperMock.Object);
 
-        mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US" });
+        mapper.ToFacetResult(new Aggregation { AggregationType = "attr", Field = "color" }, new FacetMappingContext());
+
+        captured!.TermValuesSortingType.Should().Be(CatalogModuleConstants.TermValuesSortingTypeNameAscending);
+    }
+
+    [Fact]
+    public void ToFacetResult_NullSource_PassesNullToFacetMapperAndReturnsNull()
+    {
+        AggregationFacetSource captured = null;
+        var facetMapperMock = new Mock<IFacetMapper>();
+        facetMapperMock
+            .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
+            .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source)
+            .Returns((FacetResult)null);
+        var mapper = new XCatalogMapper(facetMapperMock.Object);
+
+        var result = mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US" });
 
         captured.Should().BeNull();
+        result.Should().BeNull();
     }
 
     [Fact]
