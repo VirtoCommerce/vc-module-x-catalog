@@ -55,7 +55,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 if (query.EvaluatePromotions)
                 {
                     //Evaluate promotions
-                    var priceContext = CreatePriceMappingContext(parameter.Currency);
+                    var priceContext = CreatePromoPriceMappingContext(query, parameter.Currency);
                     promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.ToProductPromoEntry(x, priceContext)).ToList();
 
                     var promotionResults = await _marketingEvaluator.EvaluatePromotionAsync(promoEvalContext);
@@ -83,9 +83,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return promoEvalContext;
         }
 
-        protected virtual PriceMappingContext CreatePriceMappingContext(Currency currency)
+        protected virtual PriceMappingContext CreatePromoPriceMappingContext(SearchProductQuery query, Currency currency)
         {
             var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
+            context.CultureName = query.CultureName;
+            context.CurrencyCode = query.CurrencyCode;
             context.Currency = currency;
 
             return context;

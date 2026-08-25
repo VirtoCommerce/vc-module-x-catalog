@@ -6,11 +6,8 @@ using VirtoCommerce.Xapi.Core.Models;
 namespace VirtoCommerce.XCatalog.Data.Services;
 
 /// <summary>
-/// Ambient context for the pricing-related mapping methods on <see cref="IXCatalogMapper"/>:
-/// <see cref="IXCatalogMapper.ToProductPromoEntry"/> and <see cref="IXCatalogMapper.ToProductPrices"/>.
-/// Not every member is populated for every call: <c>ToProductPromoEntry</c> only reads
-/// <see cref="Currency"/>; <c>ToProductPrices</c> only reads <see cref="AllStoreCurrencies"/> and
-/// <see cref="Pricelists"/>.
+/// Ambient context for <see cref="IXCatalogMapper.ToProductPromoEntry"/> and
+/// <see cref="IXCatalogMapper.ToProductPrices"/>; not every member is needed by every call.
 /// </summary>
 public class PriceMappingContext : MappingContext
 {

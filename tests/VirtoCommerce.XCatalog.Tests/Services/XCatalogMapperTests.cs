@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using VirtoCommerce.CatalogModule.Core.Model;
+using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Models;
+using VirtoCommerce.Xapi.Core.Models.Facets;
+using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Data.Services;
@@ -21,7 +25,7 @@ namespace VirtoCommerce.XCatalog.Tests.Services;
 
 public class XCatalogMapperTests
 {
-    private readonly IXCatalogMapper _mapper = new XCatalogMapper();
+    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>());
 
     static XCatalogMapperTests()
     {
@@ -444,6 +448,18 @@ public class XCatalogMapperTests
     }
 
     [Fact]
+    public void ToProductPrices_UnsetPricelists_LeavesPricelistNameNull()
+    {
+        // No pricelists passed in - PricelistName must stay null, not get populated from elsewhere.
+        var currency = CreateCurrency("USD");
+        var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", PricelistId = "pl-1", List = 100m } };
+
+        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency], Pricelists = null }).ToList();
+
+        result.Should().ContainSingle().Which.PricelistName.Should().BeNull();
+    }
+
+    [Fact]
     public void ToProductPrices_NullSource_ReturnsEmpty()
     {
         _mapper.ToProductPrices(null, new PriceMappingContext { AllStoreCurrencies = [] }).Should().BeEmpty();
@@ -465,6 +481,106 @@ public class XCatalogMapperTests
 
         FluentActions.Invoking(() => _mapper.ToProductPrices(prices, new PriceMappingContext()))
             .Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void ToFacetResult_ConvertsAggregationToAggregationFacetSource()
+    {
+        AggregationFacetSource captured = null;
+        var facetMapperMock = new Mock<IFacetMapper>();
+        facetMapperMock
+            .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
+            .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source);
+        var mapper = new XCatalogMapper(facetMapperMock.Object);
+
+        var source = new Aggregation
+        {
+            AggregationType = "attr",
+            Field = "color",
+            TermValuesSortingType = "NameDescending",
+            Labels = [new AggregationLabel { Language = "en-US", Label = "Color" }],
+            Statistics = new AggregationStatistics { Min = 1.5, Max = 99.5 },
+            Items =
+            [
+                new AggregationItem
+                {
+                    Value = "red",
+                    Count = 5,
+                    IsApplied = true,
+                    Labels = [new AggregationLabel { Language = "en-US", Label = "Red" }],
+                    RequestedLowerBound = "1",
+                    RequestedUpperBound = "10",
+                    IncludeLower = true,
+                    IncludeUpper = false,
+                },
+            ],
+        };
+
+        mapper.ToFacetResult(source, new FacetMappingContext { CultureName = "en-US" });
+
+        captured.Should().NotBeNull();
+        captured!.AggregationType.Should().Be("attr");
+        captured.Field.Should().Be("color");
+        captured.TermValuesSortingType.Should().Be("NameDescending");
+        captured.Labels.Should().ContainSingle().Which.Label.Should().Be("Color");
+        captured.Statistics!.Min.Should().Be(1.5);
+        captured.Statistics.Max.Should().Be(99.5);
+
+        captured.Items.Should().ContainSingle();
+        var item = captured.Items![0];
+        item.Value.Should().Be("red");
+        item.Count.Should().Be(5);
+        item.IsApplied.Should().BeTrue();
+        item.Labels.Should().ContainSingle().Which.Label.Should().Be("Red");
+        item.RequestedLowerBound.Should().Be("1");
+        item.RequestedUpperBound.Should().Be("10");
+        item.IncludeLower.Should().BeTrue();
+        item.IncludeUpper.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ToFacetResult_NullSource_PassesNullToFacetMapper()
+    {
+        AggregationFacetSource captured = null;
+        var facetMapperMock = new Mock<IFacetMapper>();
+        facetMapperMock
+            .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
+            .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source);
+        var mapper = new XCatalogMapper(facetMapperMock.Object);
+
+        mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US" });
+
+        captured.Should().BeNull();
+    }
+
+    [Fact]
+    public void ToFacetResult_ReturnsFacetMapperResult()
+    {
+        var expected = new TermFacetResult();
+        var facetMapperMock = new Mock<IFacetMapper>();
+        facetMapperMock
+            .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
+            .Returns(expected);
+        var mapper = new XCatalogMapper(facetMapperMock.Object);
+
+        var result = mapper.ToFacetResult(new Aggregation { AggregationType = "attr" }, new FacetMappingContext());
+
+        result.Should().BeSameAs(expected);
+    }
+
+    [Fact]
+    public void CreateFacetMappingContext_DelegatesToFacetMapper()
+    {
+        var expected = new FacetMappingContext();
+        var facetMapperMock = new Mock<IFacetMapper>();
+        facetMapperMock
+            .Setup(x => x.CreateFacetMappingContext("en-US"))
+            .Returns(expected);
+        var mapper = new XCatalogMapper(facetMapperMock.Object);
+
+        var result = mapper.CreateFacetMappingContext("en-US");
+
+        result.Should().BeSameAs(expected);
     }
 
     private static Currency CreateCurrency(string code)

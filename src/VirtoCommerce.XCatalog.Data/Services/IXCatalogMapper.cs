@@ -18,6 +18,8 @@ public interface IXCatalogMapper
 {
     FacetResult ToFacetResult(Aggregation source, FacetMappingContext context);
 
+    FacetMappingContext CreateFacetMappingContext(string cultureName);
+
     void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria);
 
     ExpCategory ToExpCategory(SearchDocument source);

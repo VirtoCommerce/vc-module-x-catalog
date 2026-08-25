@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CoreModule.Core.Currency;
@@ -15,10 +14,12 @@ using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Models.Facets;
+using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using AggregationItem = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationItem;
+using AggregationLabel = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationLabel;
 using AggregationStatistics = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationStatistics;
 using CatalogModuleConstants = VirtoCommerce.CatalogModule.Core.ModuleConstants;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
@@ -27,24 +28,81 @@ namespace VirtoCommerce.XCatalog.Data.Services;
 
 public class XCatalogMapper : IXCatalogMapper
 {
+    private readonly IFacetMapper _facetMapper;
+
+    public XCatalogMapper(IFacetMapper facetMapper)
+    {
+        _facetMapper = facetMapper;
+    }
+
     public virtual FacetResult ToFacetResult(Aggregation source, FacetMappingContext context)
+    {
+        return _facetMapper.ToFacetResult(ToAggregationFacetSource(source), context);
+    }
+
+    public virtual FacetMappingContext CreateFacetMappingContext(string cultureName)
+    {
+        return _facetMapper.CreateFacetMappingContext(cultureName);
+    }
+
+    protected virtual AggregationFacetSource ToAggregationFacetSource(Aggregation source)
     {
         if (source == null)
         {
             return null;
         }
 
-        var result = CreateFacetResultByAggregationType(source, context);
-        if (result == null)
+        return new AggregationFacetSource
+        {
+            AggregationType = source.AggregationType,
+            Field = source.Field,
+            // Defaulting to ascending is x-catalog's own historical behavior; the shared FacetMapper
+            // itself leaves an unset TermValuesSortingType unsorted.
+            TermValuesSortingType = source.TermValuesSortingType.IsNullOrEmpty()
+                ? CatalogModuleConstants.TermValuesSortingTypeNameAscending
+                : source.TermValuesSortingType,
+            Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList(),
+            Items = source.Items?.Select(ToAggregationFacetItem).ToList(),
+            Statistics = ToAggregationFacetStatistics(source.Statistics),
+        };
+    }
+
+    protected virtual AggregationFacetItem ToAggregationFacetItem(AggregationItem source)
+    {
+        return new AggregationFacetItem
+        {
+            Value = source.Value,
+            Count = source.Count,
+            IsApplied = source.IsApplied,
+            Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList(),
+            RequestedLowerBound = source.RequestedLowerBound,
+            RequestedUpperBound = source.RequestedUpperBound,
+            IncludeLower = source.IncludeLower,
+            IncludeUpper = source.IncludeUpper,
+        };
+    }
+
+    protected virtual AggregationFacetStatistics ToAggregationFacetStatistics(AggregationStatistics source)
+    {
+        if (source == null)
         {
             return null;
         }
 
-        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, context?.CultureName)?.Label ?? result.Name;
+        return new AggregationFacetStatistics
+        {
+            Min = source.Min,
+            Max = source.Max,
+        };
+    }
 
-        SortTermFacetResultByLabels(source, result);
-
-        return result;
+    protected virtual AggregationFacetLabel ToAggregationFacetLabel(AggregationLabel source)
+    {
+        return new AggregationFacetLabel
+        {
+            Language = source.Language,
+            Label = source.Label,
+        };
     }
 
     public virtual void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria)
@@ -60,128 +118,6 @@ public class XCatalogMapper : IXCatalogMapper
         {
             term.MapTo(criteria);
         }
-    }
-
-    private FacetResult CreateFacetResultByAggregationType(Aggregation source, FacetMappingContext context)
-    {
-        return source.AggregationType switch
-        {
-            "attr" => ToTermFacetResult(source, context),
-            "range" or "pricerange" => ToRangeFacetResult(source),
-            _ => null,
-        };
-    }
-
-    protected virtual TermFacetResult ToTermFacetResult(Aggregation source, FacetMappingContext context)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<TermFacetResult>.TryCreateInstance();
-
-        result.Name = source.Field;
-        result.Terms = source.Items?.Select(x => ToFacetTerm(x, context)).ToArray() ?? [];
-
-        return result;
-    }
-
-    protected virtual FacetTerm ToFacetTerm(AggregationItem source, FacetMappingContext context)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<FacetTerm>.TryCreateInstance();
-
-        result.Count = source.Count;
-        result.IsSelected = source.IsApplied;
-        result.Term = source.Value?.ToString();
-        result.Label = source.Labels?.FirstBestMatchForLanguage(x => x.Language, context?.CultureName)?.Label ?? source.Value?.ToString();
-
-        return result;
-    }
-
-    protected virtual RangeFacetResult ToRangeFacetResult(Aggregation source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<RangeFacetResult>.TryCreateInstance();
-
-        result.Name = source.Field;
-        result.Ranges = source.Items?.Select(ToFacetRange).ToArray() ?? [];
-        result.Statistics = source.Statistics == null ? null : ToRangeFacetStatistics(source.Statistics);
-
-        return result;
-    }
-
-    protected virtual FacetRange ToFacetRange(AggregationItem source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<FacetRange>.TryCreateInstance();
-
-        result.Count = source.Count;
-        result.IsSelected = source.IsApplied;
-        result.From = ToNullableDecimal(source.RequestedLowerBound);
-        result.IncludeFrom = source.IncludeLower;
-        result.FromStr = source.RequestedLowerBound;
-        result.To = ToNullableDecimal(source.RequestedUpperBound);
-        result.IncludeTo = source.IncludeUpper;
-        result.ToStr = source.RequestedUpperBound;
-        result.Label = source.Value?.ToString();
-
-        return result;
-    }
-
-    protected virtual RangeFacetStatistics ToRangeFacetStatistics(AggregationStatistics source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<RangeFacetStatistics>.TryCreateInstance();
-
-        result.Max = source.Max;
-        result.Min = source.Min;
-
-        return result;
-    }
-
-    protected virtual void SortTermFacetResultByLabels(Aggregation source, FacetResult result)
-    {
-        if (result is not TermFacetResult termFacetResult || termFacetResult.Terms.IsNullOrEmpty())
-        {
-            return;
-        }
-
-        if (source.TermValuesSortingType.IsNullOrEmpty() || source.TermValuesSortingType.EqualsIgnoreCase(CatalogModuleConstants.TermValuesSortingTypeNameAscending))
-        {
-            termFacetResult.Terms = termFacetResult.Terms.OrderBy(x => x.Label).ToArray();
-        }
-        else if (source.TermValuesSortingType.EqualsIgnoreCase(CatalogModuleConstants.TermValuesSortingTypeNameDescending))
-        {
-            termFacetResult.Terms = termFacetResult.Terms.OrderByDescending(x => x.Label).ToArray();
-        }
-    }
-
-    private static decimal? ToNullableDecimal(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
     }
 
     public virtual ExpCategory ToExpCategory(SearchDocument source)

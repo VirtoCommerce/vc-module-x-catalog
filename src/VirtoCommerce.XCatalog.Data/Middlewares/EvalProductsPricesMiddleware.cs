@@ -64,7 +64,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 evalContext.ProductIds = parameter.Results.Select(x => x.Id).ToArray();
                 var prices = await _pricingEvaluatorService.EvaluateProductPricesAsync(evalContext);
 
-                var priceContext = CreatePriceMappingContext(parameter.AllStoreCurrencies, evalContext.Pricelists);
+                var priceContext = CreateProductPricesMappingContext(query, parameter.AllStoreCurrencies, evalContext.Pricelists);
                 foreach (var product in parameter.Results)
                 {
                     product.AllPrices = _mapper
@@ -77,7 +77,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadVariationPrices) && parameter.Results.Any())
             {
-                var variationPriceContext = CreatePriceMappingContext(parameter.AllStoreCurrencies, null);
+                var variationPriceContext = CreateProductPricesMappingContext(query, parameter.AllStoreCurrencies, null);
                 foreach (var expProducts in parameter.Results)
                 {
                     var minVariationPrices = _mapper
@@ -109,9 +109,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return evalContext;
         }
 
-        protected virtual PriceMappingContext CreatePriceMappingContext(IEnumerable<Currency> allStoreCurrencies, IEnumerable<Pricelist> pricelists)
+        protected virtual PriceMappingContext CreateProductPricesMappingContext(SearchProductQuery query, IEnumerable<Currency> allStoreCurrencies, IEnumerable<Pricelist> pricelists)
         {
             var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
+            context.CultureName = query.CultureName;
+            context.CurrencyCode = query.CurrencyCode;
             context.AllStoreCurrencies = allStoreCurrencies;
             context.Pricelists = pricelists;
 

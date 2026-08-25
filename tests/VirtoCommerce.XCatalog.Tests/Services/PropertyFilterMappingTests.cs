@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Moq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.SearchModule.Core.Model;
+using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 
@@ -10,7 +12,7 @@ namespace VirtoCommerce.XCatalog.Tests.Services;
 
 public class PropertyFilterMappingTests
 {
-    private readonly IXCatalogMapper _mapper = new XCatalogMapper();
+    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>());
 
     [Fact]
     public void MapTo_TermFilter_SetsMatchingProperty()

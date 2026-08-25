@@ -416,7 +416,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode)
         {
-            var context = CreateFacetMappingContext(languageCode);
+            var context = _mapper.CreateFacetMappingContext(languageCode);
 
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
@@ -431,14 +431,6 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     return result;
                 })
                 .ToList();
-        }
-
-        protected virtual FacetMappingContext CreateFacetMappingContext(string languageCode)
-        {
-            var context = AbstractTypeFactory<FacetMappingContext>.TryCreateInstance();
-            context.CultureName = languageCode;
-
-            return context;
         }
 
         protected virtual IList<XapiProductSorting> BuildSortings(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode)
