@@ -12,13 +12,11 @@ using VirtoCommerce.XCatalog.Core.Queries;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
-namespace VirtoCommerce.XCatalog.Data.Services;
+namespace VirtoCommerce.XCatalog.Core.Services;
 
 public interface IXCatalogMapper
 {
     FacetResult ToFacetResult(Aggregation source, FacetMappingContext context);
-
-    FacetMappingContext CreateFacetMappingContext(string cultureName);
 
     void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria);
 
@@ -34,15 +32,15 @@ public interface IXCatalogMapper
 
     PropertyDictionaryItemSearchCriteria ToPropertyDictionaryItemSearchCriteria(SearchPropertyDictionaryItemQuery source);
 
-    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="PriceMappingContext.Currency"/> is null.</exception>
-    ProductPromoEntry ToProductPromoEntry(ExpProduct source, PriceMappingContext context);
+    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="PromoPriceMappingContext.Response"/> or that response's <c>Currency</c> is null.</exception>
+    ProductPromoEntry ToProductPromoEntry(ExpProduct source, PromoPriceMappingContext context);
 
     /// <returns>An empty collection if <paramref name="source"/> is null.</returns>
     IEnumerable<TaxLine> ToTaxLines(ExpProduct source);
 
     /// <returns>An empty collection if <paramref name="source"/> is null.</returns>
-    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="PriceMappingContext.AllStoreCurrencies"/> is null.</exception>
-    IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, PriceMappingContext context);
+    /// <exception cref="System.ArgumentNullException"><paramref name="context"/> or its <see cref="ProductPricesMappingContext.Response"/> or that response's <c>AllStoreCurrencies</c> is null.</exception>
+    IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, ProductPricesMappingContext context);
 
     ExpVendor ToExpVendor(Member source);
 }

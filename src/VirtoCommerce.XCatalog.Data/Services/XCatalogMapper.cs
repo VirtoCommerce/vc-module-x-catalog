@@ -10,13 +10,13 @@ using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
-using VirtoCommerce.Xapi.Core.Extensions;
 using VirtoCommerce.Xapi.Core.Index;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using AggregationItem = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationItem;
 using AggregationLabel = VirtoCommerce.CatalogModule.Core.Model.Search.AggregationLabel;
@@ -38,11 +38,6 @@ public class XCatalogMapper : IXCatalogMapper
     public virtual FacetResult ToFacetResult(Aggregation source, FacetMappingContext context)
     {
         return _facetMapper.ToFacetResult(ToAggregationFacetSource(source), context);
-    }
-
-    public virtual FacetMappingContext CreateFacetMappingContext(string cultureName)
-    {
-        return _facetMapper.CreateFacetMappingContext(cultureName);
     }
 
     protected virtual AggregationFacetSource ToAggregationFacetSource(Aggregation source)
@@ -220,7 +215,7 @@ public class XCatalogMapper : IXCatalogMapper
         return result;
     }
 
-    public virtual ProductPromoEntry ToProductPromoEntry(ExpProduct source, PriceMappingContext context)
+    public virtual ProductPromoEntry ToProductPromoEntry(ExpProduct source, PromoPriceMappingContext context)
     {
         if (source == null)
         {
@@ -228,11 +223,12 @@ public class XCatalogMapper : IXCatalogMapper
         }
 
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(context.Currency);
+        ArgumentNullException.ThrowIfNull(context.Response);
+        ArgumentNullException.ThrowIfNull(context.Response.Currency);
 
         var result = AbstractTypeFactory<ProductPromoEntry>.TryCreateInstance();
 
-        var productPrice = source.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsIgnoreCase(context.Currency.Code));
+        var productPrice = source.AllPrices.FirstOrDefault(x => x.Currency.Code.EqualsIgnoreCase(context.Response.Currency.Code));
 
         result.CatalogId = source.IndexedProduct.CatalogId;
         result.CategoryId = source.IndexedProduct.CategoryId;
@@ -291,7 +287,7 @@ public class XCatalogMapper : IXCatalogMapper
         return result.ToArray();
     }
 
-    public virtual IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, PriceMappingContext context)
+    public virtual IEnumerable<ProductPrice> ToProductPrices(IEnumerable<Price> source, ProductPricesMappingContext context)
     {
         if (source == null)
         {
@@ -299,15 +295,13 @@ public class XCatalogMapper : IXCatalogMapper
         }
 
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(context.AllStoreCurrencies);
-
-        var currenciesByCode = context.AllStoreCurrencies.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
-        var priceLists = context.Pricelists?.ToList() ?? [];
+        ArgumentNullException.ThrowIfNull(context.Response);
+        ArgumentNullException.ThrowIfNull(context.Response.AllStoreCurrencies);
 
         var result = new List<ProductPrice>();
 
         // Group prices by currency.
-        var groupedByCurrency = ToProductPricesByCurrency(source, currenciesByCode, priceLists).GroupBy(x => x.Currency).Where(x => x.Any());
+        var groupedByCurrency = ToProductPricesByCurrency(source, context).GroupBy(x => x.Currency).Where(x => x.Any());
         foreach (var currencyGroup in groupedByCurrency)
         {
             // For each currency, need the nominal price (with the minimum quantity).
@@ -323,8 +317,11 @@ public class XCatalogMapper : IXCatalogMapper
         return result;
     }
 
-    protected virtual IEnumerable<ProductPrice> ToProductPricesByCurrency(IEnumerable<Price> prices, IDictionary<string, Currency> allCurrencies, IList<Pricelist> pricelists)
+    protected virtual IEnumerable<ProductPrice> ToProductPricesByCurrency(IEnumerable<Price> prices, ProductPricesMappingContext context)
     {
+        var allCurrencies = context.Response.AllStoreCurrencies.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase).WithDefaultValue(null);
+        var pricelists = context.Pricelists?.ToList() ?? [];
+
         foreach (var price in prices)
         {
             var currency = allCurrencies[price.Currency];

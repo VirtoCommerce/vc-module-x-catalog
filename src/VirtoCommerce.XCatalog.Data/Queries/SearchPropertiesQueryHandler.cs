@@ -7,6 +7,7 @@ using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Queries

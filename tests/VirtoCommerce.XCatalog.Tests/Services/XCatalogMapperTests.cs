@@ -16,7 +16,9 @@ using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Tests.Helpers;
 using VirtoCommerce.XCatalog.Web;
 using Xunit;
 using CatalogModuleConstants = VirtoCommerce.CatalogModule.Core.ModuleConstants;
@@ -267,7 +269,7 @@ public class XCatalogMapperTests
             ],
         };
 
-        var result = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = currency });
+        var result = _mapper.ToProductPromoEntry(product, SearchProductResponseBuilder.Build(currency).ToPromoPriceMappingContext());
 
         result.CatalogId.Should().Be("catalog-1");
         result.CategoryId.Should().Be("category-1");
@@ -294,7 +296,7 @@ public class XCatalogMapperTests
             AllPrices = [new ProductPrice(otherCurrency) { ListPrice = new Money(20m, otherCurrency) }],
         };
 
-        var result = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = requestedCurrency });
+        var result = _mapper.ToProductPromoEntry(product, SearchProductResponseBuilder.Build(requestedCurrency).ToPromoPriceMappingContext());
 
         result.Price.Should().Be(0m);
         result.ListPrice.Should().Be(0m);
@@ -304,7 +306,7 @@ public class XCatalogMapperTests
     [Fact]
     public void ToProductPromoEntry_NullSource_ReturnsNull()
     {
-        _mapper.ToProductPromoEntry(null, new PriceMappingContext { Currency = CreateCurrency("USD") }).Should().BeNull();
+        _mapper.ToProductPromoEntry(null, SearchProductResponseBuilder.Build(CreateCurrency("USD")).ToPromoPriceMappingContext()).Should().BeNull();
     }
 
     [Fact]
@@ -321,7 +323,7 @@ public class XCatalogMapperTests
     {
         var product = new ExpProduct { IndexedProduct = new CatalogProduct { Id = "product-1" } };
 
-        FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, new PriceMappingContext()))
+        FluentActions.Invoking(() => _mapper.ToProductPromoEntry(product, SearchProductResponseBuilder.Build().ToPromoPriceMappingContext()))
             .Should().Throw<ArgumentNullException>();
     }
 
@@ -417,7 +419,7 @@ public class XCatalogMapperTests
             new() { Currency = "USD", ProductId = "p-1", List = 100m, Sale = 80m, MinQuantity = 1 },
         };
 
-        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency] }).ToList();
+        var result = _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build(allStoreCurrencies: [currency]).ToProductPricesMappingContext()).ToList();
 
         result.Should().HaveCount(1);
         result[0].MinQuantity.Should().Be(1);
@@ -431,7 +433,7 @@ public class XCatalogMapperTests
         var currency = CreateCurrency("USD");
         var prices = new List<Price> { new() { Currency = "GBP", ProductId = "p-1", List = 100m } };
 
-        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency] }).ToList();
+        var result = _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build(allStoreCurrencies: [currency]).ToProductPricesMappingContext()).ToList();
 
         result.Should().BeEmpty();
     }
@@ -443,7 +445,7 @@ public class XCatalogMapperTests
         var pricelist = new Pricelist { Id = "pl-1", Name = "Default" };
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", PricelistId = "pl-1", List = 100m } };
 
-        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency], Pricelists = [pricelist] }).ToList();
+        var result = _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build(allStoreCurrencies: [currency]).ToProductPricesMappingContext([pricelist])).ToList();
 
         result.Should().ContainSingle().Which.PricelistName.Should().Be("Default");
     }
@@ -455,7 +457,7 @@ public class XCatalogMapperTests
         var currency = CreateCurrency("USD");
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", PricelistId = "pl-1", List = 100m } };
 
-        var result = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [currency], Pricelists = null }).ToList();
+        var result = _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build(allStoreCurrencies: [currency]).ToProductPricesMappingContext()).ToList();
 
         result.Should().ContainSingle().Which.PricelistName.Should().BeNull();
     }
@@ -463,7 +465,7 @@ public class XCatalogMapperTests
     [Fact]
     public void ToProductPrices_NullSource_ReturnsEmpty()
     {
-        _mapper.ToProductPrices(null, new PriceMappingContext { AllStoreCurrencies = [] }).Should().BeEmpty();
+        _mapper.ToProductPrices(null, SearchProductResponseBuilder.Build(allStoreCurrencies: []).ToProductPricesMappingContext()).Should().BeEmpty();
     }
 
     [Fact]
@@ -480,7 +482,7 @@ public class XCatalogMapperTests
     {
         var prices = new List<Price> { new() { Currency = "USD", ProductId = "p-1", List = 100m } };
 
-        FluentActions.Invoking(() => _mapper.ToProductPrices(prices, new PriceMappingContext()))
+        FluentActions.Invoking(() => _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build().ToProductPricesMappingContext()))
             .Should().Throw<ArgumentNullException>();
     }
 
@@ -582,21 +584,6 @@ public class XCatalogMapperTests
         var mapper = new XCatalogMapper(facetMapperMock.Object);
 
         var result = mapper.ToFacetResult(new Aggregation { AggregationType = "attr" }, new FacetMappingContext());
-
-        result.Should().BeSameAs(expected);
-    }
-
-    [Fact]
-    public void CreateFacetMappingContext_DelegatesToFacetMapper()
-    {
-        var expected = new FacetMappingContext();
-        var facetMapperMock = new Mock<IFacetMapper>();
-        facetMapperMock
-            .Setup(x => x.CreateFacetMappingContext("en-US"))
-            .Returns(expected);
-        var mapper = new XCatalogMapper(facetMapperMock.Object);
-
-        var result = mapper.CreateFacetMappingContext("en-US");
 
         result.Should().BeSameAs(expected);
     }

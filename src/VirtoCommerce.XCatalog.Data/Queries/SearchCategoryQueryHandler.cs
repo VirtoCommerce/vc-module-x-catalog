@@ -16,8 +16,8 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
-using VirtoCommerce.XCatalog.Data.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
 {

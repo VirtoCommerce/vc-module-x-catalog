@@ -10,7 +10,7 @@ using VirtoCommerce.TaxModule.Core.Model.Search;
 using VirtoCommerce.TaxModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 using StoreSetting = VirtoCommerce.StoreModule.Core.ModuleConstants.Settings.General;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares

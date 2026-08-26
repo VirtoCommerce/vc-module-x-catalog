@@ -13,7 +13,9 @@ using VirtoCommerce.TaxModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Tests.Helpers;
 using Xunit;
 using ProductPrice = VirtoCommerce.Xapi.Core.Models.ProductPrice;
 
@@ -70,7 +72,7 @@ public class ProductMappingParityTests
 
         var expected = _legacyMapper.Map<ProductPromoEntry>(product, options => options.Items["currency"] = currency);
 
-        var actual = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = currency });
+        var actual = _mapper.ToProductPromoEntry(product, SearchProductResponseBuilder.Build(currency).ToPromoPriceMappingContext());
 
         actual.Should().BeEquivalentTo(expected);
     }
@@ -89,7 +91,7 @@ public class ProductMappingParityTests
 
         var expected = _legacyMapper.Map<ProductPromoEntry>(product, options => options.Items["currency"] = requestedCurrency);
 
-        var actual = _mapper.ToProductPromoEntry(product, new PriceMappingContext { Currency = requestedCurrency });
+        var actual = _mapper.ToProductPromoEntry(product, SearchProductResponseBuilder.Build(requestedCurrency).ToPromoPriceMappingContext());
 
         actual.Should().BeEquivalentTo(expected);
     }
@@ -147,7 +149,7 @@ public class ProductMappingParityTests
             options.Items["pricelists"] = new[] { pricelist };
         }).ToList();
 
-        var actual = _mapper.ToProductPrices(prices, new PriceMappingContext { AllStoreCurrencies = [usd, eur], Pricelists = [pricelist] }).ToList();
+        var actual = _mapper.ToProductPrices(prices, SearchProductResponseBuilder.Build(allStoreCurrencies: [usd, eur]).ToProductPricesMappingContext([pricelist])).ToList();
 
         actual.Should().BeEquivalentTo(expected);
     }

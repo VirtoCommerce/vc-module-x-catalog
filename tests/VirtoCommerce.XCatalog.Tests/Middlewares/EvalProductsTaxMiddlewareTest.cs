@@ -14,8 +14,8 @@ using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Middlewares;
-using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Middlewares

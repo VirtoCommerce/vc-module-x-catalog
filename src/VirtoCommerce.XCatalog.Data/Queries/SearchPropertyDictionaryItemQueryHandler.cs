@@ -4,7 +4,7 @@ using MediatR;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
 {

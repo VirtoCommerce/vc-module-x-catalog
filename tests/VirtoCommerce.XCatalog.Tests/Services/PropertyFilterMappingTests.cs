@@ -5,6 +5,7 @@ using Moq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 

@@ -22,9 +22,9 @@ using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
-using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -209,7 +209,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             var handler = GetHandler();
 
-            var result = handler.CallApplyFacetLocalization(resultAggregations, "en-US");
+            var result = handler.CallApplyFacetLocalization(resultAggregations, new SearchProductResponse { Query = new SearchProductQuery() }, "en-US");
 
             result.Should().HaveCount(2);
             result[0].Name.Should().Be("color");
@@ -232,7 +232,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             var handler = GetHandler();
 
-            var result = handler.CallApplyFacetLocalization(resultAggregations, "en-US");
+            var result = handler.CallApplyFacetLocalization(resultAggregations, new SearchProductResponse { Query = new SearchProductQuery() }, "en-US");
 
             result.Should().HaveCount(2);
             result[0].Should().NotBeNull();
@@ -539,7 +539,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             public string CallBuildSearchCacheKey(SearchRequest searchRequest) => BuildSearchCacheKey(searchRequest);
 
-            public IList<FacetResult> CallApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode) => ApplyFacetLocalization(resultAggregations, languageCode);
+            public IList<FacetResult> CallApplyFacetLocalization(Aggregation[] resultAggregations, SearchProductResponse response, string languageCode) => ApplyFacetLocalization(resultAggregations, response, languageCode);
         }
 
         private sealed class DerivedAwareHandler : TestableHandler

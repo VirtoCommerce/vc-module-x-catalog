@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineNet.Middleware;
-using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.MarketingModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
@@ -10,7 +9,7 @@ using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
@@ -55,7 +54,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 if (query.EvaluatePromotions)
                 {
                     //Evaluate promotions
-                    var priceContext = CreatePromoPriceMappingContext(query, parameter.Currency);
+                    var priceContext = CreatePromoPriceMappingContext(parameter);
                     promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.ToProductPromoEntry(x, priceContext)).ToList();
 
                     var promotionResults = await _marketingEvaluator.EvaluatePromotionAsync(promoEvalContext);
@@ -83,12 +82,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return promoEvalContext;
         }
 
-        protected virtual PriceMappingContext CreatePromoPriceMappingContext(SearchProductQuery query, Currency currency)
+        protected virtual PromoPriceMappingContext CreatePromoPriceMappingContext(SearchProductResponse response)
         {
-            var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
-            context.CultureName = query.CultureName;
-            context.CurrencyCode = query.CurrencyCode;
-            context.Currency = currency;
+            var context = AbstractTypeFactory<PromoPriceMappingContext>.TryCreateInstance();
+            context.CultureName = response.Query.CultureName;
+            context.CurrencyCode = response.Query.CurrencyCode;
+            context.Response = response;
 
             return context;
         }

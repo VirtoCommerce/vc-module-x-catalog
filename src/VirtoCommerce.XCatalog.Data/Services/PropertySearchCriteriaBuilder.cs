@@ -2,6 +2,7 @@ using System;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Services
 {

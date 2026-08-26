@@ -7,7 +7,7 @@ using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares;
 

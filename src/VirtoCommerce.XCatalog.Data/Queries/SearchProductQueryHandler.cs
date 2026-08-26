@@ -20,8 +20,8 @@ using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
-using VirtoCommerce.XCatalog.Data.Services;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
 using XapiProductSorting = VirtoCommerce.XCatalog.Core.Models.ProductSorting;
@@ -222,7 +222,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             result.Currency = currency;
             result.Store = store;
             result.Results = ConvertProducts(searchResult);
-            result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
+            result.Facets = ApplyFacetLocalization(resultAggregations, result, criteria.LanguageCode);
             result.TotalCount = (int)searchResult.TotalCount;
             result.Sortings = BuildSortings(sortings, selectedSorting, languageCode);
 
@@ -414,9 +414,9 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             return searchResponse.Documents?.Select(_mapper.ToExpProduct).ToList() ?? [];
         }
 
-        protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode)
+        protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, SearchProductResponse response, string languageCode)
         {
-            var context = _mapper.CreateFacetMappingContext(languageCode);
+            var context = CreateFacetMappingContext(response);
 
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
@@ -431,6 +431,15 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                     return result;
                 })
                 .ToList();
+        }
+
+        protected virtual CatalogFacetMappingContext CreateFacetMappingContext(SearchProductResponse response)
+        {
+            var context = AbstractTypeFactory<CatalogFacetMappingContext>.TryCreateInstance();
+            context.CultureName = response.Query.CultureName;
+            context.CurrencyCode = response.Query.CurrencyCode;
+
+            return context;
         }
 
         protected virtual IList<XapiProductSorting> BuildSortings(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode)

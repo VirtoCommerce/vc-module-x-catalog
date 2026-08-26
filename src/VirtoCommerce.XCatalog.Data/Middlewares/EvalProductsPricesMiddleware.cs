@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineNet.Middleware;
-using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.PricingModule.Core.Model;
@@ -13,7 +12,7 @@ using VirtoCommerce.StoreModule.Core.Services;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
-using VirtoCommerce.XCatalog.Data.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
@@ -64,7 +63,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 evalContext.ProductIds = parameter.Results.Select(x => x.Id).ToArray();
                 var prices = await _pricingEvaluatorService.EvaluateProductPricesAsync(evalContext);
 
-                var priceContext = CreateProductPricesMappingContext(query, parameter.AllStoreCurrencies, evalContext.Pricelists);
+                var priceContext = CreateProductPricesMappingContext(parameter, evalContext.Pricelists);
                 foreach (var product in parameter.Results)
                 {
                     product.AllPrices = _mapper
@@ -77,7 +76,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
             if (responseGroup.HasFlag(ExpProductResponseGroup.LoadVariationPrices) && parameter.Results.Any())
             {
-                var variationPriceContext = CreateProductPricesMappingContext(query, parameter.AllStoreCurrencies, null);
+                var variationPriceContext = CreateProductPricesMappingContext(parameter, null);
                 foreach (var expProducts in parameter.Results)
                 {
                     var minVariationPrices = _mapper
@@ -109,12 +108,12 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return evalContext;
         }
 
-        protected virtual PriceMappingContext CreateProductPricesMappingContext(SearchProductQuery query, IEnumerable<Currency> allStoreCurrencies, IEnumerable<Pricelist> pricelists)
+        protected virtual ProductPricesMappingContext CreateProductPricesMappingContext(SearchProductResponse response, IEnumerable<Pricelist> pricelists)
         {
-            var context = AbstractTypeFactory<PriceMappingContext>.TryCreateInstance();
-            context.CultureName = query.CultureName;
-            context.CurrencyCode = query.CurrencyCode;
-            context.AllStoreCurrencies = allStoreCurrencies;
+            var context = AbstractTypeFactory<ProductPricesMappingContext>.TryCreateInstance();
+            context.CultureName = response.Query.CultureName;
+            context.CurrencyCode = response.Query.CurrencyCode;
+            context.Response = response;
             context.Pricelists = pricelists;
 
             return context;

@@ -13,8 +13,8 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Queries;
-using VirtoCommerce.XCatalog.Data.Services;
 using Xunit;
 
 namespace VirtoCommerce.XCatalog.Tests.Queries
