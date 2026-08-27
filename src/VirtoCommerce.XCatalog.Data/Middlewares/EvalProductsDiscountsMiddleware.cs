@@ -82,11 +82,13 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return promoEvalContext;
         }
 
+        // Same rule as EvalProductsPricesMiddleware.CreateProductPricesMappingContext: CurrencyCode is the
+        // resolved response.Currency, not the raw (possibly null) response.Query.CurrencyCode.
         protected virtual PromoPriceMappingContext CreatePromoPriceMappingContext(SearchProductResponse response)
         {
             var context = AbstractTypeFactory<PromoPriceMappingContext>.TryCreateInstance();
             context.CultureName = response.Query.CultureName;
-            context.CurrencyCode = response.Query.CurrencyCode;
+            context.CurrencyCode = response.Currency?.Code;
             context.Response = response;
 
             return context;

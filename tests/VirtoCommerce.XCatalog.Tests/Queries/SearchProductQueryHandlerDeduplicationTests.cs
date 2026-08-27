@@ -267,6 +267,32 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         }
 
         [Fact]
+        public void ApplyFacetLocalization_ResponseCurrencySet_ContextCarriesResolvedCurrencyCode()
+        {
+            // response.Query.CurrencyCode is the raw, unnormalized request value (null when the client
+            // omits it); response.Currency is the store-resolved currency, already on the carrier via
+            // GetStoreCurrencyAsync by the time this runs. Same divergence as CultureName above, for
+            // CurrencyCode.
+            FacetMappingContext capturedContext = null;
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((_, context) =>
+                {
+                    capturedContext = context;
+                    return null;
+                });
+
+            var handler = GetHandler();
+            var currency = GetCurrency();
+            var response = SearchProductResponseBuilder.Build(currency);
+            response.Query.CurrencyCode = null;
+
+            handler.CallApplyFacetLocalization([new Aggregation { Field = "color", AggregationType = "attr" }], response, CULTURE_NAME);
+
+            capturedContext.CurrencyCode.Should().Be(currency.Code);
+        }
+
+        [Fact]
         public async Task Handle_TwoDifferentSearchesInOneScope_CallTheProviderTwice()
         {
             var handler = GetHandler(new RequestScopedCache());

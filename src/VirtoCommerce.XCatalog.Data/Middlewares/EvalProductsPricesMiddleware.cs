@@ -108,11 +108,13 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             return evalContext;
         }
 
+        // CurrencyCode reads the resolved response.Currency, not response.Query.CurrencyCode (raw, may be
+        // null) - CultureName stays on the raw Query field since no resolved language exists on response.
         protected virtual ProductPricesMappingContext CreateProductPricesMappingContext(SearchProductResponse response, IEnumerable<Pricelist> pricelists)
         {
             var context = AbstractTypeFactory<ProductPricesMappingContext>.TryCreateInstance();
             context.CultureName = response.Query.CultureName;
-            context.CurrencyCode = response.Query.CurrencyCode;
+            context.CurrencyCode = response.Currency?.Code;
             context.Response = response;
             context.Pricelists = pricelists;
 

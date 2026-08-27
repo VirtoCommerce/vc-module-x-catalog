@@ -437,13 +437,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         /// <paramref name="languageCode"/> is the store-resolved value <see cref="ApplyFacetLocalization"/>
         /// also uses for <c>ApplyLanguageSpecificFacetResult</c> - not <c>response.Query.CultureName</c>, the
         /// raw, unresolved request value. Passing the resolved value in keeps both halves of one operation
-        /// on the same language instead of the carrier's raw field silently diverging from it.
+        /// on the same language instead of the carrier's raw field silently diverging from it. Same reasoning
+        /// for <c>CurrencyCode</c>: <c>response.Currency</c> is the store-resolved currency
+        /// (<c>GetStoreCurrencyAsync</c>), already on the carrier by the time this runs - not
+        /// <c>response.Query.CurrencyCode</c>, which is null whenever the client omits it.
         /// </summary>
         protected virtual CatalogFacetMappingContext CreateFacetMappingContext(SearchProductResponse response, string languageCode)
         {
             var context = AbstractTypeFactory<CatalogFacetMappingContext>.TryCreateInstance();
             context.CultureName = languageCode;
-            context.CurrencyCode = response.Query.CurrencyCode;
+            context.CurrencyCode = response.Currency?.Code;
 
             return context;
         }
