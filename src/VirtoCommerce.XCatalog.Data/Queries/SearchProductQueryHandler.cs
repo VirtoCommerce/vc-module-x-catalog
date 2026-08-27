@@ -416,7 +416,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, SearchProductResponse response, string languageCode)
         {
-            var context = CreateFacetMappingContext(response);
+            var context = CreateFacetMappingContext(response, languageCode);
 
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
@@ -433,10 +433,16 @@ namespace VirtoCommerce.XCatalog.Data.Queries
                 .ToList();
         }
 
-        protected virtual CatalogFacetMappingContext CreateFacetMappingContext(SearchProductResponse response)
+        /// <summary>
+        /// <paramref name="languageCode"/> is the store-resolved value <see cref="ApplyFacetLocalization"/>
+        /// also uses for <c>ApplyLanguageSpecificFacetResult</c> - not <c>response.Query.CultureName</c>, the
+        /// raw, unresolved request value. Passing the resolved value in keeps both halves of one operation
+        /// on the same language instead of the carrier's raw field silently diverging from it.
+        /// </summary>
+        protected virtual CatalogFacetMappingContext CreateFacetMappingContext(SearchProductResponse response, string languageCode)
         {
             var context = AbstractTypeFactory<CatalogFacetMappingContext>.TryCreateInstance();
-            context.CultureName = response.Query.CultureName;
+            context.CultureName = languageCode;
             context.CurrencyCode = response.Query.CurrencyCode;
 
             return context;

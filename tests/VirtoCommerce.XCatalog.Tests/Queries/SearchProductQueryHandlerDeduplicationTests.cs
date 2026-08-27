@@ -25,6 +25,7 @@ using VirtoCommerce.XCatalog.Core.Queries;
 using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
+using VirtoCommerce.XCatalog.Tests.Helpers;
 using Xunit;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -209,7 +210,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             var handler = GetHandler();
 
-            var result = handler.CallApplyFacetLocalization(resultAggregations, new SearchProductResponse { Query = new SearchProductQuery() }, "en-US");
+            var result = handler.CallApplyFacetLocalization(resultAggregations, SearchProductResponseBuilder.Build(), "en-US");
 
             result.Should().HaveCount(2);
             result[0].Name.Should().Be("color");
@@ -232,12 +233,37 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
 
             var handler = GetHandler();
 
-            var result = handler.CallApplyFacetLocalization(resultAggregations, new SearchProductResponse { Query = new SearchProductQuery() }, "en-US");
+            var result = handler.CallApplyFacetLocalization(resultAggregations, SearchProductResponseBuilder.Build(), "en-US");
 
             result.Should().HaveCount(2);
             result[0].Should().NotBeNull();
             result[0]!.Order.Should().Be(0);
             result[1].Should().BeNull();
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_ResponseQueryCultureUnresolved_ContextUsesResolvedLanguageCode()
+        {
+            // response.Query.CultureName is the raw, unnormalized request value; languageCode is what
+            // SearchProductQueryHandle already resolved via the store-language fallback one line above this
+            // call. The facet context must carry the resolved value, or facet labels silently lose
+            // localization whenever the two diverge (unset/unsupported requested culture).
+            FacetMappingContext capturedContext = null;
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((_, context) =>
+                {
+                    capturedContext = context;
+                    return null;
+                });
+
+            var handler = GetHandler();
+            var response = SearchProductResponseBuilder.Build();
+            response.Query.CultureName = null;
+
+            handler.CallApplyFacetLocalization([new Aggregation { Field = "color", AggregationType = "attr" }], response, CULTURE_NAME);
+
+            capturedContext.CultureName.Should().Be(CULTURE_NAME);
         }
 
         [Fact]

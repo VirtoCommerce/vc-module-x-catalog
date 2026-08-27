@@ -7,9 +7,11 @@ using VirtoCommerce.XCatalog.Core.Queries;
 namespace VirtoCommerce.XCatalog.Tests.Helpers;
 
 /// <summary>
-/// Builds the <see cref="SearchProductResponse"/> carrier shared by <see cref="ProductPricesMappingContext"/>
-/// and <see cref="PromoPriceMappingContext"/>, so the fixture shape used across price-mapping tests cannot
-/// drift from the production shape (<c>EvalProductsPricesMiddleware</c>/<c>EvalProductsDiscountsMiddleware</c>).
+/// Builds the <see cref="SearchProductResponse"/> carrier - the fixture any test needs once it touches a
+/// <c>MappingContext</c> derivative that carries this response whole (<see cref="ProductPricesMappingContext"/>,
+/// <see cref="PromoPriceMappingContext"/>, <c>CatalogFacetMappingContext</c>), so the shape used across those
+/// tests cannot drift from the production shape (<c>EvalProductsPricesMiddleware</c>,
+/// <c>EvalProductsDiscountsMiddleware</c>, <c>SearchProductQueryHandler</c>).
 /// </summary>
 public static class SearchProductResponseBuilder
 {
