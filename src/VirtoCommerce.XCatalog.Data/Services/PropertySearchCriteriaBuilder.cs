@@ -1,19 +1,18 @@
 using System;
-using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Services;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Services
 {
     public class PropertySearchCriteriaBuilder
     {
         private readonly ISearchPhraseParser _phraseParser;
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly PropertySearchCriteria _searchCriteria;
 
-
-        public PropertySearchCriteriaBuilder(ISearchPhraseParser phraseParser, IMapper mapper) : this()
+        public PropertySearchCriteriaBuilder(ISearchPhraseParser phraseParser, IXCatalogMapper mapper) : this()
         {
             _phraseParser = phraseParser;
             _mapper = mapper;
@@ -41,7 +40,7 @@ namespace VirtoCommerce.XCatalog.Data.Services
             }
 
             var parseResult = _phraseParser.Parse(filterPhrase);
-            _mapper.Map(parseResult.Filters, _searchCriteria);
+            _mapper.MapTo(parseResult.Filters, _searchCriteria);
 
             return this;
         }

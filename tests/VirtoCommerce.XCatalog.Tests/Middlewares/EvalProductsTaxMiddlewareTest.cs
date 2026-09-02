@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using AutoMapper;
 using FluentAssertions;
 using Moq;
 using VirtoCommerce.CoreModule.Core.Common;
 using VirtoCommerce.CoreModule.Core.Currency;
-using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Platform.Core.Settings;
 using VirtoCommerce.Platform.Modules;
 using VirtoCommerce.TaxModule.Core.Model;
@@ -16,6 +14,7 @@ using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Middlewares;
 using Xunit;
 
@@ -27,7 +26,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         public void EvalProductsTaxMiddleware_TaxNotCalculatedWithoutResponseGroup_Success()
         {
             // Arrange
-            var mapperMock = new Mock<IMapper>();
+            var mapperMock = new Mock<IXCatalogMapper>();
             var serviceProviderMock = new Mock<IServiceProvider>();
             var taxProviderSearchServiceMock = new Mock<ITaxProviderSearchService>();
             var taxProviderSearchServiceOptionalDependency = new OptionalDependencyManager<ITaxProviderSearchService>(serviceProviderMock.Object);
@@ -55,7 +54,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         public void EvalProductsTaxMiddleware_TaxNotCalculatedWithoutTaxProvider_Success()
         {
             // Arrange
-            var mapperMock = new Mock<IMapper>();
+            var mapperMock = new Mock<IXCatalogMapper>();
             var serviceProviderMock = new Mock<IServiceProvider>();
             var taxProviderSearchServiceMock = new Mock<ITaxProviderSearchService>();
             var taxProviderSearchServiceOptionalDependency = new OptionalDependencyManager<ITaxProviderSearchService>(serviceProviderMock.Object);
@@ -100,7 +99,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             var taxProviderMock = new Mock<TaxProvider>();
             taxProviderMock.Object.IsActive = true;
 
-            var mapperMock = new Mock<IMapper>();
+            var mapperMock = new Mock<IXCatalogMapper>();
             var serviceProviderMock = new Mock<IServiceProvider>();
             var taxProviderSearchServiceMock = new Mock<ITaxProviderSearchService>();
             var taxProviderSearchServiceOptionalDependency = new OptionalDependencyManager<ITaxProviderSearchService>(serviceProviderMock.Object);
@@ -163,7 +162,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             taxProviderMock.Setup(x => x.CalculateRates(It.IsAny<TaxEvaluationContext>()))
                 .Returns(() => new List<TaxRate>() { new TaxRate() { Currency = "USD", Rate = 50, Line = new TaxLine() { Id = "someId", Quantity = 0 } } });
 
-            var mapperMock = new Mock<IMapper>();
+            var mapperMock = new Mock<IXCatalogMapper>();
             var serviceProviderMock = new Mock<IServiceProvider>();
             var taxProviderSearchServiceMock = new Mock<ITaxProviderSearchService>();
             var taxProviderSearchServiceOptionalDependency = new OptionalDependencyManager<ITaxProviderSearchService>(serviceProviderMock.Object);

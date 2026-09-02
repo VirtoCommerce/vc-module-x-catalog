@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
@@ -21,6 +20,7 @@ using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -32,7 +32,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         IQueryHandler<SearchProductQuery, SearchProductResponse>,
         IQueryHandler<LoadProductsQuery, LoadProductResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly ISearchProvider _searchProvider;
         private readonly IStoreCurrencyResolver _storeCurrencyResolver;
         private readonly IStoreService _storeService;
@@ -53,7 +53,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -78,7 +78,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         [Obsolete("Use the constructor overload with IRequestScopedCacheAccessor to deduplicate identical searches within one request.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -93,7 +93,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchProductQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IStoreCurrencyResolver storeCurrencyResolver,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -106,7 +106,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public virtual async Task<LoadProductResponse> Handle(LoadProductsQuery request, CancellationToken cancellationToken)
         {
-            var searchRequest = _mapper.Map<SearchProductQuery>(request);
+            var searchRequest = _mapper.ToSearchProductQuery(request);
 
             var result = await Handle(searchRequest, cancellationToken);
 
@@ -222,7 +222,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
             result.Currency = currency;
             result.Store = store;
             result.Results = ConvertProducts(searchResult);
-            result.Facets = ApplyFacetLocalization(resultAggregations, criteria.LanguageCode);
+            result.Facets = ApplyFacetLocalization(resultAggregations, result, criteria.LanguageCode);
             result.TotalCount = (int)searchResult.TotalCount;
             result.Sortings = BuildSortings(sortings, selectedSorting, languageCode);
 
@@ -411,19 +411,44 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         protected virtual IList<ExpProduct> ConvertProducts(SearchResponse searchResponse)
         {
-            return searchResponse.Documents?.Select(x => _mapper.Map<ExpProduct>(x)).ToList() ?? new List<ExpProduct>();
+            return searchResponse.Documents?.Select(_mapper.ToExpProduct).ToList() ?? [];
         }
 
-        protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, string languageCode)
+        protected virtual IList<FacetResult> ApplyFacetLocalization(Aggregation[] resultAggregations, SearchProductResponse response, string languageCode)
         {
+            var context = CreateFacetMappingContext(response, languageCode);
+
             return resultAggregations
                 .ApplyLanguageSpecificFacetResult(languageCode)
-                .Select(x => _mapper.Map<FacetResult>(x, options =>
+                .Select(x =>
                 {
-                    options.Items["cultureName"] = languageCode;
-                    options.Items["order"] = Array.IndexOf(resultAggregations, x);
-                }))
+                    var result = _mapper.ToFacetResult(x, context);
+                    if (result != null)
+                    {
+                        result.Order = Array.IndexOf(resultAggregations, x);
+                    }
+
+                    return result;
+                })
                 .ToList();
+        }
+
+        /// <summary>
+        /// <paramref name="languageCode"/> is the store-resolved value <see cref="ApplyFacetLocalization"/>
+        /// also uses for <c>ApplyLanguageSpecificFacetResult</c> - not <c>response.Query.CultureName</c>, the
+        /// raw, unresolved request value. Passing the resolved value in keeps both halves of one operation
+        /// on the same language instead of the carrier's raw field silently diverging from it. Same reasoning
+        /// for <c>CurrencyCode</c>: <c>response.Currency</c> is the store-resolved currency
+        /// (<c>GetStoreCurrencyAsync</c>), already on the carrier by the time this runs - not
+        /// <c>response.Query.CurrencyCode</c>, which is null whenever the client omits it.
+        /// </summary>
+        protected virtual CatalogFacetMappingContext CreateFacetMappingContext(SearchProductResponse response, string languageCode)
+        {
+            var context = AbstractTypeFactory<CatalogFacetMappingContext>.TryCreateInstance();
+            context.CultureName = languageCode;
+            context.CurrencyCode = response.Currency?.Code;
+
+            return context;
         }
 
         protected virtual IList<XapiProductSorting> BuildSortings(IList<CatalogProductSorting> sortings, CatalogProductSorting selected, string languageCode)

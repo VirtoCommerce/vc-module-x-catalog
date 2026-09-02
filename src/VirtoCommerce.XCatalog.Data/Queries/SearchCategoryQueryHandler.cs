@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using MediatR;
 using VirtoCommerce.CatalogModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
@@ -17,6 +16,7 @@ using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Extensions;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 
 namespace VirtoCommerce.XCatalog.Data.Queries
@@ -25,7 +25,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         IQueryHandler<SearchCategoryQuery, SearchCategoryResponse>,
         IQueryHandler<LoadCategoryQuery, LoadCategoryResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly ISearchProvider _searchProvider;
         private readonly ISearchPhraseParser _phraseParser;
         private readonly IStoreService _storeService;
@@ -39,7 +39,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public SearchCategoryQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             ISearchPhraseParser phraseParser,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -58,7 +58,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
         [Obsolete("Use the constructor overload with IPropertyService to enable multilanguage property filtering.", DiagnosticId = "VC0016", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
         public SearchCategoryQueryHandler(
             ISearchProvider searchProvider,
-            IMapper mapper,
+            IXCatalogMapper mapper,
             ISearchPhraseParser phraseParser,
             IStoreService storeService,
             IGenericPipelineLauncher pipeline,
@@ -81,11 +81,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
             var searchResult = await _searchProvider.SearchAsync(KnownDocumentTypes.Category, searchRequest);
 
-            var categories = searchResult.Documents?.Select(x => _mapper.Map<ExpCategory>(x, options =>
-            {
-                options.Items["store"] = store;
-                options.Items["cultureName"] = request.CultureName;
-            })).ToList() ?? [];
+            var categories = searchResult.Documents?.Select(x => _mapper.ToExpCategory(x)).ToList() ?? [];
 
             var result = AbstractTypeFactory<SearchCategoryResponse>.TryCreateInstance();
             result.Query = request;
@@ -152,7 +148,7 @@ namespace VirtoCommerce.XCatalog.Data.Queries
 
         public virtual async Task<LoadCategoryResponse> Handle(LoadCategoryQuery request, CancellationToken cancellationToken)
         {
-            var searchRequest = _mapper.Map<SearchCategoryQuery>(request);
+            var searchRequest = _mapper.ToSearchCategoryQuery(request);
             searchRequest.Store = await GetStore(request);
 
             var result = await Handle(searchRequest, cancellationToken);
