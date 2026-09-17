@@ -4,7 +4,6 @@ using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.TaxModule.Core.Model;
-using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
