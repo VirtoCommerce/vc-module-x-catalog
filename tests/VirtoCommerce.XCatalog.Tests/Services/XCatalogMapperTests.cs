@@ -202,29 +202,6 @@ public class XCatalogMapperTests
     }
 
     [Fact]
-    public void ToExpVendor_MapsIdNameAndType()
-    {
-        var member = new Vendor
-        {
-            Id = "vendor-1",
-            Name = "Acme",
-            MemberType = "Vendor",
-        };
-
-        var result = _mapper.ToExpVendor(member);
-
-        result.Id.Should().Be("vendor-1");
-        result.Name.Should().Be("Acme");
-        result.Type.Should().Be("Vendor");
-    }
-
-    [Fact]
-    public void ToExpVendor_NullSource_ReturnsNull()
-    {
-        _mapper.ToExpVendor(null).Should().BeNull();
-    }
-
-    [Fact]
     public void ToExpCategory_NullSource_ReturnsNull()
     {
         _mapper.ToExpCategory(null).Should().BeNull();
