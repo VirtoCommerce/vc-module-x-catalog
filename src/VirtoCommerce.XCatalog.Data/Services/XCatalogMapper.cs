@@ -29,10 +29,12 @@ namespace VirtoCommerce.XCatalog.Data.Services;
 public class XCatalogMapper : IXCatalogMapper
 {
     private readonly IFacetMapper _facetMapper;
+    private readonly IXapiMapper _xapiMapper;
 
-    public XCatalogMapper(IFacetMapper facetMapper)
+    public XCatalogMapper(IFacetMapper facetMapper, IXapiMapper xapiMapper)
     {
         _facetMapper = facetMapper;
+        _xapiMapper = xapiMapper;
     }
 
     public virtual FacetResult ToFacetResult(Aggregation source, FacetMappingContext context)
@@ -346,17 +348,6 @@ public class XCatalogMapper : IXCatalogMapper
 
     public virtual ExpVendor ToExpVendor(Member source)
     {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<ExpVendor>.TryCreateInstance();
-
-        result.Id = source.Id;
-        result.Name = source.Name;
-        result.Type = source.MemberType;
-
-        return result;
+        return _xapiMapper.ToExpVendor(source);
     }
 }

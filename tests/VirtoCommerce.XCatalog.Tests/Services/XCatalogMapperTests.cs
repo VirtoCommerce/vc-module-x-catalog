@@ -28,7 +28,7 @@ namespace VirtoCommerce.XCatalog.Tests.Services;
 
 public class XCatalogMapperTests
 {
-    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>());
+    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>(), Mock.Of<IXapiMapper>());
 
     static XCatalogMapperTests()
     {
@@ -202,26 +202,32 @@ public class XCatalogMapperTests
     }
 
     [Fact]
-    public void ToExpVendor_MapsIdNameAndType()
+    public void ToExpVendor_DelegatesToXapiMapper()
     {
-        var member = new Vendor
-        {
-            Id = "vendor-1",
-            Name = "Acme",
-            MemberType = "Vendor",
-        };
+        // The Member -> ExpVendor conversion itself lives (and is tested) in x-api's IXapiMapper -
+        // this only verifies XCatalogMapper forwards to it rather than keeping its own copy.
+        var member = new Vendor { Id = "vendor-1", Name = "Acme", MemberType = "Vendor" };
+        var expected = new ExpVendor { Id = "vendor-1" };
+        var xapiMapperMock = new Mock<IXapiMapper>();
+        xapiMapperMock.Setup(x => x.ToExpVendor(member)).Returns(expected);
+        var mapper = new XCatalogMapper(Mock.Of<IFacetMapper>(), xapiMapperMock.Object);
 
-        var result = _mapper.ToExpVendor(member);
+        var result = mapper.ToExpVendor(member);
 
-        result.Id.Should().Be("vendor-1");
-        result.Name.Should().Be("Acme");
-        result.Type.Should().Be("Vendor");
+        result.Should().BeSameAs(expected);
+        xapiMapperMock.Verify(x => x.ToExpVendor(member), Times.Once);
     }
 
     [Fact]
-    public void ToExpVendor_NullSource_ReturnsNull()
+    public void ToExpVendor_NullSource_DelegatesToXapiMapper()
     {
-        _mapper.ToExpVendor(null).Should().BeNull();
+        var xapiMapperMock = new Mock<IXapiMapper>();
+        xapiMapperMock.Setup(x => x.ToExpVendor(null)).Returns((ExpVendor)null);
+        var mapper = new XCatalogMapper(Mock.Of<IFacetMapper>(), xapiMapperMock.Object);
+
+        mapper.ToExpVendor(null).Should().BeNull();
+
+        xapiMapperMock.Verify(x => x.ToExpVendor(null), Times.Once);
     }
 
     [Fact]
@@ -494,7 +500,7 @@ public class XCatalogMapperTests
         facetMapperMock
             .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
             .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source);
-        var mapper = new XCatalogMapper(facetMapperMock.Object);
+        var mapper = new XCatalogMapper(facetMapperMock.Object, Mock.Of<IXapiMapper>());
 
         var source = new Aggregation
         {
@@ -549,7 +555,7 @@ public class XCatalogMapperTests
         facetMapperMock
             .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
             .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source);
-        var mapper = new XCatalogMapper(facetMapperMock.Object);
+        var mapper = new XCatalogMapper(facetMapperMock.Object, Mock.Of<IXapiMapper>());
 
         mapper.ToFacetResult(new Aggregation { AggregationType = "attr", Field = "color" }, new FacetMappingContext());
 
@@ -565,7 +571,7 @@ public class XCatalogMapperTests
             .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
             .Callback<AggregationFacetSource, FacetMappingContext>((source, _) => captured = source)
             .Returns((FacetResult)null);
-        var mapper = new XCatalogMapper(facetMapperMock.Object);
+        var mapper = new XCatalogMapper(facetMapperMock.Object, Mock.Of<IXapiMapper>());
 
         var result = mapper.ToFacetResult(null, new FacetMappingContext { CultureName = "en-US" });
 
@@ -581,7 +587,7 @@ public class XCatalogMapperTests
         facetMapperMock
             .Setup(x => x.ToFacetResult(It.IsAny<AggregationFacetSource>(), It.IsAny<FacetMappingContext>()))
             .Returns(expected);
-        var mapper = new XCatalogMapper(facetMapperMock.Object);
+        var mapper = new XCatalogMapper(facetMapperMock.Object, Mock.Of<IXapiMapper>());
 
         var result = mapper.ToFacetResult(new Aggregation { AggregationType = "attr" }, new FacetMappingContext());
 
