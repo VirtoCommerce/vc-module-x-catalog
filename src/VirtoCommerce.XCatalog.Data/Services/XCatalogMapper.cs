@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CoreModule.Core.Currency;
-using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
@@ -29,12 +28,10 @@ namespace VirtoCommerce.XCatalog.Data.Services;
 public class XCatalogMapper : IXCatalogMapper
 {
     private readonly IFacetMapper _facetMapper;
-    private readonly IXapiMapper _xapiMapper;
 
-    public XCatalogMapper(IFacetMapper facetMapper, IXapiMapper xapiMapper)
+    public XCatalogMapper(IFacetMapper facetMapper)
     {
         _facetMapper = facetMapper;
-        _xapiMapper = xapiMapper;
     }
 
     public virtual FacetResult ToFacetResult(Aggregation source, FacetMappingContext context)
@@ -344,10 +341,5 @@ public class XCatalogMapper : IXCatalogMapper
                 yield return productPrice;
             }
         }
-    }
-
-    public virtual ExpVendor ToExpVendor(Member source)
-    {
-        return _xapiMapper.ToExpVendor(source);
     }
 }

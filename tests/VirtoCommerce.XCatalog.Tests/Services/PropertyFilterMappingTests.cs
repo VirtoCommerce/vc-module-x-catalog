@@ -13,7 +13,7 @@ namespace VirtoCommerce.XCatalog.Tests.Services;
 
 public class PropertyFilterMappingTests
 {
-    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>(), Mock.Of<IXapiMapper>());
+    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>());
 
     [Fact]
     public void MapTo_TermFilter_SetsMatchingProperty()

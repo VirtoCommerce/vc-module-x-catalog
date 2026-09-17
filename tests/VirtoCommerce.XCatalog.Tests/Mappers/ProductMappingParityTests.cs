@@ -27,7 +27,7 @@ namespace VirtoCommerce.XCatalog.Tests.Mappers;
 /// </summary>
 public class ProductMappingParityTests
 {
-    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>(), Mock.Of<IXapiMapper>());
+    private readonly IXCatalogMapper _mapper = new XCatalogMapper(Mock.Of<IFacetMapper>());
 
     private static readonly IMapper _legacyMapper = new MapperConfiguration(cfg =>
         cfg.AddProfile<LegacyProductMappingProfile>()).CreateMapper();
