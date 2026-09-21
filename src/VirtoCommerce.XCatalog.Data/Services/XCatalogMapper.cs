@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CoreModule.Core.Currency;
-using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.PricingModule.Core.Model;
@@ -47,34 +46,36 @@ public class XCatalogMapper : IXCatalogMapper
             return null;
         }
 
-        return new AggregationFacetSource
-        {
-            AggregationType = source.AggregationType,
-            Field = source.Field,
-            // Defaulting to ascending is x-catalog's own historical behavior; the shared FacetMapper
-            // itself leaves an unset TermValuesSortingType unsorted.
-            TermValuesSortingType = source.TermValuesSortingType.IsNullOrEmpty()
-                ? CatalogModuleConstants.TermValuesSortingTypeNameAscending
-                : source.TermValuesSortingType,
-            Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList(),
-            Items = source.Items?.Select(ToAggregationFacetItem).ToList(),
-            Statistics = ToAggregationFacetStatistics(source.Statistics),
-        };
+        var result = AbstractTypeFactory<AggregationFacetSource>.TryCreateInstance();
+
+        result.AggregationType = source.AggregationType;
+        result.Field = source.Field;
+        // Defaulting to ascending is x-catalog's own historical behavior; the shared FacetMapper
+        // itself leaves an unset TermValuesSortingType unsorted.
+        result.TermValuesSortingType = source.TermValuesSortingType.IsNullOrEmpty()
+            ? CatalogModuleConstants.TermValuesSortingTypeNameAscending
+            : source.TermValuesSortingType;
+        result.Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList();
+        result.Items = source.Items?.Select(ToAggregationFacetItem).ToList();
+        result.Statistics = ToAggregationFacetStatistics(source.Statistics);
+
+        return result;
     }
 
     protected virtual AggregationFacetItem ToAggregationFacetItem(AggregationItem source)
     {
-        return new AggregationFacetItem
-        {
-            Value = source.Value,
-            Count = source.Count,
-            IsApplied = source.IsApplied,
-            Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList(),
-            RequestedLowerBound = source.RequestedLowerBound,
-            RequestedUpperBound = source.RequestedUpperBound,
-            IncludeLower = source.IncludeLower,
-            IncludeUpper = source.IncludeUpper,
-        };
+        var result = AbstractTypeFactory<AggregationFacetItem>.TryCreateInstance();
+
+        result.Value = source.Value;
+        result.Count = source.Count;
+        result.IsApplied = source.IsApplied;
+        result.Labels = source.Labels?.Select(ToAggregationFacetLabel).ToList();
+        result.RequestedLowerBound = source.RequestedLowerBound;
+        result.RequestedUpperBound = source.RequestedUpperBound;
+        result.IncludeLower = source.IncludeLower;
+        result.IncludeUpper = source.IncludeUpper;
+
+        return result;
     }
 
     protected virtual AggregationFacetStatistics ToAggregationFacetStatistics(AggregationStatistics source)
@@ -84,20 +85,22 @@ public class XCatalogMapper : IXCatalogMapper
             return null;
         }
 
-        return new AggregationFacetStatistics
-        {
-            Min = source.Min,
-            Max = source.Max,
-        };
+        var result = AbstractTypeFactory<AggregationFacetStatistics>.TryCreateInstance();
+
+        result.Min = source.Min;
+        result.Max = source.Max;
+
+        return result;
     }
 
     protected virtual AggregationFacetLabel ToAggregationFacetLabel(AggregationLabel source)
     {
-        return new AggregationFacetLabel
-        {
-            Language = source.Language,
-            Label = source.Label,
-        };
+        var result = AbstractTypeFactory<AggregationFacetLabel>.TryCreateInstance();
+
+        result.Language = source.Language;
+        result.Label = source.Label;
+
+        return result;
     }
 
     public virtual void MapTo(IList<IFilter> filters, PropertySearchCriteria criteria)
@@ -342,21 +345,5 @@ public class XCatalogMapper : IXCatalogMapper
                 yield return productPrice;
             }
         }
-    }
-
-    public virtual ExpVendor ToExpVendor(Member source)
-    {
-        if (source == null)
-        {
-            return null;
-        }
-
-        var result = AbstractTypeFactory<ExpVendor>.TryCreateInstance();
-
-        result.Id = source.Id;
-        result.Name = source.Name;
-        result.Type = source.MemberType;
-
-        return result;
     }
 }

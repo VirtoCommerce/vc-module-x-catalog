@@ -6,8 +6,8 @@ using PipelineNet.Middleware;
 using VirtoCommerce.CustomerModule.Core.Model;
 using VirtoCommerce.CustomerModule.Core.Services;
 using VirtoCommerce.Platform.Core.Common;
+using VirtoCommerce.Xapi.Core.Services;
 using VirtoCommerce.XCatalog.Core.Models;
-using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares;
 
@@ -16,7 +16,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares;
 /// </summary>
 public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductResponse>
 {
-    private readonly IXCatalogMapper _mapper;
+    private readonly IXapiMapper _mapper;
     private readonly IMemberService _memberService;
 
     /// <summary>
@@ -24,7 +24,7 @@ public class EvalProductsVendorMiddleware : IAsyncMiddleware<SearchProductRespon
     /// </summary>
     /// <param name="mapper"></param>
     /// <param name="memberService"></param>
-    public EvalProductsVendorMiddleware(IXCatalogMapper mapper, IMemberService memberService)
+    public EvalProductsVendorMiddleware(IXapiMapper mapper, IMemberService memberService)
     {
         _mapper = mapper;
         _memberService = memberService;
