@@ -211,9 +211,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             nestedFilter.ChildFilters.OfType<TermFilter>().Single(x => x.FieldName == "is").Values.Should().Equal("product", "variation");
         }
 
-        private static Mock<IBarcodeSearchService> CreateService(params string[] fields)
+        private static Mock<IBarcodeSearchConfigurationService> CreateService(params string[] fields)
         {
-            var serviceMock = new Mock<IBarcodeSearchService>();
+            var serviceMock = new Mock<IBarcodeSearchConfigurationService>();
             serviceMock
                 .Setup(x => x.GetSettingsAsync(StoreId))
                 .ReturnsAsync(new BarcodeSearchSettings { ScannerEnabled = true, Fields = fields });
@@ -270,10 +270,10 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             return GetFilter(builder).CloneTyped();
         }
 
-        private static async Task<bool> RunMiddleware(IBarcodeSearchService barcodeSearchService, IndexSearchRequestBuilder builder)
+        private static async Task<bool> RunMiddleware(IBarcodeSearchConfigurationService barcodeSearchConfigurationService, IndexSearchRequestBuilder builder)
         {
             var nextCalled = false;
-            var middleware = new EvalBarcodeFilterMiddleware(barcodeSearchService);
+            var middleware = new EvalBarcodeFilterMiddleware(barcodeSearchConfigurationService);
 
             await middleware.Run(builder, _ =>
             {

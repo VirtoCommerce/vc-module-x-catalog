@@ -21,11 +21,11 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         private const string ProductDocumentType = "product";
         private const string VariationDocumentType = "variation";
 
-        private readonly IBarcodeSearchService _barcodeSearchService;
+        private readonly IBarcodeSearchConfigurationService _barcodeSearchConfigurationService;
 
-        public EvalBarcodeFilterMiddleware(IBarcodeSearchService barcodeSearchService)
+        public EvalBarcodeFilterMiddleware(IBarcodeSearchConfigurationService barcodeSearchConfigurationService)
         {
-            _barcodeSearchService = barcodeSearchService;
+            _barcodeSearchConfigurationService = barcodeSearchConfigurationService;
         }
 
         public virtual async Task Run(IndexSearchRequestBuilder parameter, Func<IndexSearchRequestBuilder, Task> next)
@@ -38,7 +38,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
                 if (values?.Count > 0)
                 {
-                    var settings = await _barcodeSearchService.GetSettingsAsync(parameter.StoreId);
+                    var settings = await _barcodeSearchConfigurationService.GetSettingsAsync(parameter.StoreId);
 
                     if (!settings.Fields.IsNullOrEmpty())
                     {
