@@ -222,30 +222,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
             }
         }
 
-        [Obsolete("Use AddTermFilter()", DiagnosticId = "VC0011", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
-        public IndexSearchRequestBuilder AddTerms(IEnumerable<string> terms)
-        {
-            if (terms != null)
-            {
-                var termsFields = GetFiltersFromTerm(terms);
-                AddFiltersToSearchRequest(termsFields);
-            }
-
-            return this;
-        }
-
-        [Obsolete("Use AddTermFilter()", DiagnosticId = "VC0011", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
-        public IndexSearchRequestBuilder AddTerms(IEnumerable<string> terms, bool skipIfExists)
-        {
-            if (terms != null)
-            {
-                var termsFields = GetFiltersFromTerm(terms);
-                AddFiltersToSearchRequest(termsFields, skipIfExists);
-            }
-
-            return this;
-        }
-
         public IndexSearchRequestBuilder ParseFilters(ISearchPhraseParser phraseParser, string filterPhrase)
         {
             ArgumentNullException.ThrowIfNull(phraseParser);
@@ -515,24 +491,6 @@ namespace VirtoCommerce.XCatalog.Data.Index
             childFilters.AddRange(filtersToAdd);
 
             return filtersToAdd.Count > 0;
-        }
-
-        private static IFilter[] GetFiltersFromTerm(IEnumerable<string> terms)
-        {
-            const string commaEscapeString = "%x2C";
-
-            var nameValueDelimiter = new[] { ':' };
-            var valuesDelimiter = new[] { ',' };
-
-            return terms.Select(item => item.Split(nameValueDelimiter, 2))
-                .Where(item => item.Length == 2)
-                .Select(item => new TermFilter
-                {
-                    FieldName = item[0],
-                    Values = item[1].Split(valuesDelimiter, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(x => x.Replace(commaEscapeString, ","))
-                        .ToArray(),
-                }).ToArray<IFilter>();
         }
     }
 }
