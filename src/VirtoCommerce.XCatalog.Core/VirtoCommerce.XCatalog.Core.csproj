@@ -8,8 +8,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
-    <!-- TEMP VCST-2945: local build shim, revert to PackageReference VirtoCommerce.CatalogModule.Core Version=3.1046.0 (or the published alpha string until Catalog releases) before the PR -->
-    <ProjectReference Include="..\..\..\vc-module-catalog\src\VirtoCommerce.CatalogModule.Core\VirtoCommerce.CatalogModule.Core.csproj" />
+    <PackageReference Include="VirtoCommerce.CatalogModule.Core" Version="3.1046.0-alpha.2570-vcst-2945-barcode-search-setup" />
     <PackageReference Include="VirtoCommerce.InventoryModule.Core" Version="3.1003.0" />
     <PackageReference Include="VirtoCommerce.MarketingModule.Core" Version="3.1005.0" />
     <PackageReference Include="VirtoCommerce.Platform.Core" Version="3.1062.0" />
