@@ -34,7 +34,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 parameter.Filter is AndFilter andFilter && !andFilter.ChildFilters.IsNullOrEmpty())
             {
                 var barcodeFilter = FindBarcodeFilter(andFilter);
-                var values = barcodeFilter?.Values?.Where(x => !x.IsNullOrEmpty()).ToList();
+                var values = barcodeFilter?.Values?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
 
                 if (values?.Count > 0)
                 {
@@ -50,7 +50,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await next(parameter);
         }
 
-        private static void ExpandBarcodeFilter(IndexSearchRequestBuilder parameter, AndFilter andFilter, TermFilter barcodeFilter, IList<string> fields, IList<string> values)
+        protected virtual void ExpandBarcodeFilter(IndexSearchRequestBuilder parameter, AndFilter andFilter, TermFilter barcodeFilter, IList<string> fields, IList<string> values)
         {
             // The configured names are index field names, so they are used verbatim.
             var fieldFilters = fields.Select(x => new TermFilter { FieldName = x, Values = values.ToList() }).ToList();
@@ -88,7 +88,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
 
         // The scope is the default "is:product" the query handler adds only when the caller did not send one of
         // their own; an explicitly requested scope is theirs to keep.
-        private static bool HasDefaultProductScope(AndFilter filter, IList<IFilter> userFilters)
+        protected virtual bool HasDefaultProductScope(AndFilter filter, IList<IFilter> userFilters)
         {
             var documentTypeFilter = FindDocumentTypeFilter(filter);
 
@@ -101,7 +101,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         }
 
         // A barcode may be stored on a variation, so the default scope is widened to variations as well.
-        private static void IncludeVariations(AndFilter filter)
+        protected virtual void IncludeVariations(AndFilter filter)
         {
             var documentTypeFilter = FindDocumentTypeFilter(filter);
 
@@ -111,7 +111,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             }
         }
 
-        private static void UpdateAggregations(IndexSearchRequestBuilder parameter, IFilter expansion, bool includeVariations)
+        private void UpdateAggregations(IndexSearchRequestBuilder parameter, IFilter expansion, bool includeVariations)
         {
             foreach (var aggregation in parameter.Aggregations)
             {
@@ -125,7 +125,7 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
         // The per-aggregation copies of the request filter, made by ApplyMultiSelectFacetSearch before this pipeline
         // runs, carry the barcode term too - either as a direct child or nested in the copied AndFilter. Each copy
         // that carries it gets its own copy of the expansion.
-        private static void ExpandBarcodeFilter(AndFilter filter, IFilter expansion, bool includeVariations)
+        private void ExpandBarcodeFilter(AndFilter filter, IFilter expansion, bool includeVariations)
         {
             var barcodeFilter = FindBarcodeFilter(filter);
             if (barcodeFilter != null)

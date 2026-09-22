@@ -18,6 +18,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
     {
         private const string StoreId = "B2B-store";
         private const string BarcodeValue = "0123456789012";
+        private const string SecondBarcodeValue = "9876543210987";
 
         [Fact]
         public async Task Run_NoBarcodeTerm_LeavesRequestUntouchedAndDoesNotLoadSettings()
@@ -46,11 +47,13 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             serviceMock.Verify(x => x.GetSettingsAsync(It.IsAny<string>()), Times.Never);
         }
 
-        [Fact]
-        public async Task Run_EmptyBarcodeValue_LeavesRequestUntouched()
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task Run_EmptyBarcodeValue_LeavesRequestUntouched(string barcodeValue)
         {
             var serviceMock = CreateService("gtin");
-            var builder = CreateBuilder(barcodeValue: string.Empty);
+            var builder = CreateBuilder(barcodeValue: barcodeValue);
 
             var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
@@ -107,14 +110,48 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             orFilter.ChildFilters.OfType<TermFilter>().Should().OnlyContain(x => x.Values.Single() == BarcodeValue);
         }
 
+        // The scanner switch only shows or hides the storefront button, the filter term is expanded either way.
+        [Fact]
+        public async Task Run_ScannerDisabled_StillExpandsBarcodeTerm()
+        {
+            var serviceMock = CreateService(scannerEnabled: false, "gtin");
+            var builder = CreateBuilder();
+
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
+
+            nextCalled.Should().BeTrue();
+            GetTermFilter(builder, "barcode").Should().BeNull();
+            GetTermFilter(builder, "gtin").Values.Should().Equal(BarcodeValue);
+        }
+
+        [Fact]
+        public async Task Run_SecondBarcodeTerm_StaysLiteralField()
+        {
+            var serviceMock = CreateService("gtin");
+            var builder = CreateBuilder(secondBarcodeValue: SecondBarcodeValue);
+
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
+
+            nextCalled.Should().BeTrue();
+            GetTermFilter(builder, "gtin").Values.Should().Equal(BarcodeValue);
+
+            var secondBarcodeFilter = GetTermFilter(builder, "barcode");
+            secondBarcodeFilter.Values.Should().Equal(SecondBarcodeValue);
+            builder.UserFilters.Should().ContainSingle().Which.Should().BeSameAs(secondBarcodeFilter);
+            builder.GeneratedFilters.Should().ContainSingle()
+                .Which.Should().BeOfType<TermFilter>()
+                .Which.FieldName.Should().Be("gtin");
+        }
+
         [Fact]
         public async Task Run_SingleConfiguredField_ReportsExpansionAsGeneratedFilter()
         {
             var serviceMock = CreateService("gtin");
             var builder = CreateBuilder();
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             builder.UserFilters.Should().BeEmpty();
             builder.GeneratedFilters.Should().ContainSingle()
                 .Which.Should().BeOfType<TermFilter>()
@@ -129,8 +166,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             var serviceMock = CreateService("gtin", "manufacturerPartNumber");
             var builder = CreateBuilder();
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             builder.UserFilters.Should().BeEmpty();
             builder.GeneratedFilters.OfType<TermFilter>().Select(x => x.FieldName).Should().Equal("gtin", "manufacturerPartNumber");
 
@@ -146,8 +184,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             var serviceMock = CreateService("gtin");
             var builder = CreateBuilder();
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             GetTermFilter(builder, "is").Values.Should().Equal("product", "variation");
         }
 
@@ -157,8 +196,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             var serviceMock = CreateService("gtin");
             var builder = CreateBuilder(documentTypeFromUser: true);
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             GetTermFilter(builder, "gtin").Values.Should().Equal(BarcodeValue);
             GetTermFilter(builder, "is").Values.Should().Equal("product");
             builder.UserFilters.OfType<TermFilter>().Should().ContainSingle(x => x.FieldName == "is");
@@ -166,13 +206,14 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         }
 
         [Fact]
-        public async Task Run_ExplicitDocumentTypeScope_IsNotWidened()
+        public async Task Run_NonProductDocumentType_IsNotWidened()
         {
             var serviceMock = CreateService("gtin");
             var builder = CreateBuilder(documentTypes: ["variation"]);
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             GetTermFilter(builder, "is").Values.Should().Equal("variation");
         }
 
@@ -184,8 +225,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             var aggregationFilter = CloneRequestFilter(builder);
             builder.Aggregations.Add(new TermAggregationRequest { FieldName = "color", Filter = aggregationFilter });
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             aggregationFilter.ChildFilters.OfType<TermFilter>().Should().NotContain(x => x.FieldName == "barcode");
             aggregationFilter.ChildFilters.OfType<OrFilter>().Single()
                 .ChildFilters.OfType<TermFilter>().Select(x => x.FieldName).Should().Equal("gtin", "manufacturerPartNumber");
@@ -204,8 +246,9 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             };
             builder.Aggregations.Add(new TermAggregationRequest { FieldName = "color", Filter = aggregationFilter });
 
-            await RunMiddleware(serviceMock.Object, builder);
+            var nextCalled = await RunMiddleware(serviceMock.Object, builder);
 
+            nextCalled.Should().BeTrue();
             nestedFilter.ChildFilters.OfType<TermFilter>().Should().NotContain(x => x.FieldName == "barcode");
             nestedFilter.ChildFilters.OfType<TermFilter>().Single(x => x.FieldName == "gtin").Values.Should().Equal(BarcodeValue);
             nestedFilter.ChildFilters.OfType<TermFilter>().Single(x => x.FieldName == "is").Values.Should().Equal("product", "variation");
@@ -213,10 +256,15 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
 
         private static Mock<IBarcodeSearchConfigurationService> CreateService(params string[] fields)
         {
+            return CreateService(scannerEnabled: true, fields);
+        }
+
+        private static Mock<IBarcodeSearchConfigurationService> CreateService(bool scannerEnabled, params string[] fields)
+        {
             var serviceMock = new Mock<IBarcodeSearchConfigurationService>();
             serviceMock
                 .Setup(x => x.GetSettingsAsync(StoreId))
-                .ReturnsAsync(new BarcodeSearchSettings { ScannerEnabled = true, Fields = fields });
+                .ReturnsAsync(new BarcodeSearchSettings { ScannerEnabled = scannerEnabled, Fields = fields });
 
             return serviceMock;
         }
@@ -224,6 +272,7 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
         private static IndexSearchRequestBuilder CreateBuilder(
             string storeId = StoreId,
             string barcodeValue = BarcodeValue,
+            string secondBarcodeValue = null,
             IList<string> documentTypes = null,
             bool documentTypeFromUser = false)
         {
@@ -235,6 +284,11 @@ namespace VirtoCommerce.XCatalog.Tests.Middlewares
             if (barcodeValue != null)
             {
                 userFilters.Add(new TermFilter { FieldName = "barcode", Values = [barcodeValue] });
+            }
+
+            if (secondBarcodeValue != null)
+            {
+                userFilters.Add(new TermFilter { FieldName = "barcode", Values = [secondBarcodeValue] });
             }
 
             if (documentTypeFromUser)

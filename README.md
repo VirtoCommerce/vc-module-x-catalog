@@ -22,6 +22,12 @@ The document scope is widened from products to variations, so a code stored on a
 default `is:product` scope is in effect; a request that sends a scope of its own keeps it. Only the first `barcode`
 term of a request is expanded; a second one stays a literal field name.
 
+The `Catalog.Search.BarcodeScannerEnabled` setting only shows or hides the scanner button in the storefront UI and does
+not affect this expansion: a hand-crafted `barcode:` term is expanded whenever the store has barcode fields configured.
+
+If a configured barcode field is also a facet, the barcode term is applied inside that facet's own aggregation as well,
+so the multi-select semantics do not apply to that facet while a barcode is active.
+
 With no configured field the store matches a scanned code by full text: the term is left untouched (the storefront
 sends the scanned value as an ordinary keyword in that mode instead of as this filter).
 
