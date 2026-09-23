@@ -49,6 +49,7 @@ namespace VirtoCommerce.XCatalog.Data.Extensions
             services.AddPipeline<IndexSearchRequestBuilder>(builder =>
             {
                 builder.AddMiddleware(typeof(EvalSearchRequestUserGroupsMiddleware));
+                builder.AddMiddleware(typeof(EvalBarcodeFilterMiddleware));
             });
 
             services.AddPipeline<InventorySearchCriteria>();
