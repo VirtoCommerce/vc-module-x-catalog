@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using VirtoCommerce.CatalogModule.Core.Serialization;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
@@ -26,24 +27,34 @@ namespace VirtoCommerce.XCatalog.Core.Binding
             {
                 case Array jArray:
                     {
-                        var jObjects = new List<JObject>();
+                        var indexedPrices = new List<IndexedPrice>();
                         foreach (var sObj in jArray.OfType<string>())
                         {
                             try
                             {
-                                var jObj = JObject.Parse(sObj);
-                                jObjects.Add(jObj);
+                                var indexedPrice = ProductJsonSerializer.Deserialize<IndexedPrice>(sObj);
+
+                                if (indexedPrice != null)
+                                {
+                                    indexedPrices.Add(indexedPrice);
+                                }
                             }
-                            catch (JsonReaderException)
+                            // JObject.Parse rejected a payload that was not an object; the direct path
+                            // reports that as a serialization error, and both must skip only this price.
+                            catch (JsonException)
                             {
                                 // Intentionally left empty
                             }
                         }
 
-                        jObjects = jObjects.Count != 0 ? jObjects : jArray.OfType<JObject>().ToList();
-                        foreach (var jObject in jObjects)
+                        if (indexedPrices.Count == 0)
                         {
-                            AddPrice(result, jObject);
+                            indexedPrices = jArray.OfType<JObject>().Select(x => x.ToObject<IndexedPrice>()).ToList();
+                        }
+
+                        foreach (var indexedPrice in indexedPrices)
+                        {
+                            AddPrice(result, indexedPrice);
                         }
 
                         break;
@@ -51,7 +62,7 @@ namespace VirtoCommerce.XCatalog.Core.Binding
 
                 case JObject jObject:
                     {
-                        AddPrice(result, jObject);
+                        AddPrice(result, jObject.ToObject<IndexedPrice>());
                         break;
                     }
             }
@@ -59,9 +70,8 @@ namespace VirtoCommerce.XCatalog.Core.Binding
             return result;
         }
 
-        private static void AddPrice(List<Price> result, JObject jObject)
+        private static void AddPrice(List<Price> result, IndexedPrice indexedPrice)
         {
-            var indexedPrice = jObject.ToObject<IndexedPrice>();
             result.Add(new Price
             {
                 Currency = indexedPrice.Currency,
