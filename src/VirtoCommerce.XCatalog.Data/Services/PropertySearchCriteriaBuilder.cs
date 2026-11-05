@@ -54,6 +54,7 @@ namespace VirtoCommerce.XCatalog.Data.Services
 
         public PropertySearchCriteriaBuilder WithCatalogId(string catalogId)
         {
+            _searchCriteria.CatalogIds = null;
             _searchCriteria.CatalogId = catalogId;
             return this;
         }
