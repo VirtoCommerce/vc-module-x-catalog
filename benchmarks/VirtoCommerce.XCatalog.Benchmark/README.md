@@ -6,7 +6,7 @@ BenchmarkDotNet micro-benchmarks for `VirtoCommerce.XCatalog`. Mirrors the layou
 ## Layout
 
 Each suite lives in its own subfolder with a matching `VirtoCommerce.XCatalog.Benchmark.<Suite>`
-namespace (`Caching/` today). To see what actually exists, ask the runner rather than a hand-maintained
+namespace (`Caching/`, `Binding/` today). To see what actually exists, ask the runner rather than a hand-maintained
 list:
 
 ```bash
@@ -62,3 +62,33 @@ Two production steps are deliberately not reproduced, which makes these figures 
 
 When changing the key or the request shape, re-run and update the numbers quoted in the PR description —
 nothing verifies them.
+
+## Binding / ProductBindingBenchmarks
+
+Measures binding **one** indexed product document — what `SearchProductQueryHandler.ConvertProducts` does
+per hit through `XCatalogMapper.ToExpProduct`, i.e. `new GenericModelBinder<ExpProduct>().BindModel(document)`.
+Three arms over the same document: `BindExpProduct` (the production call, baseline), and the two binders
+that dominate it, `BindCatalogProduct` (field `__object`) and `BindMinVariationPrices` (field
+`__minvariationprice`), so a change in the total can be attributed. `Allocated` is the primary figure.
+
+The document is shaped like an Elasticsearch 8 provider's: `__object` is a string written by
+`ProductJsonSerializer`, `__minvariationprice` an array of such strings (three currencies), next to the
+scalar fields a stored document carries. The synthetic product (properties, images, assets, outlines, SEO
+infos, reviews, category links) is sized so its serialized `__object` is about 20 000 characters, the length
+measured on a real stored object; the actual length is printed when the run starts. To measure a real
+document instead, point `XCATALOG_BENCH_OBJECT_JSON` at a file holding a stored `__object` — never commit
+such a file:
+
+```bash
+XCATALOG_BENCH_OBJECT_JSON=~/object.json dotnet run -c Release -- --filter '*ProductBinding*'
+```
+
+Not reproduced, so the figures are per-document binding cost, not request cost:
+
+- a provider that returns `__object` as a `JObject` takes another branch of `CatalogProductBinder`;
+- real documents vary in size; one fixed size stands in for them;
+- the rest of the Elasticsearch response materialisation and everything after binding.
+
+The file uses only public API that exists both before and after a change to the binders, so it is meant to be
+run on **two code states with the same file** — copy it into a checkout of the base commit, run, then run it on
+the change — and the two `Allocated` columns compared.
