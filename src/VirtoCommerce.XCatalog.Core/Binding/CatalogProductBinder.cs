@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
@@ -29,17 +28,7 @@ namespace VirtoCommerce.XCatalog.Core.Binding
                 return null;
             }
 
-            var productProperties = result.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var property in productProperties)
-            {
-                var binder = property.GetIndexModelBinder();
-
-                if (binder != null)
-                {
-                    property.SetValue(result, binder.BindModel(searchDocument));
-                }
-            }
+            result.BindIndexedProperties(searchDocument);
 
             return result;
         }
