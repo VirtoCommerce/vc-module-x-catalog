@@ -1,9 +1,7 @@
 using System;
 using System.Reflection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
-using VirtoCommerce.CatalogModule.Core.Serialization;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
@@ -51,16 +49,7 @@ namespace VirtoCommerce.XCatalog.Core.Binding
             switch (obj)
             {
                 case string sObj:
-                    try
-                    {
-                        return (CatalogProduct)ProductJsonSerializer.Deserialize(sObj, _productType);
-                    }
-                    // JObject.Parse rejected a payload that was not an object; the direct path reports
-                    // that as a serialization error, so both must stay non-fatal for the whole page.
-                    catch (JsonException)
-                    {
-                        return null;
-                    }
+                    return (CatalogProduct)IndexedObjectReader.Read(sObj, _productType);
 
                 case JObject jobj:
                     return (CatalogProduct)jobj.ToObject(_productType);

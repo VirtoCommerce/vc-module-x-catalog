@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FluentAssertions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Serialization;
 using VirtoCommerce.PricingModule.Core.Model;
@@ -17,37 +18,54 @@ public class MinVariationPriceBinderTests
     private readonly MinVariationPriceBinder _binder = new();
 
     [Fact]
-    public void BindModel_NoPriceField_ReturnsEmpty()
+    public void BindModel_OnlyElementsWithoutObjectRoot_ReturnsEmpty()
     {
-        var result = (IList<Price>)_binder.BindModel(new SearchDocument());
-
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void BindModel_MalformedJsonStrings_ReturnsEmpty()
-    {
-        var result = (IList<Price>)_binder.BindModel(Document(new object[] { "{ not json", "also not json" }));
+        var result = (IList<Price>)_binder.BindModel(Document(new object[] { "also not json", "null" }));
 
         result.Should().BeEmpty();
     }
 
     /// <summary>
-    /// One unusable element must cost that price only — the exception would otherwise escape into the
-    /// AutoMapper conversion and fail the whole result page.
+    /// An element whose root is not a JSON object carries no price, so it costs that price only — it must
+    /// not fail the whole result page that <c>XCatalogMapper.ToExpProduct</c>
+    /// (<c>GenericModelBinder&lt;ExpProduct&gt;</c>) maps.
     /// </summary>
     [Theory]
-    [InlineData("{ not json")]
+    [InlineData("also not json")]
     [InlineData("null")]
     [InlineData("[]")]
     [InlineData("123")]
-    public void BindModel_UnusableElement_IsSkippedAndTheRestAreBound(string unusable)
+    public void BindModel_ElementWithoutObjectRoot_IsSkippedAndTheRestAreBound(string unusable)
     {
         var payloads = Serialize(("USD", 10.5m));
 
         var result = (IList<Price>)_binder.BindModel(Document(new object[] { unusable, payloads[0] }));
 
         result.Should().ContainSingle().Which.Currency.Should().Be("USD");
+    }
+
+    /// <summary>
+    /// Once the object has started, a broken element is a defect to surface, not a price to drop silently.
+    /// </summary>
+    [Fact]
+    public void BindModel_MalformedPriceElement_Throws()
+    {
+        var payloads = Serialize(("USD", 10.5m));
+
+        var act = () => _binder.BindModel(Document(new object[] { "{ not json", payloads[0] }));
+
+        act.Should().Throw<JsonReaderException>();
+    }
+
+    /// <summary>
+    /// A bind-level failure (a value that does not fit the contract) must not be swallowed either.
+    /// </summary>
+    [Fact]
+    public void BindModel_PriceThatDoesNotFitTheContract_Throws()
+    {
+        var act = () => _binder.BindModel(Document(new object[] { "{\"currency\":\"USD\",\"value\":\"abc\"}" }));
+
+        act.Should().Throw<JsonException>();
     }
 
     /// <summary>

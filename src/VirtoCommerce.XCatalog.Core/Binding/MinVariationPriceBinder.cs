@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using VirtoCommerce.CatalogModule.Core.Serialization;
 using VirtoCommerce.PricingModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
@@ -30,20 +28,11 @@ namespace VirtoCommerce.XCatalog.Core.Binding
                         var indexedPrices = new List<IndexedPrice>();
                         foreach (var sObj in jArray.OfType<string>())
                         {
-                            try
-                            {
-                                var indexedPrice = ProductJsonSerializer.Deserialize<IndexedPrice>(sObj);
+                            var indexedPrice = IndexedObjectReader.Read<IndexedPrice>(sObj);
 
-                                if (indexedPrice != null)
-                                {
-                                    indexedPrices.Add(indexedPrice);
-                                }
-                            }
-                            // JObject.Parse rejected a payload that was not an object; the direct path
-                            // reports that as a serialization error, and both must skip only this price.
-                            catch (JsonException)
+                            if (indexedPrice != null)
                             {
-                                // Intentionally left empty
+                                indexedPrices.Add(indexedPrice);
                             }
                         }
 

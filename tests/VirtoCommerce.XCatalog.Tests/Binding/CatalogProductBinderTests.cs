@@ -1,5 +1,6 @@
 using System;
 using FluentAssertions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Outlines;
@@ -26,22 +27,45 @@ public class CatalogProductBinderTests
     }
 
     /// <summary>
-    /// An unusable payload must cost the caller this one product, never the whole result page:
-    /// <c>BindModel</c> runs inside the AutoMapper conversion that maps every document of the page.
+    /// A payload whose root is not a JSON object carries no product, so it costs the caller this one
+    /// product, never the whole result page: <c>BindModel</c> runs inside the <c>XCatalogMapper.ToExpProduct</c>
+    /// conversion (<c>GenericModelBinder&lt;ExpProduct&gt;</c>) that maps every document of the page.
     /// </summary>
     [Theory]
-    [InlineData("{ this is not json")]
     [InlineData("")]
     [InlineData("null")]
     [InlineData("[]")]
     [InlineData("[{ \"id\": \"product-id\" }]")]
     [InlineData("\"a string\"")]
     [InlineData("123")]
-    public void BindModel_UnusablePayload_ReturnsNull(string json)
+    [InlineData("not json at all")]
+    public void BindModel_PayloadWithoutObjectRoot_ReturnsNull(string json)
     {
         var result = _binder.BindModel(Document(json));
 
         result.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Once the object has started, a broken payload is a defect to surface, not a product to drop silently.
+    /// </summary>
+    [Fact]
+    public void BindModel_MalformedObjectPayload_Throws()
+    {
+        var act = () => _binder.BindModel(Document("{ this is not json"));
+
+        act.Should().Throw<JsonReaderException>();
+    }
+
+    /// <summary>
+    /// A bind-level failure (a value that does not fit the contract) must not be swallowed either.
+    /// </summary>
+    [Fact]
+    public void BindModel_PayloadThatDoesNotFitTheContract_Throws()
+    {
+        var act = () => _binder.BindModel(Document("{\"isActive\":\"not-a-bool\"}"));
+
+        act.Should().Throw<JsonException>();
     }
 
     /// <summary>
@@ -60,8 +84,8 @@ public class CatalogProductBinderTests
     }
 
     /// <summary>
-    /// <see cref="PropertyValue.Value"/> is typed <see cref="object"/>, so its runtime type is decided by
-    /// date handling rather than by a contract — the one member where the two branches can disagree.
+    /// A date-shaped or plain text in <see cref="PropertyValue.Value"/> (typed <see cref="object"/>)
+    /// resolves to the same runtime type and value on the string branch and on the structural branch.
     /// </summary>
     [Theory]
     [InlineData("2026-08-04T10:20:30Z")]
