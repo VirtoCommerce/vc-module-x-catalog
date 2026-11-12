@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using PipelineNet.Middleware;
 using VirtoCommerce.MarketingModule.Core.Model.Promotions;
 using VirtoCommerce.MarketingModule.Core.Services;
@@ -10,17 +9,18 @@ using VirtoCommerce.Platform.Core.Modularity;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 
 namespace VirtoCommerce.XCatalog.Data.Middlewares
 {
     public class EvalProductsDiscountsMiddleware : IAsyncMiddleware<SearchProductResponse>
     {
-        private readonly IMapper _mapper;
+        private readonly IXCatalogMapper _mapper;
         private readonly IMarketingPromoEvaluator _marketingEvaluator;
         private readonly IGenericPipelineLauncher _pipeline;
 
         public EvalProductsDiscountsMiddleware(
-            IMapper mapper,
+            IXCatalogMapper mapper,
             IOptionalDependency<IMarketingPromoEvaluator> marketingEvaluator,
             IGenericPipelineLauncher pipeline)
         {
@@ -54,11 +54,8 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
                 if (query.EvaluatePromotions)
                 {
                     //Evaluate promotions
-                    promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.Map<ProductPromoEntry>(x, options =>
-                    {
-                        options.Items["all_currencies"] = parameter.AllStoreCurrencies;
-                        options.Items["currency"] = parameter.Currency;
-                    })).ToList();
+                    var priceContext = CreatePromoPriceMappingContext(parameter);
+                    promoEvalContext.PromoEntries = parameter.Results.Select(x => _mapper.ToProductPromoEntry(x, priceContext)).ToList();
 
                     var promotionResults = await _marketingEvaluator.EvaluatePromotionAsync(promoEvalContext);
                     var promoRewards = promotionResults.Rewards.OfType<CatalogItemAmountReward>().ToArray();
@@ -83,6 +80,18 @@ namespace VirtoCommerce.XCatalog.Data.Middlewares
             await _pipeline.Execute(promoEvalContext);
 
             return promoEvalContext;
+        }
+
+        // Same rule as EvalProductsPricesMiddleware.CreateProductPricesMappingContext: CurrencyCode is the
+        // resolved response.Currency, not the raw (possibly null) response.Query.CurrencyCode.
+        protected virtual PromoPriceMappingContext CreatePromoPriceMappingContext(SearchProductResponse response)
+        {
+            var context = AbstractTypeFactory<PromoPriceMappingContext>.TryCreateInstance();
+            context.CultureName = response.Query.CultureName;
+            context.CurrencyCode = response.Currency?.Code;
+            context.Response = response;
+
+            return context;
         }
     }
 }

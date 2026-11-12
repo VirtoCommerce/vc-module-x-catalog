@@ -29,6 +29,10 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
 {
     public class ProductType : ExtendableGraphType<ExpProduct>
     {
+        private const int _maxVariationsBatchSize = 200;
+
+        private readonly IDataLoaderContextAccessor _dataLoader;
+
         /// <example>
         ///{
         ///    product(id: "f1b26974b7634abaa0900e575a99476f")
@@ -67,6 +71,8 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
         /// </example>
         public ProductType(IDataLoaderContextAccessor dataLoader)
         {
+            _dataLoader = dataLoader;
+
             Name = "Product";
             Description = "Products are the sellable goods in an e-commerce project.";
 
@@ -265,27 +271,15 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             };
             AddField(brandField);
 
-            ExtendableFieldAsync<VariationType>(
+            ExtendableField<VariationType>(
                 "masterVariation",
-                resolve: async context =>
-                {
-                    if (string.IsNullOrEmpty(context.Source.IndexedProduct.MainProductId))
-                    {
-                        return null;
-                    }
+                resolve: ResolveMasterVariation);
 
-                    var query = context.GetCatalogQuery<LoadProductsQuery>();
-                    query.ObjectIds = new[] { context.Source.IndexedProduct.MainProductId };
-                    query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToArray();
-
-                    var response = await context.GetMediator().Send(query);
-
-                    return response.Products.Select(expProduct => new ExpVariation(expProduct)).FirstOrDefault();
-                });
-
+#pragma warning disable VC0015 // Type or member is obsolete
             ExtendableFieldAsync<NonNullGraphType<ListGraphType<NonNullGraphType<VariationType>>>>(
                 "variations",
                 resolve: ResolveVariationsFieldAsync);
+#pragma warning restore VC0015 // Type or member is obsolete
 
             Field<NonNullGraphType<BooleanGraphType>, bool>("hasVariations")
                 .Resolve(context =>
@@ -319,7 +313,7 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             ExtendableField<NonNullGraphType<PriceType>>(
                 "price",
                 "Product price",
-                resolve: context => context.Source.AllPrices.FirstOrDefault() ?? new ProductPrice(context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
+                resolve: context => context.Source.AllPrices.FirstOrDefault() ?? AbstractTypeFactory<ProductPrice>.TryCreateInstance(nameof(ProductPrice), context.GetCurrencyByCode(context.GetValue<string>("currencyCode"))));
 
             ExtendableField<NonNullGraphType<ListGraphType<NonNullGraphType<PriceType>>>>(
                 "prices",
@@ -426,26 +420,69 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             return brandName?.ToString();
         }
 
-        protected virtual async Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
+        [Obsolete("Use ResolveVariations.", DiagnosticId = "VC0015", UrlFormat = "https://docs.virtocommerce.org/products/products-virto3-versions")]
+        protected virtual Task<object> ResolveVariationsFieldAsync(IResolveFieldContext<ExpProduct> context)
         {
-            if (context.Source.IndexedVariationIds.IsNullOrEmpty())
+            return Task.FromResult<object>(ResolveVariations(context));
+        }
+
+        protected virtual IDataLoaderResult<IList<ExpVariation>> ResolveVariations(IResolveFieldContext<ExpProduct> context)
+        {
+            var ids = context.Source.IndexedVariationIds;
+
+            if (ids.IsNullOrEmpty())
             {
-                return new List<ExpVariation>();
+                return new DataLoaderResult<IList<ExpVariation>>([]);
             }
 
-            var query = context.GetCatalogQuery<LoadProductsQuery>();
-            query.ObjectIds = context.Source.IndexedVariationIds;
-            query.IncludeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+            return GetVariationLoader(context)
+                .LoadAsync(ids)
+                .Then(IList<ExpVariation> (products) => products
+                    .Where(x => x?.IndexedProduct?.IsActive == true)
+                    .Select(x => new ExpVariation(x))
+                    .ToList());
+        }
 
-            // Include "isActive" field to filter out inactive variations
-            if (!query.IncludeFields.Contains("isActive"))
+        protected virtual IDataLoaderResult<ExpVariation> ResolveMasterVariation(IResolveFieldContext<ExpProduct> context)
+        {
+            var id = context.Source.IndexedProduct.MainProductId;
+
+            if (string.IsNullOrEmpty(id))
             {
-                query.IncludeFields.Add("isActive");
+                return new DataLoaderResult<ExpVariation>((ExpVariation)null);
             }
 
-            var response = await context.GetMediator().Send(query);
+            return GetVariationLoader(context)
+                .LoadAsync(id)
+                .Then(product => product is null ? null : new ExpVariation(product));
+        }
 
-            return response.Products.Where(x => x.IndexedProduct?.IsActive == true).Select(expProduct => new ExpVariation(expProduct));
+        private IDataLoader<string, ExpProduct> GetVariationLoader(IResolveFieldContext context)
+        {
+            var includeFields = context.SubFields.Values.GetAllNodesPaths(context).ToList();
+
+            // ResolveVariations filters by IsActive;
+            // ResolveMasterVariation needs it only to have the same key.
+            if (!includeFields.Contains("isActive"))
+            {
+                includeFields.Add("isActive");
+            }
+
+            var loaderKey = $"product_variations_{string.Join(',', includeFields.OrderBy(x => x, StringComparer.Ordinal))}";
+
+            return _dataLoader.Context.GetOrAddBatchLoader<string, ExpProduct>(
+                loaderKey,
+                async ids =>
+                {
+                    var query = context.GetCatalogQuery<LoadProductsQuery>();
+                    query.ObjectIds = ids.ToList();
+                    query.IncludeFields = includeFields;
+
+                    var response = await context.GetMediator().Send(query);
+
+                    return response.Products.ToDictionary(x => x.Id);
+                },
+                maxBatchSize: _maxVariationsBatchSize);
         }
 
         private static async Task<object> ResolveVideosConnectionAsync(IResolveConnectionContext<ExpProduct> context)

@@ -3,29 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.CatalogModule.Core.Model.Search;
 using VirtoCommerce.CatalogModule.Core.Search;
 using VirtoCommerce.CatalogModule.Core.Search.Sorting;
 using VirtoCommerce.CatalogModule.Core.Services;
-using VirtoCommerce.CoreModule.Core.Currency;
 using VirtoCommerce.Platform.Caching;
 using VirtoCommerce.Platform.Core.Caching;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.SearchModule.Core.Services;
 using VirtoCommerce.StoreModule.Core.Model;
 using VirtoCommerce.StoreModule.Core.Services;
+using VirtoCommerce.Xapi.Core.Models.Facets;
 using VirtoCommerce.Xapi.Core.Pipelines;
 using VirtoCommerce.Xapi.Tests.Helpers;
 using VirtoCommerce.XCatalog.Core;
 using VirtoCommerce.XCatalog.Core.Models;
 using VirtoCommerce.XCatalog.Core.Queries;
+using VirtoCommerce.XCatalog.Core.Services;
 using VirtoCommerce.XCatalog.Data.Index;
 using VirtoCommerce.XCatalog.Data.Queries;
+using VirtoCommerce.XCatalog.Tests.Helpers;
 using Xunit;
 using Aggregation = VirtoCommerce.CatalogModule.Core.Model.Search.Aggregation;
 using CatalogProductSorting = VirtoCommerce.CatalogModule.Core.Search.Sorting.ProductSorting;
@@ -43,7 +43,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         private const string START_DATE_FIELD = "startdate";
 
         private readonly Mock<ISearchProvider> _searchProviderMock = new();
-        private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<IXCatalogMapper> _mapperMock = new();
         private readonly Mock<IStoreCurrencyResolver> _storeCurrencyResolverMock = new();
         private readonly Mock<IStoreService> _storeServiceMock = new();
         private readonly Mock<IGenericPipelineLauncher> _pipelineMock = new();
@@ -95,7 +95,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 .ReturnsAsync([]);
 
             _mapperMock
-                .Setup(x => x.Map<ExpProduct>(It.IsAny<object>()))
+                .Setup(x => x.ToExpProduct(It.IsAny<SearchDocument>()))
                 .Returns(() => new ExpProduct());
 
             SetupProviderResponse();
@@ -194,6 +194,102 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             await handler.Handle(Query("shoes"), CancellationToken.None);
 
             _capturedSearchRequests.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_AssignsOrderMatchingOriginalArrayPosition_EvenWhenAFakeLanguageAggregationIsFiltered()
+        {
+            var color = new Aggregation { Field = "color", AggregationType = "attr" };
+            var colorLanguageSpecific = new Aggregation { Field = "color_en-us", AggregationType = "attr" };
+            var brand = new Aggregation { Field = "brand", AggregationType = "attr" };
+            var resultAggregations = new[] { color, colorLanguageSpecific, brand };
+
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((source, _) => new TermFacetResult { Name = source.Field });
+
+            var handler = GetHandler();
+
+            var result = handler.CallApplyFacetLocalization(resultAggregations, SearchProductResponseBuilder.Build(), "en-US");
+
+            result.Should().HaveCount(2);
+            result[0].Name.Should().Be("color");
+            result[0].Order.Should().Be(0);
+            result[1].Name.Should().Be("brand");
+            result[1].Order.Should().Be(2);
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_MapperReturnsNullForOneAggregation_LeavesThatEntryNullWithoutThrowing()
+        {
+            var color = new Aggregation { Field = "color", AggregationType = "attr" };
+            var unrecognized = new Aggregation { Field = "unknown", AggregationType = "category" };
+            var resultAggregations = new[] { color, unrecognized };
+
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((source, _) =>
+                    source.AggregationType == "attr" ? new TermFacetResult { Name = source.Field } : null);
+
+            var handler = GetHandler();
+
+            var result = handler.CallApplyFacetLocalization(resultAggregations, SearchProductResponseBuilder.Build(), "en-US");
+
+            result.Should().HaveCount(2);
+            result[0].Should().NotBeNull();
+            result[0]!.Order.Should().Be(0);
+            result[1].Should().BeNull();
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_ResponseQueryCultureUnresolved_ContextUsesResolvedLanguageCode()
+        {
+            // response.Query.CultureName is the raw, unnormalized request value; languageCode is what
+            // SearchProductQueryHandle already resolved via the store-language fallback one line above this
+            // call. The facet context must carry the resolved value, or facet labels silently lose
+            // localization whenever the two diverge (unset/unsupported requested culture).
+            FacetMappingContext capturedContext = null;
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((_, context) =>
+                {
+                    capturedContext = context;
+                    return null;
+                });
+
+            var handler = GetHandler();
+            var response = SearchProductResponseBuilder.Build();
+            response.Query.CultureName = null;
+
+            handler.CallApplyFacetLocalization([new Aggregation { Field = "color", AggregationType = "attr" }], response, CULTURE_NAME);
+
+            capturedContext.CultureName.Should().Be(CULTURE_NAME);
+        }
+
+        [Fact]
+        public void ApplyFacetLocalization_ResponseCurrencySet_ContextCarriesResolvedCurrencyCode()
+        {
+            // response.Query.CurrencyCode is the raw, unnormalized request value (null when the client
+            // omits it); response.Currency is the store-resolved currency, already on the carrier via
+            // GetStoreCurrencyAsync by the time this runs. Same divergence as CultureName above, for
+            // CurrencyCode.
+            FacetMappingContext capturedContext = null;
+            _mapperMock
+                .Setup(x => x.ToFacetResult(It.IsAny<Aggregation>(), It.IsAny<FacetMappingContext>()))
+                .Returns<Aggregation, FacetMappingContext>((_, context) =>
+                {
+                    capturedContext = context;
+                    return null;
+                });
+
+            var handler = GetHandler();
+            var currency = GetCurrency();
+            var response = SearchProductResponseBuilder.Build(currency);
+            response.Query.CurrencyCode = null;
+
+            handler.CallApplyFacetLocalization([new Aggregation { Field = "color", AggregationType = "attr" }], response, CULTURE_NAME);
+
+            capturedContext.CurrencyCode.Should().Be(currency.Code);
         }
 
         [Fact]
@@ -419,7 +515,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
                 Mock.Of<IRequestScopedCacheAccessor>());
 
             _mapperMock
-                .Setup(x => x.Map<SearchProductQuery>(It.IsAny<LoadProductsQuery>()))
+                .Setup(x => x.ToSearchProductQuery(It.IsAny<LoadProductsQuery>()))
                 .Returns(() => Query("mapped"));
 
             await handler.Handle(Query("direct"), CancellationToken.None);
@@ -476,7 +572,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         {
             public TestableHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,
@@ -494,13 +590,15 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
             public SearchResponse CallCloneSearchResponse(SearchResponse source) => CloneSearchResponse(source);
 
             public string CallBuildSearchCacheKey(SearchRequest searchRequest) => BuildSearchCacheKey(searchRequest);
+
+            public IList<FacetResult> CallApplyFacetLocalization(Aggregation[] resultAggregations, SearchProductResponse response, string languageCode) => ApplyFacetLocalization(resultAggregations, response, languageCode);
         }
 
         private sealed class DerivedAwareHandler : TestableHandler
         {
             public DerivedAwareHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,
@@ -534,7 +632,7 @@ namespace VirtoCommerce.XCatalog.Tests.Queries
         {
             public SeamOverridingHandler(
                 ISearchProvider searchProvider,
-                IMapper mapper,
+                IXCatalogMapper mapper,
                 IStoreCurrencyResolver storeCurrencyResolver,
                 IStoreService storeService,
                 IGenericPipelineLauncher pipeline,
