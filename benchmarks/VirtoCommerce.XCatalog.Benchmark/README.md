@@ -71,11 +71,11 @@ Three arms over the same document: `BindExpProduct` (the production call, baseli
 that dominate it, `BindCatalogProduct` (field `__object`) and `BindMinVariationPrices` (field
 `__minvariationprice`), so a change in the total can be attributed. `Allocated` is the primary figure.
 
-The document is shaped like an Elasticsearch 8 provider's: `__object` is a string written by
+The document is shaped like that of a search provider that stores `__object` as a JSON string, written by
 `ProductJsonSerializer`, `__minvariationprice` an array of such strings (three currencies), next to the
 scalar fields a stored document carries. The synthetic product (properties, images, assets, outlines, SEO
-infos, reviews, category links) is sized so its serialized `__object` is about 20 000 characters, the length
-measured on a real stored object; the actual length is printed when the run starts. To measure a real
+infos, reviews, category links) is sized so its serialized `__object` is about 20 000 characters, a
+representative length for a fully populated product; the actual length is printed when the run starts. To measure a real
 document instead, point `XCATALOG_BENCH_OBJECT_JSON` at a file holding a stored `__object` — never commit
 such a file:
 
@@ -87,7 +87,7 @@ Not reproduced, so the figures are per-document binding cost, not request cost:
 
 - a provider that returns `__object` as a `JObject` takes another branch of `CatalogProductBinder`;
 - real documents vary in size; one fixed size stands in for them;
-- the rest of the Elasticsearch response materialisation and everything after binding.
+- the rest of the provider's response materialisation and everything after binding.
 
 The file uses only public API that exists both before and after a change to the binders, so it is meant to be
 run on **two code states with the same file** — copy it into a checkout of the base commit, run, then run it on

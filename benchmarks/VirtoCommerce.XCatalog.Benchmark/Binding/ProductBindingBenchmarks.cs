@@ -28,16 +28,16 @@ namespace VirtoCommerce.XCatalog.Benchmark.Binding;
 // The file uses only public API that exists on both sides of a change to the binders, so the same file can
 // be dropped into a checkout of the base commit and into the changed one to compare like with like.
 //
-// The document is shaped like the one an Elasticsearch 8 provider returns for a product whose object is
-// stored as a string: "__object" is a JSON string written by ProductJsonSerializer, and
-// "__minvariationprice" is an array of such strings.
+// The document is shaped like the one a search provider returns when it stores a product's object as a
+// JSON string: "__object" is a JSON string written by ProductJsonSerializer, and "__minvariationprice" is
+// an array of such strings.
 //
 // What this fixture does NOT reproduce, so the figures read as per-document binding cost, not request cost:
 //   - A provider that hands "__object" back as a JObject takes a different branch of CatalogProductBinder.
 //   - Real documents vary in size; the synthetic product is tuned to one measured stored-object length
 //     (see ObjectCharacters). Set XCATALOG_BENCH_OBJECT_JSON to a file holding a real stored "__object" to
 //     measure a document of your own; never commit such a file.
-//   - The rest of the response materialisation (parsing the Elasticsearch response into SearchDocument),
+//   - The rest of the response materialisation (parsing the provider's response into SearchDocument),
 //     and everything after binding (prices, inventory, DataLoader), is not included.
 //   - A single document: a result page binds one per hit, so multiply by the page size.
 [MemoryDiagnoser]
@@ -45,7 +45,7 @@ public class ProductBindingBenchmarks
 {
     private const string ObjectJsonEnvironmentVariable = "XCATALOG_BENCH_OBJECT_JSON";
 
-    // The measured length of a real stored "__object" on a deployment (78.5% of a 26 081-character document).
+    // A representative length for a stored "__object" of a fully populated product.
     // The synthetic product is sized to land near it; the actual figure is printed at setup.
     private const int ObjectCharacters = 20_000;
 

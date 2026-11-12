@@ -6,14 +6,16 @@ using VirtoCommerce.CatalogModule.Core.Serialization;
 namespace VirtoCommerce.XCatalog.Core.Binding
 {
     /// <summary>
-    /// Reads an object the indexer stored as a JSON string, with the serializer that wrote it.
+    /// Reads an object a search provider returned as a JSON string, with <see cref="ProductJsonSerializer"/>
+    /// in a single pass — no intermediate token tree.
     /// </summary>
     internal static class IndexedObjectReader
     {
         /// <summary>
-        /// Null when the payload's root is not a JSON object. Any failure after the object has started —
-        /// malformed JSON or a value that does not fit the contract — propagates: the indexer writes only
-        /// what <see cref="ProductJsonSerializer"/> produced, so such a payload is a defect to surface.
+        /// Null when the payload's root is not a JSON object, as before. Once the object has started, a
+        /// failure — malformed JSON, or a value of the wrong type for the contract — propagates instead of
+        /// dropping the document silently. Reading follows <see cref="ProductJsonSerializer.ObjectSerializer"/>:
+        /// a JSON null leaves the member at its default, and anything after the root object is not read.
         /// </summary>
         public static object Read(string json, Type type)
         {
@@ -34,7 +36,15 @@ namespace VirtoCommerce.XCatalog.Core.Binding
         {
             try
             {
-                return reader.Read() && reader.TokenType == JsonToken.StartObject;
+                while (reader.Read())
+                {
+                    if (reader.TokenType != JsonToken.Comment)
+                    {
+                        return reader.TokenType == JsonToken.StartObject;
+                    }
+                }
+
+                return false;
             }
             catch (JsonReaderException)
             {

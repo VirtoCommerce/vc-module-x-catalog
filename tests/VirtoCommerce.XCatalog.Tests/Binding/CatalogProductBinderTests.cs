@@ -69,6 +69,22 @@ public class CatalogProductBinderTests
     }
 
     /// <summary>
+    /// A comment before the root object does not make the payload unusable: it is skipped, as the token
+    /// tree that the string branch used to build skipped it.
+    /// </summary>
+    [Fact]
+    public void BindModel_CommentBeforeObject_BindsTheProduct()
+    {
+        var product = CreateProduct();
+        var json = "/* stored */ " + ProductJsonSerializer.Serialize(product);
+
+        var result = _binder.BindModel(Document(json)) as CatalogProduct;
+
+        result.Should().NotBeNull();
+        result.Id.Should().Be(product.Id);
+    }
+
+    /// <summary>
     /// The string branch and the structural branch feed the same product to every consumer;
     /// only the provider differs in which one it stores.
     /// </summary>
