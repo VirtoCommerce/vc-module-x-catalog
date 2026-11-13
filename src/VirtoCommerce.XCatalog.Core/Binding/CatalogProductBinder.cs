@@ -1,61 +1,50 @@
 using System;
-using System.Reflection;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using VirtoCommerce.CatalogModule.Core.Model;
 using VirtoCommerce.Platform.Core.Common;
 using VirtoCommerce.SearchModule.Core.Model;
 using VirtoCommerce.Xapi.Core.Binding;
 
-namespace VirtoCommerce.XCatalog.Core.Binding
+namespace VirtoCommerce.XCatalog.Core.Binding;
+
+public class CatalogProductBinder : IIndexModelBinder
 {
-    public class CatalogProductBinder : IIndexModelBinder
+    private static readonly Type _productType = AbstractTypeFactory<CatalogProduct>.TryCreateInstance().GetType();
+
+    public BindingInfo BindingInfo { get; set; } = new BindingInfo { FieldName = "__object" };
+
+    public virtual object BindModel(SearchDocument searchDocument)
     {
-        private static readonly Type _productType = AbstractTypeFactory<CatalogProduct>.TryCreateInstance().GetType();
-
-        public BindingInfo BindingInfo { get; set; } = new BindingInfo { FieldName = "__object" };
-
-        public virtual object BindModel(SearchDocument searchDocument)
+        if (!searchDocument.TryGetValue(BindingInfo.FieldName, out var obj))
         {
-            var result = default(CatalogProduct);
+            // No object in index
+            return null;
+        }
 
-            if (!searchDocument.TryGetValue(BindingInfo.FieldName, out var obj))
-            {
-                // No object in index
-                return result;
-            }
+        var result = Deserialize(obj);
 
-            // check if __object document field name contains string or jObject
-            if (obj is string sObj)
-            {
-                try
-                {
-                    obj = JObject.Parse(sObj);
-                }
-                catch (JsonReaderException)
-                {
-                    return result;
-                }
-            }
+        if (result == null)
+        {
+            return null;
+        }
 
-            if (obj is JObject jobj)
-            {
-                result = (CatalogProduct)jobj.ToObject(_productType);
+        result.BindIndexedProperties(searchDocument);
 
-                var productProperties = result.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        return result;
+    }
 
-                foreach (var property in productProperties)
-                {
-                    var binder = property.GetIndexModelBinder();
+    private static CatalogProduct Deserialize(object obj)
+    {
+        switch (obj)
+        {
+            case string sObj:
+                return (CatalogProduct)IndexedObjectReader.Read(sObj, _productType);
 
-                    if (binder != null)
-                    {
-                        property.SetValue(result, binder.BindModel(searchDocument));
-                    }
-                }
-            }
+            case JObject jobj:
+                return (CatalogProduct)jobj.ToObject(_productType);
 
-            return result;
+            default:
+                return null;
         }
     }
 }
