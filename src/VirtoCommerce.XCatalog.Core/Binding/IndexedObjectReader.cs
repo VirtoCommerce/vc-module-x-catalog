@@ -32,7 +32,7 @@ internal static class IndexedObjectReader
 
     public static T Read<T>(string json) => (T)Read(json, typeof(T));
 
-    private static bool StartsWithObject(JsonReader reader)
+    private static bool StartsWithObject(JsonTextReader reader)
     {
         try
         {
