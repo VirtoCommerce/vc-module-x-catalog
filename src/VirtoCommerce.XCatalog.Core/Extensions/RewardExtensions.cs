@@ -27,13 +27,14 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
             {
                 var mappedRewards = rewardsMap[productPrice.Currency];
 
-                productPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - productPrice.SalePrice).Amount), productPrice.Currency);
+                // Discounts stay unrounded; rounding to the currency happens once, when the amount is displayed
+                productPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - productPrice.SalePrice).InternalAmount), productPrice.Currency);
 
                 foreach (var reward in mappedRewards)
                 {
                     foreach (var tierPrice in productPrice.TierPrices)
                     {
-                        tierPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - tierPrice.Price).Amount), productPrice.Currency);
+                        tierPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - tierPrice.Price).InternalAmount), productPrice.Currency);
                     }
 
                     if (!reward.IsValid)
@@ -41,7 +42,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
                         continue;
                     }
 
-                    var priceAmount = (productPrice.ListPrice - productPrice.DiscountAmount).Amount;
+                    var priceAmount = (productPrice.ListPrice - productPrice.DiscountAmount).InternalAmount;
 
                     var discount = new Discount
                     {
@@ -59,7 +60,7 @@ namespace VirtoCommerce.XCatalog.Core.Extensions
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.Price.Amount, 1, productPrice.Currency);
+                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.Price.InternalAmount, 1, productPrice.Currency);
                         }
                     }
                 }
