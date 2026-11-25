@@ -33,7 +33,9 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
             Field<NonNullGraphType<MoneyType>>("discountAmountWithTax")
                 .Description("Discount amount with tax: the displayed list price with tax minus the displayed actual price with tax")
                 .Resolve(context => context.Source.GetDisplayDiscountAmountWithTax());
-            Field(d => d.DiscountPercent, nullable: false);
+            Field<NonNullGraphType<DecimalGraphType>>("discountPercent")
+                .Description("Discount percent: the displayed discount amount divided by the displayed list price")
+                .Resolve(context => context.Source.GetDisplayDiscountPercent());
             Field<NonNullGraphType<StringGraphType>>("currency")
                 .Description("Currency")
                 .Resolve(context => context.Source.Currency.Code);
