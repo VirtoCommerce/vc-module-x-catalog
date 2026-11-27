@@ -139,8 +139,17 @@ namespace VirtoCommerce.XCatalog.Core.Models
         {
             foreach (var productPrice in AllPrices)
             {
-                productPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - productPrice.SalePrice).Amount), productPrice.Currency);
+                productPrice.DiscountAmount = GetStaticDiscount(productPrice);
             }
+        }
+
+        /// <summary>
+        /// The discount between the list and the sale price, kept unrounded: ActualPrice = ListPrice - DiscountAmount must equal SalePrice
+        /// under any currency rounding policy, so the rounding happens once, when the amount is displayed.
+        /// </summary>
+        protected virtual Money GetStaticDiscount(ProductPrice productPrice)
+        {
+            return new Money(Math.Max(0, (productPrice.ListPrice - productPrice.SalePrice).InternalAmount), productPrice.Currency);
         }
 
         public virtual void ApplyRewards(CatalogItemAmountReward[] allRewards)
@@ -160,7 +169,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
             {
                 var mappedRewards = rewardsMap[productPrice.Currency];
                 productPrice.Discounts.Clear();
-                productPrice.DiscountAmount = new Money(Math.Max(0, (productPrice.ListPrice - productPrice.SalePrice).Amount), productPrice.Currency);
+                productPrice.DiscountAmount = GetStaticDiscount(productPrice);
 
                 foreach (var reward in mappedRewards)
                 {
@@ -169,7 +178,8 @@ namespace VirtoCommerce.XCatalog.Core.Models
                         continue;
                     }
 
-                    var priceAmount = (productPrice.ListPrice - productPrice.DiscountAmount).Amount;
+                    // Same base as the cart line item: the exact price after the previous discounts
+                    var priceAmount = (productPrice.ListPrice - productPrice.DiscountAmount).InternalAmount;
 
                     var discount = new Discount
                     {
@@ -187,7 +197,7 @@ namespace VirtoCommerce.XCatalog.Core.Models
 
                         foreach (var tierPrice in productPrice.TierPrices)
                         {
-                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.ActualPrice.Amount, 1, productPrice.Currency);
+                            tierPrice.DiscountAmount += reward.GetTotalAmount(tierPrice.ActualPrice.InternalAmount, 1, productPrice.Currency);
                         }
                     }
                 }

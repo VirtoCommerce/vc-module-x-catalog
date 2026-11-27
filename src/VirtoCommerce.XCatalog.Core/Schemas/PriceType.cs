@@ -1,6 +1,7 @@
 using GraphQL.Types;
 using VirtoCommerce.Xapi.Core.Models;
 using VirtoCommerce.Xapi.Core.Schemas;
+using VirtoCommerce.XCatalog.Core.Extensions;
 
 namespace VirtoCommerce.XCatalog.Core.Schemas
 {
@@ -27,12 +28,14 @@ namespace VirtoCommerce.XCatalog.Core.Schemas
                 .Description("Actual price with tax")
                 .Resolve(context => context.Source.ActualPriceWithTax);
             Field<NonNullGraphType<MoneyType>>("discountAmount")
-                .Description("Discount amount")
-                .Resolve(context => context.Source.DiscountAmount);
+                .Description("Discount amount: the displayed list price minus the displayed actual price")
+                .Resolve(context => context.Source.GetDisplayDiscountAmount());
             Field<NonNullGraphType<MoneyType>>("discountAmountWithTax")
-                .Description("Discount amount with tax")
-                .Resolve(context => context.Source.DiscountAmountWithTax);
-            Field(d => d.DiscountPercent, nullable: false);
+                .Description("Discount amount with tax: the displayed list price with tax minus the displayed actual price with tax")
+                .Resolve(context => context.Source.GetDisplayDiscountAmountWithTax());
+            Field<NonNullGraphType<DecimalGraphType>>("discountPercent")
+                .Description("Discount percent: the displayed discount amount divided by the displayed list price")
+                .Resolve(context => context.Source.GetDisplayDiscountPercent());
             Field<NonNullGraphType<StringGraphType>>("currency")
                 .Description("Currency")
                 .Resolve(context => context.Source.Currency.Code);
